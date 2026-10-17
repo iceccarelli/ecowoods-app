@@ -80,7 +80,7 @@ export const PILLARS: FrameworkPillar[] = [
       {
         id: '1.1',
         question: 'Was the subfloor moisture content measured, and were the readings written down?',
-        risk: 'A floor installed over a wet subfloor will cup, crown, gap or buckle. No warranty language overrides physics.',
+        risk: 'A floor installed over a wet subfloor will cup, crown, gap or buckle.',
         severity: 'critical',
         source: { paper: P_CLIMATE, section: 'moisture-testing' },
       },
@@ -214,7 +214,7 @@ export const PILLARS: FrameworkPillar[] = [
         id: '4.2',
         question:
           'Was the safe indoor humidity band the floor needs to live in — and who is responsible for maintaining it — stated in writing?',
-        risk: 'A floor handed over without a stated operating range has no defensible warranty boundary, in either direction.',
+        risk: 'A floor handed over without a stated operating range has no defined range it is meant to stay within.',
         severity: 'major',
         source: { paper: P_CLIMATE, section: 'climate-reality' },
       },
@@ -297,13 +297,6 @@ export const PILLARS: FrameworkPillar[] = [
         source: { paper: P_COST, section: 'installer-checklist' },
       },
       {
-        id: '6.3',
-        question: 'Is there true lifetime workmanship warranty language in the contract itself?',
-        risk: 'A warranty described in conversation and absent from the contract is not a warranty.',
-        severity: 'critical',
-        source: { paper: P_COST, section: 'installer-checklist' },
-      },
-      {
         id: '6.4',
         question:
           'Would they refuse the job if the substrate or the conditions were wrong — and have they said so plainly?',
@@ -317,14 +310,6 @@ export const PILLARS: FrameworkPillar[] = [
         risk: 'Testing after the deposit inverts the incentive: the finding can no longer change the decision.',
         severity: 'major',
         source: { paper: P_CLIMATE, section: 'what-to-demand' },
-      },
-      {
-        id: '6.6',
-        question:
-          'Are manufacturer warranties passed through in writing, naming the manufacturer and the product?',
-        risk: 'A manufacturer warranty that is never registered or documented cannot be claimed against years later.',
-        severity: 'advisory',
-        source: { paper: P_COST, section: 'installer-checklist' },
       },
     ],
   },

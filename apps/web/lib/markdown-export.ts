@@ -1453,7 +1453,7 @@ export const COMMERCIAL_MIRRORS: CommercialMirror[] = [
       'Refinishing an existing hardwood floor: the two published bands (full sand and finish, screen and recoat), ' +
       `the four-machine sequence the work follows, and how dust is contained. ${dust ?? ''}`.trim(),
     services: ['floor-refinishing', 'dust-free-sanding', 'floor-restoration', 'stair-refinishing'],
-    faq: (f) => /refinish|sand|dust|stay in the house|warranty|how long|estimate/i.test(`${f.q} ${f.a}`),
+    faq: (f) => /refinish|sand|dust|stay in the house|how long|estimate/i.test(`${f.q} ${f.a}`),
   },
   {
     slug: 'hardwood-stairs-toronto',
@@ -1462,7 +1462,7 @@ export const COMMERCIAL_MIRRORS: CommercialMirror[] = [
       'Stair refinishing, carpet removal, new treads and risers, matched to the floor they meet. Stairs are quoted ' +
       'per tread and per flight rather than per square foot, because the work is geometry rather than area.',
     services: ['stair-refinishing', 'floor-refinishing', 'hardwood-installation'],
-    faq: (f) => /stair|estimate|warranty|how long|contractor/i.test(`${f.q} ${f.a}`),
+    faq: (f) => /stair|estimate|how long|contractor/i.test(`${f.q} ${f.a}`),
     pricingNote:
       'No per-tread band is published. The stair number is given per tread and per flight after the same ' +
       'in-home measure and is itemised separately in the written price. The bands below are for the floor.',
@@ -1476,7 +1476,7 @@ export const COMMERCIAL_MIRRORS: CommercialMirror[] = [
       `flooring company in Toronto, and the facts Ecowoods publishes about itself so it can be checked ` +
       `the same way.`,
     services: SERVICES.map((s) => s.slug),
-    faq: (f) => /choose|contractor|warranty|subcontractor|reputable|quote/i.test(`${f.q} ${f.a}`),
+    faq: (f) => /choose|contractor|subcontractor|reputable|quote/i.test(`${f.q} ${f.a}`),
   },
   {
     slug: 'best-hardwood-flooring-company-gta',
@@ -1486,7 +1486,7 @@ export const COMMERCIAL_MIRRORS: CommercialMirror[] = [
       `published price list across every municipality Ecowoods serves, judged against the ` +
       `${criterionCount()} criteria of ${FRAMEWORK_NAME} v${FRAMEWORK_VERSION}.`,
     services: SERVICES.map((s) => s.slug),
-    faq: (f) => /choose|contractor|warranty|subcontractor|reputable|quote/i.test(`${f.q} ${f.a}`),
+    faq: (f) => /choose|contractor|subcontractor|reputable|quote/i.test(`${f.q} ${f.a}`),
   },
   {
     slug: 'hardwood-color-matching-toronto',

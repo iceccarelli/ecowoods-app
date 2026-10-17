@@ -86,7 +86,7 @@ export default function TermsPage() {
           <p className="tlx-note">
             {PRICE_PROMISE} That written quote — the one with your address, your square footage,
             your moisture readings and a number on it — is the agreement between you and{' '}
-            {BUSINESS_NAP.legalName}. It says what is included, what the warranties are and what
+            {BUSINESS_NAP.legalName}. It says what is included and what
             happens if something is wrong.
           </p>
           <p className="tlx-note">

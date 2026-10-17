@@ -90,7 +90,7 @@ export const GLOSSARY: GlossaryTerm[] = [
       'The amount of water vapour in the air relative to what that air could hold at its temperature — the environmental variable a hardwood floor actually responds to.',
     body: [
       'Toronto indoor relative humidity runs from 18–25% at the winter low to above 60% at the summer high. The safe operating band for hardwood is 35–55%.',
-      'The gap between those numbers is the whole problem. A floor specified without reference to that range was specified for a different city, and a floor handed over without a stated operating band has no defensible warranty boundary in either direction.',
+      'The gap between those numbers is the whole problem. A floor specified without reference to that range was specified for a different city, and a floor handed over without a stated operating band has no defined range it is meant to stay within.',
     ],
     related: ['hygroscopic', 'acclimation', 'cupping', 'seasonal-gapping'],
     pillars: ['movement', 'specification'],
@@ -118,7 +118,7 @@ export const GLOSSARY: GlossaryTerm[] = [
       'The difference between the moisture content of the flooring material and that of the subfloor, which must sit inside an acceptable range before installation.',
     body: [
       'Two readings that are each individually plausible can still be incompatible with each other. Both must sit within the manufacturer’s and the installer’s acceptable delta.',
-      'A large differential guarantees dimensional change after installation, regardless of how well the floor is laid. There is no warranty language that overrides it.',
+      'A large differential guarantees dimensional change after installation, regardless of how well the floor is laid.',
     ],
     related: ['moisture-content', 'acclimation', 'cupping', 'crowning'],
     pillars: ['moisture'],
