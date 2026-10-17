@@ -75,26 +75,7 @@ export async function POST(request: Request) {
   try {
     const session = await auth();
 
-    // Authoritative server-side recheck with live counts (client can be stale).
     const dayKey = localDateKey(startsAt);
-    const sameDay = await db.appointment.findMany({
-      where: {
-        status: 'SCHEDULED',
-        startsAt: { gte: new Date(`${dayKey}T00:00:00Z`), lte: new Date(`${dayKey}T23:59:59Z`) },
-      },
-      select: { startsAt: true },
-    });
-    const counts = new Map<string, number>();
-    for (const r of sameDay) {
-      const iso = r.startsAt.toISOString();
-      counts.set(iso, (counts.get(iso) ?? 0) + 1);
-    }
-    if (!isBookableSlot(data.startsAt, { now: new Date(), bookingCounts: counts })) {
-      return NextResponse.json(
-        { error: 'That time was just taken or is no longer available. Please pick another.' },
-        { status: 409 },
-      );
-    }
 
     /* ASSISTANT-07 — designId/designCode, same fields and same
        designIdOf() validation /api/leads already applies, so a booking that
@@ -106,35 +87,76 @@ export async function POST(request: Request) {
     const designId = designIdOf(data.designId);
     const designCode = typeof data.designCode === 'string' ? data.designCode.slice(0, 400) : null;
 
-    // One transaction: create the lead (QuoteRequest) + the Appointment on it.
-    const { quote, appt } = await db.$transaction(async (tx) => {
-      const quote = await tx.quoteRequest.create({
-        data: {
-          name: data.name,
-          email: data.email,
-          phone: data.phone ?? null,
-          city: data.postal ?? null,
-          service: data.service,
-          squareFeet: typeof data.sqft === 'number' ? data.sqft : null,
-          notes: data.notes ?? null,
-          userId: session?.user?.id ?? null,
-          designId: designId ?? null,
-          designCode,
-        },
-      });
-      const appt = await tx.appointment.create({
-        data: {
-          quoteRequestId: quote.id,
-          startsAt,
-          durationMinutes: SLOT_DURATION_MINUTES,
-          customerName: data.name,
-          customerEmail: data.email,
-          customerPhone: data.phone ?? null,
-          notes: data.notes ?? null,
-        },
-      });
-      return { quote, appt };
-    });
+    /* One Serializable transaction: the capacity re-check, the lead
+       (QuoteRequest) and the Appointment commit together. Checking outside the
+       transaction let two simultaneous bookings both see a free slot and both
+       insert. Under Serializable, Postgres aborts one of two conflicting
+       count-then-insert transactions (P2034); it is retried, and on the retry
+       it sees the other booking and answers "just taken". */
+    const SLOT_TAKEN = Symbol('slot taken');
+    let booked: { quote: { id: string }; appt: { id: string; startsAt: Date } } | typeof SLOT_TAKEN | null = null;
+    for (let attempt = 0; attempt < 3 && booked === null; attempt++) {
+      try {
+        booked = await db.$transaction(
+          async (tx) => {
+            const sameDay = await tx.appointment.findMany({
+              where: {
+                status: 'SCHEDULED',
+                startsAt: { gte: new Date(`${dayKey}T00:00:00Z`), lte: new Date(`${dayKey}T23:59:59Z`) },
+              },
+              select: { startsAt: true },
+            });
+            const counts = new Map<string, number>();
+            for (const r of sameDay) {
+              const iso = r.startsAt.toISOString();
+              counts.set(iso, (counts.get(iso) ?? 0) + 1);
+            }
+            if (!isBookableSlot(data.startsAt, { now: new Date(), bookingCounts: counts })) return SLOT_TAKEN;
+
+            const quote = await tx.quoteRequest.create({
+              data: {
+                name: data.name,
+                email: data.email,
+                phone: data.phone ?? null,
+                city: data.postal ?? null,
+                service: data.service,
+                squareFeet: typeof data.sqft === 'number' ? data.sqft : null,
+                notes: data.notes ?? null,
+                userId: session?.user?.id ?? null,
+                designId: designId ?? null,
+                designCode,
+              },
+            });
+            const appt = await tx.appointment.create({
+              data: {
+                quoteRequestId: quote.id,
+                startsAt,
+                durationMinutes: SLOT_DURATION_MINUTES,
+                customerName: data.name,
+                customerEmail: data.email,
+                customerPhone: data.phone ?? null,
+                notes: data.notes ?? null,
+              },
+            });
+            return { quote, appt };
+          },
+          { isolationLevel: 'Serializable' },
+        );
+      } catch (err) {
+        const conflict = typeof err === 'object' && err !== null && (err as { code?: string }).code === 'P2034';
+        if (!conflict || attempt === 2) {
+          if (conflict) booked = SLOT_TAKEN; // still contended after retries: do not guess, ask them to pick again
+          else throw err;
+        }
+      }
+    }
+    if (booked === SLOT_TAKEN || booked === null) {
+      return NextResponse.json(
+        { error: 'That time was just taken or is no longer available. Please pick another.' },
+        { status: 409 },
+      );
+    }
+    const { quote, appt } = booked;
 
     /* MEAS-02 — the brief's `appointment` event. Outside the transaction on
        purpose: a measurement row must never be able to roll back a booking
