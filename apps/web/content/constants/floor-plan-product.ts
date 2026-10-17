@@ -2,17 +2,17 @@
  * content/constants/floor-plan-product.ts — the Personal Floor Plan spec PDF
  * (EW-0004), a NEW paid product and NOT yet a confirmed commercial term.
  *
- * Same Class C posture as the other paid-review constants files in this
- * branch: $99 is the ecowoods-opportunity agent's researched recommendation,
- * not an owner-confirmed price.
+ * The $99 figure is a researched recommendation, not an owner-confirmed
+ * price. `priceConfirmed` remains false until the owner confirms the
+ * commercial term. The product page hides the proposal and checkout form
+ * while it is false, and the API refuses checkout before writing an Order or
+ * creating a Stripe session. Only an owner-approved change should set it true.
  *
  * studio-products.ts already declares this exact rung — id 'floor-plan',
  * `priceCad: null`, `published: false` — and that file is deliberately not
  * edited here. Publishing a figure by editing that file is the one thing its
- * own header comment says no engineer or agent gets to do in a patch. This
- * file is the sibling NEW declaration the opportunity brief asked for
- * instead.
- */
+ * own header comment says no engineer or agent gets to do in a patch.
+ *
 
 export const FLOOR_PLAN_PRODUCT = {
   slug: 'floor-plan',
