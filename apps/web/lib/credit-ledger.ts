@@ -92,6 +92,11 @@ export async function grantCreditsForOrder(input: {
     });
   } catch (err) {
     if (isUniqueViolation(err)) {
+      // P2002 can also be two first-time wallet upserts racing on userId. Only
+      // report "already granted" when the grant row really exists; otherwise
+      // rethrow so the caller retries instead of believing credits were issued.
+      const grantRow = await db.creditTransaction.findUnique({ where: { idempotencyKey } });
+      if (!grantRow) throw err;
       const existing = await db.creditWallet.findUnique({ where: { userId: input.userId } });
       return { granted: false, balance: existing?.balance ?? 0, reason: 'already_granted' as const };
     }

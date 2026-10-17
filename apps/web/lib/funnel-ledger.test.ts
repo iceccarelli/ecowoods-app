@@ -125,7 +125,7 @@ describe('the six instrumentation points still exist', () => {
     ['app/api/appointments/route.ts', 'APPOINTMENT_BOOKED'],
     ['lib/actions/quotes.ts', 'QUOTE_ISSUED'],
     ['lib/actions/quotes.ts', 'QUOTE_ACCEPTED'],
-    ['app/api/webhooks/stripe/route.ts', 'DEPOSIT_PAID'],
+    ['lib/stripe-fulfillment.ts', 'DEPOSIT_PAID'],
     ['lib/actions/projects.ts', 'JOB_COMPLETED'],
   ];
 
@@ -151,7 +151,7 @@ describe('the six instrumentation points still exist', () => {
   it('the deposit stage is guarded to the DEPOSIT invoice only', () => {
     /* Counting progress and final invoices as deposits reports a conversion
        rate above 100% for every job that invoices in thirds. */
-    const src = read('app/api/webhooks/stripe/route.ts');
+    const src = read('lib/stripe-fulfillment.ts');
     expect(src).toContain("invoice.stage === 'DEPOSIT'");
   });
 
