@@ -52,6 +52,8 @@ describe('listing-floor-report/submit — product binding', () => {
     ['well-installed review', 'Well-Installed Quote Review (Standard)'],
     ['personal floor plan', 'Personal Floor Plan\nFP_DESIGN:abc'],
     ['renovation credits', 'Renovation Credits (starter-40)'],
+    ['unrelated order with injected product suffix', 'Shop order\nListing Floor Report (photo)'],
+    ['unknown listing SKU', 'Listing Floor Report (unknown-sku)'],
     ['no notes', null],
   ])('a PAID %s order is rejected: 404, no email, no write', async (_n, notes) => {
     state.order = { id: ORDER_ID, status: 'PAID', notes, user: { email: 'jane@example.com' } };
