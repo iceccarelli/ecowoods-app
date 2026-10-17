@@ -150,8 +150,8 @@ async function submitDocs(orderId: string, email = 'jane@example.com') {
   const form = new FormData();
   form.set('orderId', orderId);
   form.set('email', email);
-  form.append('documents', new File([new Uint8Array([37, 80, 68, 70])], 'quote-a.pdf', { type: 'application/pdf' }));
-  form.append('documents', new File([new Uint8Array([37, 80, 68, 70])], 'quote-b.pdf', { type: 'application/pdf' }));
+  form.append('documents', new File([new TextEncoder().encode('%PDF-1.7\n%quote')], 'quote-a.pdf', { type: 'application/pdf' }));
+  form.append('documents', new File([new TextEncoder().encode('%PDF-1.7\n%quote')], 'quote-b.pdf', { type: 'application/pdf' }));
   return submit.POST(new Request('http://localhost/api/well-installed-review/submit', { method: 'POST', body: form, headers: { 'x-forwarded-for': nextIp() } }));
 }
 

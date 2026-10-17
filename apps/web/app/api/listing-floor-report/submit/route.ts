@@ -24,6 +24,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
+import { safeFilename, sniffFile, type SniffedImage } from '@/lib/image-sniff';
 import { checkListingReportSubmissionEligibility } from '@/lib/listing-floor-report';
 import { appendIntakeMarker, appendMetaMarker, extractListingReportSku, hasIntakeMarker, isListingFloorReportOrder } from '@/lib/listing-floor-report/notes';
 import { grantConsent, readCheckbox } from '@/lib/floor-graph/consent';
@@ -38,7 +39,6 @@ export const dynamic = 'force-dynamic';
 const MIN_PHOTOS = 3;
 const MAX_PHOTOS = 8;
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
-const ACCEPTED = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
 
 const fieldsSchema = z.object({
   orderId: z.string().uuid('Missing order reference.'),
@@ -140,9 +140,13 @@ export async function POST(request: Request) {
     if (files.length < MIN_PHOTOS) fileErrors.push(`Attach at least ${MIN_PHOTOS} photos: traffic lanes, overall field, a transition, and a close-up of any wear.`);
     if (files.length > MAX_PHOTOS) fileErrors.push(`At most ${MAX_PHOTOS} photos.`);
   }
+  // Decided from the bytes, not the declared type or the filename.
+  const sniffedByFile = new Map<File, SniffedImage>();
   for (const f of files.slice(0, MAX_PHOTOS)) {
-    if (f.type && !ACCEPTED.has(f.type)) fileErrors.push(`${f.name}: use JPEG, PNG, WebP or HEIC.`);
+    const kind = await sniffFile(f);
+    if (!kind) fileErrors.push(`${f.name}: use JPEG, PNG, WebP or HEIC.`);
     else if (f.size > MAX_IMAGE_BYTES) fileErrors.push(`${f.name} is too large — photos must be under 2 MB each.`);
+    else sniffedByFile.set(f, kind);
   }
   if (fileErrors.length) {
     return NextResponse.json(
@@ -175,7 +179,7 @@ export async function POST(request: Request) {
         let position = 0;
         for (const f of files.slice(0, MAX_PHOTOS)) {
           const buffer = Buffer.from(await f.arrayBuffer());
-          const contentType = f.type || 'image/jpeg';
+          const contentType = sniffedByFile.get(f)!.contentType;
           const put = await storePhoto(buffer, `${assessment.value}-${position}`, contentType);
           if (!put.ok) {
             console.warn(JSON.stringify({ event: 'listing_floor_report.photo_not_retained', orderId: order!.id, reason: put.reason }));
@@ -199,7 +203,7 @@ export async function POST(request: Request) {
   try {
     const attachments: EmailAttachment[] = [];
     for (const f of files.slice(0, MAX_PHOTOS)) {
-      attachments.push({ filename: f.name || 'photo.jpg', content: Buffer.from(await f.arrayBuffer()) });
+      attachments.push({ filename: safeFilename(f.name, sniffedByFile.get(f)!.ext), content: Buffer.from(await f.arrayBuffer()) });
     }
     const rows = [
       ['Order', order!.id],

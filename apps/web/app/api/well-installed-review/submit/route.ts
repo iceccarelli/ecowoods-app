@@ -20,6 +20,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { safeFilename, sniffDocumentFile, type SniffedDocument } from '@/lib/image-sniff';
 import { checkSubmissionEligibility } from '@/lib/well-installed-review';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 import { recordQuoteReviewEvent } from '@/lib/quote-intelligence/events';
@@ -31,14 +32,6 @@ export const dynamic = 'force-dynamic';
 const MAX_FILES = 3;
 const MAX_PDF_BYTES = 8 * 1024 * 1024;
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
-const ACCEPTED = new Set([
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/heic',
-  'image/heif',
-]);
 
 const fieldsSchema = z.object({
   orderId: z.string().uuid('Missing order reference.'),
@@ -91,10 +84,15 @@ export async function POST(request: Request) {
   const fileErrors: string[] = [];
   if (files.length === 0) fileErrors.push('Attach the quote — a PDF, or photos of it.');
   if (files.length > MAX_FILES) fileErrors.push(`At most ${MAX_FILES} files.`);
+  /* Decided from the bytes, not the declared type or the filename: a missing
+     or forged `type` used to skip the check, and size limits followed it. */
+  const sniffedByFile = new Map<File, SniffedDocument>();
   for (const f of files.slice(0, MAX_FILES)) {
-    if (f.type && !ACCEPTED.has(f.type)) fileErrors.push(`${f.name}: send a PDF or an image.`);
-    else if (f.type === 'application/pdf' && f.size > MAX_PDF_BYTES) fileErrors.push(`${f.name} is over 8 MB.`);
-    else if (f.type !== 'application/pdf' && f.size > MAX_IMAGE_BYTES) fileErrors.push(`${f.name} is too large.`);
+    const kind = await sniffDocumentFile(f);
+    if (!kind) fileErrors.push(`${f.name}: send a PDF or an image.`);
+    else if (kind.contentType === 'application/pdf' && f.size > MAX_PDF_BYTES) fileErrors.push(`${f.name} is over 8 MB.`);
+    else if (kind.contentType !== 'application/pdf' && f.size > MAX_IMAGE_BYTES) fileErrors.push(`${f.name} is too large.`);
+    else sniffedByFile.set(f, kind);
   }
 
   if (!parsed.success || fileErrors.length) {
@@ -137,7 +135,7 @@ export async function POST(request: Request) {
   try {
     const attachments: EmailAttachment[] = [];
     for (const f of files.slice(0, MAX_FILES)) {
-      attachments.push({ filename: f.name || 'quote.pdf', content: Buffer.from(await f.arrayBuffer()) });
+      attachments.push({ filename: safeFilename(f.name, sniffedByFile.get(f)!.ext, 'quote'), content: Buffer.from(await f.arrayBuffer()) });
     }
     const rows = [
       ['Order', order!.id],
