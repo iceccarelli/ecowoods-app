@@ -42,7 +42,19 @@ export interface Slot {
   available: boolean;
 }
 export interface DayAvailability { date: string; slots: Slot[]; }
+/**
+ * `bookingCounts` may be keyed by a slot's own local-offset ISO string (the
+ * form this module emits) OR by the UTC instant (`Date#toISOString()`), which
+ * is what a database row produces. The two spell the same moment differently,
+ * and the routes key by the second form: matching only the first meant no
+ * booked slot was ever counted, so capacity was never enforced.
+ */
 export interface ComputeOptions { now: Date; bookingCounts: Map<string, number>; }
+
+function bookedAt(counts: Map<string, number>, start: string): number {
+  const utc = new Date(start).toISOString();
+  return utc === start ? (counts.get(start) ?? 0) : (counts.get(start) ?? 0) + (counts.get(utc) ?? 0);
+}
 
 const WEEKDAY_INDEX: Record<string, number> = { Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6 };
 
@@ -103,7 +115,7 @@ export function computeDayAvailability(dateKey: string, opts: ComputeOptions): D
     .map(({ hour, minute }) => {
       const start = isoForLocalTime(dateKey, hour, minute);
       const startMs = new Date(start).getTime();
-      const remaining = Math.max(0, SLOTS_PER_WINDOW - (opts.bookingCounts.get(start) ?? 0));
+      const remaining = Math.max(0, SLOTS_PER_WINDOW - bookedAt(opts.bookingCounts, start));
       return { start, startMs, durationMinutes: SLOT_DURATION_MINUTES, remaining };
     })
     .filter((s) => s.startMs >= earliest)
