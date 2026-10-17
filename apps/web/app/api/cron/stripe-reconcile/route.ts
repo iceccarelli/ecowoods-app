@@ -5,6 +5,9 @@ import { reconcilePendingFulfillments } from '@/lib/stripe-fulfillment';
  * GET /api/cron/stripe-reconcile — finish paid orders whose fulfilment a
  * webhook delivery started and did not complete (see lib/stripe-fulfillment.ts).
  *
+ * Also asks Stripe (read-only) for recent paid sessions whose webhook never
+ * arrived and fulfils those still PENDING here.
+ *
  * Run by Vercel Cron (see the `crons` block in vercel.json), independent of
  * Stripe's own redelivery schedule. Idempotent: the credit grant is guarded
  * by CreditTransaction.idempotencyKey, so a sweep that overlaps a webhook

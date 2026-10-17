@@ -34,6 +34,7 @@
  */
 import type Stripe from 'stripe';
 import { db } from '@/lib/db';
+import { stripe } from '@/lib/stripe';
 import { grantCreditsForOrder } from '@/lib/credit-ledger';
 import { recordFunnelEvent } from '@/lib/funnel-ledger';
 import { CREDIT_PACK } from '@/lib/assistant-workspace/credits-config';
@@ -213,6 +214,58 @@ export async function fulfilCheckoutSession(session: Stripe.Checkout.Session): P
   return reject('no_reference', { sessionId: session.id });
 }
 
+/**
+ * Webhooks can be lost for good: a misconfigured endpoint, a signing-secret
+ * mismatch, or an outage longer than Stripe's retry window. The customer has
+ * then paid, the Order is still PENDING, and nothing else ever looks. Ask
+ * Stripe (read-only) for recently completed, paid Checkout Sessions and run
+ * the ones whose Order/Invoice we still hold as unpaid through the same
+ * idempotent fulfilment the webhook uses. Sessions younger than `minAgeMs` are
+ * left to the webhook that is probably still on its way.
+ */
+async function reconcileLostWebhooks(
+  summary: ReconcileSummary,
+  options: { minAgeMs?: number; lookbackMs?: number; maxSessions?: number },
+): Promise<void> {
+  const now = Date.now();
+  const newest = now - (options.minAgeMs ?? 10 * 60 * 1000);
+  const oldest = now - (options.lookbackMs ?? 3 * 86_400_000);
+  const maxSessions = options.maxSessions ?? 200;
+  try {
+    const paid: Stripe.Checkout.Session[] = [];
+    let seen = 0;
+    for await (const session of stripe.checkout.sessions.list({ status: 'complete', created: { gte: Math.floor(oldest / 1000) }, limit: 100 })) {
+      if (++seen > maxSessions) break;
+      if (session.payment_status === 'paid' && session.created * 1000 <= newest) paid.push(session);
+    }
+    const orderIds = paid.flatMap((x) => (x.metadata?.orderId ? [x.metadata.orderId] : []));
+    const invoiceIds = paid.flatMap((x) => (!x.metadata?.orderId && x.metadata?.invoiceId ? [x.metadata.invoiceId] : []));
+    const [orders, invoices] = await Promise.all([
+      orderIds.length ? db.order.findMany({ where: { id: { in: orderIds }, status: { in: ['PENDING', 'CANCELLED'] } }, select: { id: true } }) : [],
+      invoiceIds.length ? db.invoice.findMany({ where: { id: { in: invoiceIds }, status: { not: 'PAID' } }, select: { id: true } }) : [],
+    ]);
+    const unpaidOrders = new Set(orders.map((o) => o.id));
+    const unpaidInvoices = new Set(invoices.map((i) => i.id));
+    for (const session of paid) {
+      const ref = session.metadata?.orderId ? unpaidOrders.has(session.metadata.orderId) : session.metadata?.invoiceId ? unpaidInvoices.has(session.metadata.invoiceId) : false;
+      if (!ref) continue;
+      summary.examined += 1;
+      try {
+        log('stripe_fulfillment.lost_webhook_recovered', { sessionId: session.id, orderId: session.metadata?.orderId ?? null, invoiceId: session.metadata?.invoiceId ?? null });
+        const outcome = await fulfilCheckoutSession(session);
+        if (outcome.status === 'fulfilled') summary.fulfilled += 1;
+        else summary.failed += 1;
+      } catch (err) {
+        summary.failed += 1;
+        console.error(JSON.stringify({ event: 'stripe_fulfillment.unresolved', sessionId: session.id, error: err instanceof Error ? err.message : 'unknown' }));
+      }
+    }
+  } catch (err) {
+    summary.failed += 1;
+    console.error(JSON.stringify({ event: 'stripe_fulfillment.lost_webhook_scan_failed', error: err instanceof Error ? err.message : 'unknown' }));
+  }
+}
+
 export interface ReconcileSummary {
   examined: number;
   fulfilled: number;
@@ -224,7 +277,7 @@ export interface ReconcileSummary {
  * every credits Order still PAID after the grace period is re-run through the
  * same idempotent fulfilment. Independent of Stripe's own retry schedule.
  */
-export async function reconcilePendingFulfillments(options: { olderThanMs?: number; batch?: number } = {}): Promise<ReconcileSummary> {
+export async function reconcilePendingFulfillments(options: { olderThanMs?: number; batch?: number; lostWebhook?: { minAgeMs?: number; lookbackMs?: number; maxSessions?: number } } = {}): Promise<ReconcileSummary> {
   const cutoff = new Date(Date.now() - (options.olderThanMs ?? 5 * 60 * 1000));
   const pending = await db.order.findMany({
     where: { status: 'PAID', notes: { startsWith: CREDITS_NOTES_PREFIX }, paidAt: { lte: cutoff } },
@@ -272,5 +325,6 @@ export async function reconcilePendingFulfillments(options: { olderThanMs?: numb
       console.error(JSON.stringify({ event: 'stripe_fulfillment.unresolved', orderId: order.id, error: err instanceof Error ? err.message : 'unknown' }));
     }
   }
+  await reconcileLostWebhooks(summary, options.lostWebhook ?? {});
   return summary;
 }
