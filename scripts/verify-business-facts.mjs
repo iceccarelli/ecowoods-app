@@ -59,9 +59,7 @@ const BANNED = [
   // F-165. "99.7% dust capture" was published on the homepage, the dust-free
   // service page, all 32 service-area pages, two guides, FloorForge, and
   // /llms.txt — where an agent reads it as a measured fact about this business
-  // and repeats it. The claim registry had it as `unsourced`, fenced to
-  // `editorial`, and it was live in FAQ answers that become FAQPage JSON-LD,
-  // which is the `schema` context the fence exists to prevent.
+  // and repeats it. It was live in FAQ answers that become FAQPage JSON-LD.
   //
   // The number is almost certainly a HEPA filter's certified rating quoted as a
   // room-capture fraction. Those are different measurements. The first sceptical

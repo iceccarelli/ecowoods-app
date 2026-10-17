@@ -74,7 +74,7 @@ export const QUOTE_IMPACTS: readonly QuoteImpact[] = [
     paper: 'where-toronto-hardwood-comes-from',
     anchor: 'why-provenance',
     body:
-      'Provenance is not a sentiment on an invoice — it decides how the boards behave in your house and whether the warranty behind them is worth anything. Ask your quote to name the species, the mill or the supplier, and the certification, and to say whether the material is in stock or being ordered. Substitution after the deposit is the most common way a quoted floor becomes a different floor, and the sentence that prevents it is a specified product on a signed document rather than a species named in conversation.',
+      'Provenance is not a sentiment on an invoice — it decides how the boards behave in your house. Ask your quote to name the species, the mill or the supplier, and the certification, and to say whether the material is in stock or being ordered. Substitution after the deposit is the most common way a quoted floor becomes a different floor, and the sentence that prevents it is a specified product on a signed document rather than a species named in conversation.',
     cta: { href: '/#quote', label: 'Get a fixed written price' },
   },
   {

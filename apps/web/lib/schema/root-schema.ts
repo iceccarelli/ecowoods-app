@@ -332,9 +332,6 @@ const BAND_OFFER_CATALOG = {
  * day someone changes one of them. And this is the object a search engine reads
  * to decide WHO this business is. lib/structured-data.ts held a third copy of
  * the same five fields, on the thirty-two service-area pages. Both now derive.
- *
- * `pnpm seo:claims` fails the build on a NAP literal anywhere outside
- * packages/shared/constants.
  */
 export const ROOT_ORG_CONFIG: OrganizationConfig = {
   siteUrl: SITE_URL,
@@ -396,7 +393,7 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
   offerCatalog: BAND_OFFER_CATALOG,
   slogan: "Toronto's master hardwood flooring artisans",
   description:
-    'Custom hardwood floor installation and dust-free refinishing in Toronto and the GTA. Fixed written estimates; manufacturer warranties passed through in writing.',
+    'Custom hardwood floor installation and dust-free refinishing in Toronto and the GTA. Fixed written estimates.',
   // Both of these used to be hand-written paths into apps/web/public, and both
   // returned 404 in production for the life of the project. See F-162 and
   // lib/brand-assets.ts — the URLs are now derived from imported files, so a

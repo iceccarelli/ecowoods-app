@@ -9,7 +9,6 @@ import type { Product } from '@ecowoods/types';
 const TESTIMONIALS = [
   { name: 'Sarah & Michael T.', location: 'Leaside', quote: 'Transformed our home. Flawless finish.', project: '1,120 sq ft • White Oak' },
   { name: 'David Chen', location: 'The Annex', quote: 'Handled condo restrictions perfectly.', project: '680 sq ft • Walnut' },
-  { name: 'Priya & Raj Patel', location: 'Forest Hill', quote: 'The 5-year warranty gives real peace of mind.', project: '890 sq ft • Engineered Maple' },
 ];
 
 const IMPACT_STATS = [
@@ -58,7 +57,7 @@ export default function HomeScreen() {
       <View style={s.hero}>
         <Text style={s.eyebrow}>EST. 2014 • TORONTO</Text>
         <Text style={s.heroTitle}>Premium hardwood.{'\n'}Expertly installed.</Text>
-        <Text style={s.heroSub}>Sustainable Canadian forests • 5-year warranty • 98% recommend us</Text>
+        <Text style={s.heroSub}>Sustainable Canadian forests • 98% recommend us</Text>
         
         <View style={s.heroCtas}>
           <Pressable style={s.primaryBtn} onPress={() => router.push('/(tabs)/shop')}>
@@ -161,7 +160,7 @@ export default function HomeScreen() {
           {[
             { num: '01', title: 'Free Measure & 3D Render', desc: 'We visit, measure & visualize your space' },
             { num: '02', title: 'Transparent Quote', desc: 'All-in pricing • No hidden fees • 7-day hold' },
-            { num: '03', title: 'Expert Install', desc: '1-3 days • 5-year warranty • Eco-friendly finish' },
+            { num: '03', title: 'Expert Install', desc: '1-3 days • Eco-friendly finish' },
           ].map((step, i) => (
             <View key={i} style={s.step}>
               <View style={s.stepNum}><Text style={s.stepNumText}>{step.num}</Text></View>

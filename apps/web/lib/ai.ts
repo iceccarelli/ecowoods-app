@@ -177,7 +177,7 @@ Location: ${city ?? 'Toronto, ON'}
 Service: ${service ?? 'hardwood flooring'}
 Species: ${species?.join(', ') ?? 'TBD'}
 Area: ${squareFeet ? `${squareFeet.toLocaleString()} sq ft` : 'TBD'}
-Include professional standards like moisture testing, acclimation, and warranty.`,
+Include professional standards like moisture testing and acclimation.`,
       },
     ],
     max_tokens: 400,

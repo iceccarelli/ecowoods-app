@@ -24,4 +24,4 @@ Skipping or rushing the planetary pass is one of the most common reasons floors 
 
 ## EcoWoods Context
 The planetary stage is part of the non-negotiable protocol.  
-It ensures the floor that leaves EcoWoods will perform and look correct for decades under the lifetime workmanship warranty.
+It ensures the floor that leaves EcoWoods will perform and look correct for decades.

@@ -434,7 +434,6 @@ export const CLUSTERS: QueryCluster[] = [
       'how to evaluate a hardwood quote',
       'what should a hardwood flooring quote include',
       'questions to ask a flooring contractor',
-      'what warranty do hardwood installers give',
       'do flooring companies use subcontractors',
       'compare hardwood flooring quotes Toronto',
     ],

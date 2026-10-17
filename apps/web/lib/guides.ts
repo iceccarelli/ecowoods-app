@@ -267,22 +267,21 @@ export const GUIDES: Guide[] = [
     ],
     decisionTree: [
       'Do they moisture-test at the free estimate, and document the readings? → If no, stop here.',
-      'Do they require a minimum 72-hour acclimation in the actual space? → If no, the warranty is decorative.',
+      'Do they require a minimum 72-hour acclimation in the actual space? → If no, the floor is at risk of moving after install.',
       'Is the price fixed in writing, with no open-ended change-order language? → If no, the quoted number is not the price.',
       'Are the installers salaried employees, or day-labour subcontractors?',
       'Will they refuse the job if the substrate or conditions are wrong?',
-      'Is there true lifetime workmanship warranty language in the contract itself?',
     ],
     faqs: [
       {
         q: 'What should a hardwood flooring quote include?',
         a:
-          'The moisture readings and the date they were taken, the species, grade and width, the subfloor preparation, the installation method and why, the grit sequence, the finish product and number of coats, stairs and transitions itemised, the schedule, and the workmanship warranty language in the contract itself rather than on a website. A quote missing the moisture readings was priced before anyone knew what the job was.',
+          'The moisture readings and the date they were taken, the species, grade and width, the subfloor preparation, the installation method and why, the grit sequence, the finish product and number of coats, stairs and transitions itemised, the schedule. A quote missing the moisture readings was priced before anyone knew what the job was.',
       },
       {
         q: 'How do I know if a hardwood contractor uses subcontractors?',
         a:
-          'Ask who is on payroll and get the answer in writing. The question matters because a protocol can be requested of a subcontracted crew and required of a salaried one, and because a workmanship warranty is only meaningful from a company that still controls the people whose workmanship it covers when you call.',
+          'Ask who is on payroll and get the answer in writing. The question matters because a protocol can be requested of a subcontracted crew and required of a salaried one.',
       },
     ],
     recommendation: {
@@ -372,7 +371,6 @@ export const GUIDES: Guide[] = [
     ],
     watchpoints: [
       'Solid hardwood over radiant is the specification error with the longest delay before it shows.',
-      'A floor handed over without a stated operating range has no defensible warranty boundary in either direction.',
       'Thermal cycling compounds the seasonal RH swing rather than replacing it.',
     ],
     faqs: [
@@ -384,7 +382,7 @@ export const GUIDES: Guide[] = [
       {
         q: 'What surface temperature is safe for hardwood over radiant heat?',
         a:
-          'The controlling number is not the water temperature but the temperature at the top of the board, and it is set by the flooring manufacturer for the specific product. An assembly designed without reference to that figure, and without a commissioning schedule that brings the system up gradually, has no warranty boundary in either direction.',
+          'The controlling number is not the water temperature but the temperature at the top of the board, and it is set by the flooring manufacturer for the specific product. An assembly designed without reference to that figure, and without a commissioning schedule that brings the system up gradually, is not specified for the conditions it will see.',
       },
     ],
     recommendation: {
@@ -520,7 +518,7 @@ export const GUIDES: Guide[] = [
       },
     ],
     recommendation: {
-      text: 'Use the published ranges to budget. Book the free in-home measure for the fixed written price. Compare quotes on scope completeness — machines, sequence, moisture protocol, warranties in writing — not on the headline number alone.',
+      text: 'Use the published ranges to budget. Book the free in-home measure for the fixed written price. Compare quotes on scope completeness — machines, sequence, moisture protocol — not on the headline number alone.',
     },
     sources: [
       { paper: P_COST, section: 'installed-cost' },
@@ -549,7 +547,7 @@ export const GUIDES: Guide[] = [
       },
       {
         name: 'What is written in the contract',
-        why: 'Manufacturer warranties itemized, fixed price language, and the finish system named are the terms that matter after the cheque clears.',
+        why: 'Fixed price language and the finish system named are the terms that matter after the cheque clears.',
       },
       {
         name: 'Machine sequence on refinish work',
@@ -559,7 +557,7 @@ export const GUIDES: Guide[] = [
     decisionTree: [
       'Ask who will be on site on sanding day — employees or subcontractors.',
       'Ask whether the estimate includes a moisture reading and, for refinish, a depth check above the tongue.',
-      'Ask for the finish system by product name and the manufacturer warranty period in writing.',
+      'Ask for the finish system by product name in writing.',
       'Ask which machines run, in which order, on a full sand.',
       'Decline quotes that only compete on a low headline number with empty scope.',
     ],
@@ -569,7 +567,7 @@ export const GUIDES: Guide[] = [
       'Unforeseen conditions clauses that re-price substrate issues found on day one shift risk back to you.',
     ],
     recommendation: {
-      text: 'Choose the contractor who writes a fixed price after measuring the floor you actually have, names the crew model, and itemizes warranties. Use the quote-evaluation guide as the scorecard when two bids look similar on price.',
+      text: 'Choose the contractor who writes a fixed price after measuring the floor you actually have, and names the crew model. Use the quote-evaluation guide as the scorecard when two bids look similar on price.',
     },
     sources: [
       { paper: P_COST, section: 'decision-tree' },

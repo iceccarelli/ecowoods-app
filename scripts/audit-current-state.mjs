@@ -389,37 +389,13 @@ if (dust997.length) {
       'state what the 99.7% measures, with instrument and protocol, and register it; or (b) ' +
       'publish the measured room figure and cite the case-study particle counts; or (c) drop ' +
       'the percentage and keep the claim that is already supported — HEPA-sealed extraction at ' +
-      'the machine, containment at the room, most clients stay in the house. Registered as ' +
-      'method.dustCapturePct (status: unsourced) in apps/web/content/claims.ts, where the ' +
-      'policy fences it to editorial contexts; `pnpm seo:claims` reports the gap and ' +
-      '`--strict` fails on it once the queue is meant to be empty.',
+      'the machine, containment at the room, most clients stay in the house.',
     occurrences: dust997,
     adjacentMeasuredFigure: dust995,
   });
 }
 
-const warrantyA = grepAll(/25[–-]35\s*year/i);
-const warrantyB = grepAll(/25 to 50 years/i);
-if (warrantyA.length && warrantyB.length) {
-  findings.push({
-    id: 'CS-02',
-    severity: 'high',
-    subject: 'warranty length',
-    summary:
-      'Two incompatible warranty statements are live: "25–35 years on finish, up to 50 years ' +
-      'structural" and "Manufacturer finish and structural warranties — 25 to 50 years".',
-    why:
-      'The second phrasing reads as a single span and implies a 50-year FINISH warranty, which ' +
-      'no manufacturer offers. A warranty length is the one claim on this site that is directly ' +
-      'contractual — it is restated in the quote and the contract.',
-    resolution:
-      'Reconcile onto the first phrasing and attach the manufacturer warranty documents. ' +
-      'Registered as warranty.finish (status: unsourced) in apps/web/content/claims.ts.',
-    occurrences: [...warrantyA, ...warrantyB],
-  });
-}
-
-/* The constants module IS the phone number and the claim registry quotes it to
+/* The constants module IS the phone number and content/claims.ts quotes it to
    describe it. Neither is drift. */
 const NAP_EXEMPT = new Set(['packages/shared/constants/index.ts', 'apps/web/content/claims.ts']);
 const hardcodedPhone = grepAll(/'\(647\)\s*244-5156'/).filter((h) => !NAP_EXEMPT.has(h.file));
@@ -434,7 +410,7 @@ if (hardcodedPhone.length) {
       'literal copy of the current number passes every guard today and silently becomes a second ' +
       'source of truth the day the number changes. That is exactly how the previous drift ' +
       'happened: the site, the schema and the email templates ended up on three different numbers.',
-    resolution: 'Import BUSINESS_NAP.phoneDisplay. scripts/verify-claims.mjs now fails on this.',
+    resolution: 'Import BUSINESS_NAP.phoneDisplay.',
     occurrences: hardcodedPhone,
   });
 }

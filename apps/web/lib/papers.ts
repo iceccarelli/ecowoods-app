@@ -130,7 +130,7 @@ export const PAPERS: Paper[] = [
         id: 'moisture-testing',
         heading: 'Moisture testing — the first non-negotiable',
         body: [
-          'A floor installed over a wet subfloor, or with boards that have not equalized, will cup, crown, gap or buckle. There is no warranty language that can override physics.',
+          'A floor installed over a wet subfloor, or with boards that have not equalized, will cup, crown, gap or buckle.',
         ],
         ordered: [
           'Subfloor moisture content must be measured.',
@@ -170,7 +170,7 @@ export const PAPERS: Paper[] = [
         id: 'protocol',
         heading: 'The Ecowoods non-negotiable protocol',
         body: [
-          'These steps prevent physical failure, and they are what make a lifetime workmanship warranty something a company can offer and still sleep at night.',
+          'These steps prevent physical failure.',
         ],
         ordered: [
           'Moisture testing of subfloor and material, documented.',
@@ -205,7 +205,6 @@ export const PAPERS: Paper[] = [
           'Explicit confirmation of minimum 72-hour acclimation in the actual space.',
           'A fixed price in writing, with no open-ended "unforeseen conditions" language.',
           'Confirmation that salaried artisans, not subcontractors, will perform the work.',
-          'Lifetime workmanship warranty language in the contract.',
           'Willingness to refuse the job if conditions are wrong.',
         ],
       },
@@ -327,7 +326,6 @@ export const PAPERS: Paper[] = [
           'Is the price fixed in writing, with no open-ended change-order language?',
           'Are the installers salaried employees, or day-labour subcontractors?',
           'Will they refuse the job if the substrate or conditions are wrong?',
-          'Is there a true lifetime workmanship warranty in the contract?',
         ],
       },
       {
@@ -338,7 +336,6 @@ export const PAPERS: Paper[] = [
           'Request a free in-home estimate that includes moisture testing and samples.',
           'Insist on a written fixed-price proposal with the full protocol listed.',
           'Confirm that only salaried artisans will perform the work.',
-          'Verify the lifetime workmanship warranty language before signing.',
           'Keep indoor RH between 35% and 55% year-round after installation.',
         ],
       },

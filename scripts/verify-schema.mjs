@@ -190,7 +190,7 @@ const FAQPAGE_ALLOWED = new Set([
   // lib/guides.ts, which is content, not schema decoration.
   'apps/web/app/guides/[slug]/page.tsx',
   // /team. Renders its FAQ visibly in a <dl>; every answer is interpolated
-  // from BUSINESS_NAP, the framework or the contract's own warranty clause.
+  // from BUSINESS_NAP or the framework.
   'apps/web/app/team/page.tsx',
   'apps/web/lib/structured-data.ts',              // faqPageSchema() builder
   'apps/web/lib/schema/builders.ts',              // buildFAQPage() builder

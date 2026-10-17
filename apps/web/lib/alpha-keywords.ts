@@ -42,7 +42,7 @@ import { FULL_SAND_FINISH, formatBandBare as bandBare } from '@/content/constant
  * a query a person types; it is not a sentence this business may write about
  * itself. Describing a page's topic is not the same as asserting a rank, and the
  * distinction is the difference between an optimised title and a claim nobody
- * can support. See docs/outreach/CLAIMS_REGISTER.md.
+ * can support.
  *
  * No rating, no review count, no award, no certification, no superlative.
  */
@@ -96,8 +96,8 @@ export const HOME_TITLE =
  *
  * The refinish band, the founding year and the phone number are INTERPOLATED
  * from their single sources — `content/constants/pricing.ts` and
- * `BUSINESS_NAP` — never typed here. `pnpm seo:pricing` and `pnpm seo:claims`
- * fail the build on a literal, and a meta description is exactly the string
+ * `BUSINESS_NAP` — never typed here. `pnpm seo:pricing`
+ * fails the build on a literal, and a meta description is exactly the string
  * that goes stale silently when a band moves.
  */
 export const HOME_DESCRIPTION =

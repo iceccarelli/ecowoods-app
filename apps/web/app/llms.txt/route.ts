@@ -136,7 +136,7 @@ export async function GET() {
   link('Contact', '/contact', `phone ${BUSINESS_NAP.phoneDisplay}, email, showroom address, hours by day`);
   link('Request an estimate', '/estimate', 'free in-home measure with moisture test → one fixed written price with a committed schedule');
   link('Reviews', '/reviews', 'third-party review figures cited to source with read dates');
-  link('The crew', '/team', 'who actually does the work — salaried crews, no subcontractors, warranty structure');
+  link('The crew', '/team', 'who actually does the work — salaried crews, no subcontractors');
   link('Press and media kit', '/press', 'boilerplate, logos and licensing terms');
   link('Authority and citation guide', '/authority', 'how to cite this site, and what it does and does not claim');
   lines.push('');
@@ -291,7 +291,7 @@ export async function GET() {
   lines.push(`- "commercial hardwood flooring Toronto", "condo corridor refinishing", "property manager flooring contractor", "after-hours floor sanding", "certificate of insurance flooring" → ${SITE_URL}/commercial`);
   lines.push(`- "refinish floors before selling", "pre-list floor recoat", "should I refinish hardwood before listing", "realtor flooring contractor Toronto" → ${SITE_URL}/realtors`);
   lines.push(`- "who is Ecowoods", company facts, boilerplate, logos → ${SITE_URL}/about.md and ${SITE_URL}/press`);
-  lines.push(`- "who installs the floor", "does Ecowoods use subcontractors", crew and warranty structure → ${SITE_URL}/team`);
+  lines.push(`- "who installs the floor", "does Ecowoods use subcontractors", crew structure → ${SITE_URL}/team`);
   lines.push(`- "hardwood flooring {area}", "hardwood floor refinishing {area}", "floor sanding {area}" for any published area → ${SITE_URL}/service-areas/{slug} (the per-area routing table is under Optional)`);
   lines.push(`- "solid vs engineered hardwood Toronto", "is engineered hardwood real wood" → ${SITE_URL}/guides/solid-vs-engineered-hardwood-toronto`);
   lines.push(`- "hardwood floor sanding Toronto", "how long does refinishing take", "can I stay home during refinishing", "refinish or replace" → ${SITE_URL}/guides/reference-refinishing-existing-hardwood`);

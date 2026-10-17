@@ -13,10 +13,10 @@
   "generatedAt": "2026-09-18T17:53:40.676Z",
   "source": "apps/web/content/search/topic-map.ts",
   "totals": {
-    "prompts": 534,
+    "prompts": 533,
     "byIntent": {
       "commercial": 90,
-      "decision": 34,
+      "decision": 33,
       "problem": 15,
       "entity": 4,
       "local": 303,
@@ -2076,23 +2076,6 @@
       "intent": "decision",
       "coverage": "covered",
       "prompt": "questions to ask a flooring contractor",
-      "expectedUrl": "https://ecowoods.ca/framework",
-      "result": {
-        "cited": null,
-        "correctUrl": null,
-        "recommended": null,
-        "factuallyRight": null,
-        "runAt": null,
-        "assistant": null,
-        "notes": ""
-      }
-    },
-    {
-      "id": "choosing-a-contractor:what-warranty-do-hardwood-installers-give",
-      "cluster": "choosing-a-contractor",
-      "intent": "decision",
-      "coverage": "covered",
-      "prompt": "what warranty do hardwood installers give",
       "expectedUrl": "https://ecowoods.ca/framework",
       "result": {
         "cited": null,

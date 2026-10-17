@@ -55,7 +55,6 @@ export default function ProductDetail() {
           <View style={s.trust}>
             <View style={s.trustRow}><Text style={s.trustIcon}>✓</Text><Text style={s.trustText}>Free in-home measure across the GTA</Text></View>
             <View style={s.trustRow}><Text style={s.trustIcon}>✓</Text><Text style={s.trustText}>Professional installation available</Text></View>
-            <View style={s.trustRow}><Text style={s.trustIcon}>✓</Text><Text style={s.trustText}>5-year installation warranty</Text></View>
           </View>
 
           <Pressable style={s.cta} onPress={() => router.push('/(tabs)/shop')}>

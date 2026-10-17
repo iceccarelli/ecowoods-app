@@ -97,7 +97,7 @@ export const STANDARDS: Standard[] = [
     governs:
       'The calcium-chloride test — how much moisture vapour a concrete subfloor emits over a measured period.',
     relevance:
-      'The older of the two concrete moisture tests, and still specified by some manufacturers. Which test a warranty requires is a question worth asking before the slab is covered.',
+      'The older of the two concrete moisture tests, and still specified by some manufacturers. Which test the flooring manufacturer specifies is a question worth asking before the slab is covered.',
     status: 'revision-open',
     sourceUrl: 'https://store.astm.org/f1869-22.html',
     verifiedAt: '2026-08-20',
@@ -136,7 +136,7 @@ export const STANDARDS: Standard[] = [
     governs:
       'Installation of wood flooring over wood, concrete and radiant substrates: acclimation, moisture testing, subfloor flatness and preparation, fastening schedules and method selection.',
     relevance:
-      'The trade body whose guidelines most manufacturer warranties reference. Acclimation periods, subfloor requirements and installation method by substrate all trace here.',
+      'The trade body whose guidelines most manufacturers reference. Acclimation periods, subfloor requirements and installation method by substrate all trace here.',
     status: 'current',
     edition: 'Revised © 2025',
     sourceUrl: 'https://nwfa.org/wp-content/uploads/2026/02/NWFA-Installation-Guidelines.pdf',

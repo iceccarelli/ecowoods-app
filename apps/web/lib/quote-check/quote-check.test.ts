@@ -93,12 +93,12 @@ describe('compare', () => {
   });
 
   it('does not call quotes incomparable over an item that changes certainty, not scope', () => {
-    const warranty = SCOPE_ITEMS.find((i) => i.id === 'warranty-in-contract');
-    expect(warranty?.changesScope).toBe(false);
-    const without = ALL.filter((id) => id !== 'warranty-in-contract');
+    const priceFixed = SCOPE_ITEMS.find((i) => i.id === 'price-fixed');
+    expect(priceFixed?.changesScope).toBe(false);
+    const without = ALL.filter((id) => id !== 'price-fixed');
     const c = compare([q('A', ALL, 8500, 1000), q('B', without, 8400, 1000)]);
     expect(c.verdict).toBe('comparable');
-    expect(c.readings[1].missing.map((i) => i.id)).toEqual(['warranty-in-contract']);
+    expect(c.readings[1].missing.map((i) => i.id)).toEqual(['price-fixed']);
     expect(c.readings[1].missingScope).toEqual([]);
   });
 

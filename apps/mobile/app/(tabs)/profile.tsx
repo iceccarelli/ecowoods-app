@@ -32,7 +32,7 @@ export default function ProfileScreen() {
           <Pressable style={s.signInBtn} onPress={() => setIsSignedIn(true)}>
             <Text style={s.signInText}>Sign in or Create Account</Text>
           </Pressable>
-          <Text style={s.guestNote}>Guest checkout available • 5-year warranty still applies</Text>
+          <Text style={s.guestNote}>Guest checkout available</Text>
         </View>
       </View>
     );

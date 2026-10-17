@@ -21,7 +21,7 @@
     "machineSurfacesExpected": 10,
     "priceLiteralsOutsideConstants": 0,
     "commercialAliases": 41,
-    "findings": 2
+    "findings": 1
   },
   "routes": [
     {
@@ -2988,7 +2988,7 @@
       "subject": "dust capture percentage",
       "summary": "The figure 99.7% is published in 18 place(s) with no source recorded anywhere in the repository. Separately, 11 place(s) — the case studies — report a MEASURED 99.5%, from on-site particle counts, for what may or may not be the same quantity.",
       "why": "The two figures are probably measuring different things — a HEPA element is rated at the filter, a particle count is measured in the room — but nothing in this repository says so, and that is the whole problem: neither number carries a protocol, an instrument or a date. A published performance claim needs a source under the Competition Act, and this one is not a footnote: two of the occurrences are inside FAQ answers emitted as FAQPage JSON-LD and restated verbatim by answer engines, and one is the SERVICES blurb that feeds llms.txt and /api/knowledge.",
-      "resolution": "Owner decision, not a code change — which is why nothing here was edited. Either (a) state what the 99.7% measures, with instrument and protocol, and register it; or (b) publish the measured room figure and cite the case-study particle counts; or (c) drop the percentage and keep the claim that is already supported — HEPA-sealed extraction at the machine, containment at the room, most clients stay in the house. Registered as method.dustCapturePct (status: unsourced) in apps/web/content/claims.ts, where the policy fences it to editorial contexts; `pnpm seo:claims` reports the gap and `--strict` fails on it once the queue is meant to be empty.",
+      "resolution": "Owner decision, not a code change — which is why nothing here was edited. Either (a) state what the 99.7% measures, with instrument and protocol, and register it; or (b) publish the measured room figure and cite the case-study particle counts; or (c) drop the percentage and keep the claim that is already supported — HEPA-sealed extraction at the machine, containment at the room, most clients stay in the house.",
       "occurrences": [
         {
           "file": "apps/web/app/home-client.tsx",
@@ -3136,56 +3136,6 @@
           "file": "apps/web/content/claims.ts",
           "line": 272,
           "text": "value: '99.5%',"
-        }
-      ]
-    },
-    {
-      "id": "CS-02",
-      "severity": "high",
-      "subject": "warranty length",
-      "summary": "Two incompatible warranty statements are live: \"25–35 years on finish, up to 50 years structural\" and \"Manufacturer finish and structural warranties — 25 to 50 years\".",
-      "why": "The second phrasing reads as a single span and implies a 50-year FINISH warranty, which no manufacturer offers. A warranty length is the one claim on this site that is directly contractual — it is restated in the quote and the contract.",
-      "resolution": "Reconcile onto the first phrasing and attach the manufacturer warranty documents. Registered as warranty.finish (status: unsourced) in apps/web/content/claims.ts.",
-      "occurrences": [
-        {
-          "file": "apps/web/app/home-client.tsx",
-          "line": 254,
-          "text": "proof: 'Premium finishes carry 25–35 year manufacturer warranties, structural to 50 — passed straight through to you, in writing.',"
-        },
-        {
-          "file": "apps/web/app/home-client.tsx",
-          "line": 353,
-          "text": "a: 'Your finishes and materials carry their manufacturer warranties — typically 25–35 years on finish, up to 50 years structural — and we pass every one through"
-        },
-        {
-          "file": "apps/web/lib/seo-data.ts",
-          "line": 106,
-          "text": "{ q: 'What warranty comes with the work?', a: 'Your finishes and materials carry their manufacturer warranties — typically 25–35 years on finish, up to 50 years"
-        },
-        {
-          "file": "apps/web/content/claims.ts",
-          "line": 300,
-          "text": "'itemised in the contract — typically 25–35 years on finish, up to 50 years structural.',"
-        },
-        {
-          "file": "apps/web/content/claims.ts",
-          "line": 301,
-          "text": "value: '25–35 years finish; up to 50 years structural',"
-        },
-        {
-          "file": "apps/web/content/claims.ts",
-          "line": 308,
-          "text": "'\"25–35 years on finish, up to 50 years structural\". home-client.tsx also says ' +"
-        },
-        {
-          "file": "apps/web/app/home-client.tsx",
-          "line": 322,
-          "text": "line: 'Manufacturer finish and structural warranties — 25 to 50 years — documented in your contract, not just promised.',"
-        },
-        {
-          "file": "apps/web/content/claims.ts",
-          "line": 309,
-          "text": "'\"25 to 50 years\" in a differentiator line, which reads as a single span and ' +"
         }
       ]
     }

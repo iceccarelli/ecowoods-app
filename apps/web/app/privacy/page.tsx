@@ -147,7 +147,7 @@ export default function PrivacyPage() {
           </p>
           <p className="tlx-note">
             <strong>Why we keep it.</strong> To answer you, to prepare and honour a written
-            quote, and to keep the record of a job we did — a warranty claim years later needs the
+            quote, and to keep the record of a job we did — a question about the job years later needs the
             file. We do not have a fixed deletion schedule; ask and it goes.
           </p>
         </div>

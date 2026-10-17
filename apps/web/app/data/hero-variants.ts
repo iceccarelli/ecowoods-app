@@ -6,9 +6,7 @@
  *
  * Three of these lines contain a business fact that goes stale or drifts:
  * the founding year, the years-in-business count, and the street address.
- * Typed as literals in JSX they would (a) fail `pnpm seo:claims`, which bans
- * a current phone number, email, street address or founding year written as
- * a literal anywhere under apps/web, and (b) be wrong on 1 January 2027 with
+ * Typed as literals in JSX they would be wrong on 1 January 2027 with
  * nothing to catch it. Every one of them is interpolated from
  * `@ecowoods/shared/constants`, so the hero cannot disagree with the footer,
  * the schema or the estimate email.

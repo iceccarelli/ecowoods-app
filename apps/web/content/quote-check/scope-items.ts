@@ -253,20 +253,11 @@ export const SCOPE_ITEMS: ScopeItem[] = [
     changesScope: false,
   },
   {
-    id: 'warranty-in-contract',
-    group: 'The paperwork',
-    label: 'Workmanship warranty language in the contract itself, not on a website',
-    why: 'A warranty that lives only on a website is not part of the agreement you sign.',
-    basis: 'published',
-    cite: Q,
-    changesScope: false,
-  },
-  {
     id: 'who-performs',
     group: 'The paperwork',
     label: 'Who performs the work — employees or subcontracted crews',
     why:
-      'It does not change the material list. It changes who is accountable for the workmanship the warranty covers.',
+      'It does not change the material list. It changes who is accountable for the workmanship.',
     basis: 'published',
     cite: Q,
     changesScope: false,

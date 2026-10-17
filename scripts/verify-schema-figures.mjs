@@ -8,8 +8,7 @@
  * $2,500–$8,000, $2,000–$6,000, $3,000–$10,000 and one more — that appear
  * nowhere else on this site, derive from nothing, and were being handed to
  * Google as structured price data for the business. It also repeated
- * "~99.7% of airborne dust", a figure already recorded in
- * docs/outreach/CLAIMS_REGISTER.md as unsourced.
+ * "~99.7% of airborne dust".
  *
  * Twenty-five guards were watching the pages. None was watching the schema.
  * That is the wrong way round: an unsourced number on a page is read by a human

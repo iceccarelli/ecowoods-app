@@ -187,7 +187,7 @@ export default function SiteFooter() {
             </div>
             <p style={{ marginBottom: '1.5rem', maxWidth: '320px' }}>
               Master hardwood flooring craftsmen serving Toronto and the GTA since {BUSINESS_NAP.foundedYear}.
-              Eco-friendly finishes, manufacturer-backed warranties, dust-free refinishing.
+              Eco-friendly finishes, dust-free refinishing.
             </p>
             <div className="availability-pill dark">
               <span className="availability-dot" />
