@@ -249,7 +249,7 @@ export default function Header() {
       >
         <div className="topbar-inner">
           {/* Brand Lockup */}
-          <a className="brand-lockup" href={baseUrl} aria-label={`${BUSINESS_NAP.name} home`}>
+          <a className="brand-lockup" href={baseUrl} aria-label={`${BUSINESS_NAP.name} Toronto · Est. ${BUSINESS_NAP.foundedYear} home`}>
             {/* F-167. This was aria-hidden with alt="", wrapping a 14.5 KB base64
                 data URI. A data URI has no URL: it cannot be crawled, indexed,
                 linked or shared, which is why Google Images could not find this

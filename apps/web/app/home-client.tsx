@@ -1086,7 +1086,7 @@ export default function HomePage({ contentPromo }: { contentPromo?: ReactNode })
                       {Icon.plus}
                     </span>
                   </button>
-                  <div className="faq-content" id={`faq-content-${i}`} role="region">
+                  <div className="faq-content" id={`faq-content-${i}`}>
                     <div className="faq-content-inner">{item.a}</div>
                   </div>
                 </div>
