@@ -34,11 +34,13 @@ const state = vi.hoisted(() => ({
   orders: new Map<string, Order>(),
   session: null as null | { user: { role: string } },
   stripeCalls: [] as Array<Record<string, unknown>>,
-  emails: [] as Array<{ to: string; subject: string; html: string; attachments?: unknown[] }>,
+  emails: [] as Array<{ to: string; subject: string; html: string; attachments?: unknown[]; idempotencyKey?: string }>,
   stored: [] as Array<{ filename: string; buffer: Buffer }>,
   failNextEmail: false,
   emailGate: null as null | Promise<void>,
   failFulfilWrites: 0,
+  failNotifiedWrites: 0,
+  failReportWrites: 0,
 }));
 
 vi.mock('@/lib/db', () => {
@@ -76,6 +78,14 @@ vi.mock('@/lib/db', () => {
             state.failFulfilWrites--;
             throw new Error('db down');
           }
+          if (typeof data.notes === 'string' && data.notes.includes('REPORT_NOTIFIED:') && state.failNotifiedWrites > 0) {
+            state.failNotifiedWrites--;
+            throw new Error('db down');
+          }
+          if (typeof data.notes === 'string' && data.notes.includes('QI_REPORT:') && state.failReportWrites > 0) {
+            state.failReportWrites--;
+            throw new Error('db down');
+          }
           Object.assign(o, data);
           return { count: 1 };
         },
@@ -103,7 +113,7 @@ vi.mock('@/lib/stripe', () => ({
 }));
 
 vi.mock('@/lib/email', () => ({
-  sendEmail: async (msg: { to: string; subject: string; html: string; attachments?: unknown[] }) => {
+  sendEmail: async (msg: { to: string; subject: string; html: string; attachments?: unknown[]; idempotencyKey?: string }) => {
     if (state.emailGate) await state.emailGate;
     if (state.failNextEmail) {
       state.failNextEmail = false;
@@ -191,6 +201,8 @@ beforeEach(() => {
   state.failNextEmail = false;
   state.emailGate = null;
   state.failFulfilWrites = 0;
+  state.failNotifiedWrites = 0;
+  state.failReportWrites = 0;
   logs = [];
   vi.spyOn(console, 'info').mockImplementation((line: unknown) => {
     logs.push(String(line));
@@ -451,15 +463,122 @@ describe('compose (preview) and publish — ADMIN only', () => {
     expect(Number(published[0].highRiskFlags)).toBeGreaterThanOrEqual(1);
 
     const again = await publish.POST(jsonPost('http://localhost/api/quote-intelligence/publish', workbenchBody(orderId)));
-    expect(await again.json()).toEqual({ url: body.url, alreadyPublished: true });
+    expect(await again.json()).toEqual({ url: body.url, alreadyPublished: true, notified: true });
     expect(state.stored).toHaveLength(1);
     expect(state.emails.filter((e) => e.to === 'jane@example.com')).toHaveLength(1);
+  });
+});
+
+describe('publish — recovery, concurrency and eligibility', () => {
+  const publishPost = (body: unknown) => publish.POST(jsonPost('http://localhost/api/quote-intelligence/publish', body));
+  const customerEmails = () => state.emails.filter((e) => e.to === 'jane@example.com');
+
+  async function submitted() {
+    const orderId = await paidOrder();
+    await submitDocs(orderId);
+    state.session = { user: { role: 'ADMIN' } };
+    return orderId;
+  }
+
+  it('refuses an order whose customer has not submitted documents, and an unpaid one: nothing stored or sent', async () => {
+    const orderId = await paidOrder();
+    state.session = { user: { role: 'ADMIN' } };
+    const res = await publishPost(workbenchBody(orderId));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toMatch(/not submitted/);
+
+    state.orders.get(orderId)!.status = 'PENDING';
+    expect((await publishPost(workbenchBody(orderId))).status).toBe(409);
+    expect(state.stored).toHaveLength(0);
+    expect(state.emails).toHaveLength(0);
+  });
+
+  it('two simultaneous publishes store one PDF and send one email', async () => {
+    const orderId = await submitted();
+    let open!: () => void;
+    state.emailGate = new Promise<void>((r) => (open = r));
+    const a = publishPost(workbenchBody(orderId));
+    const b = publishPost(workbenchBody(orderId));
+    await new Promise((r) => setTimeout(r, 30));
+    open();
+    const statuses = (await Promise.all([a, b])).map((r) => r.status).sort();
+    expect(statuses).toEqual([200, 409]);
+    expect(state.stored).toHaveLength(1);
+    expect(customerEmails()).toHaveLength(1);
+  });
+
+  it('a failed customer email keeps the report, shows notified:false, and a retry sends only the email with the same key', async () => {
+    const orderId = await submitted();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    state.failNextEmail = true;
+    const first = await publishPost(workbenchBody(orderId));
+    const firstBody = await first.json();
+    expect(first.status).toBe(200);
+    expect(firstBody).toMatchObject({ alreadyPublished: false, notified: false });
+    expect(firstBody.notificationError).toMatch(/did not send/);
+    expect(state.orders.get(orderId)!.notes).toMatch(/QI_REPORT:/);
+    expect(state.orders.get(orderId)!.notes).not.toMatch(/REPORT_NOTIFIED|PUBLISH_CLAIM/);
+
+    const retry = await publishPost({ orderId }); // no form body needed once the report is stored
+    expect(await retry.json()).toEqual({ url: firstBody.url, alreadyPublished: true, notified: true });
+    expect(state.stored).toHaveLength(1);
+    expect(customerEmails()).toHaveLength(1);
+    expect(customerEmails()[0].idempotencyKey).toBe(`report-delivery/${orderId}/v1`);
+    expect(state.orders.get(orderId)!.notes).toMatch(/REPORT_NOTIFIED:/);
+
+    await publishPost({ orderId });
+    expect(customerEmails()).toHaveLength(1);
+  });
+
+  it('provider accepted but the NOTIFIED write failed: a retry re-sends with the identical key and payload, then settles', async () => {
+    const orderId = await submitted();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    state.failNotifiedWrites = 3;
+    const first = await publishPost(workbenchBody(orderId));
+    expect((await first.json()).notified).toBe(true);
+    expect(customerEmails()).toHaveLength(1);
+    expect(state.orders.get(orderId)!.notes).not.toMatch(/REPORT_NOTIFIED|PUBLISH_CLAIM/);
+
+    await publishPost({ orderId });
+    expect(customerEmails()).toHaveLength(2);
+    expect(customerEmails()[1].idempotencyKey).toBe(customerEmails()[0].idempotencyKey);
+    expect(customerEmails()[1].html).toBe(customerEmails()[0].html);
+    expect(state.stored).toHaveLength(1);
+
+    await publishPost({ orderId });
+    expect(customerEmails()).toHaveLength(2);
+  });
+
+  it('a crashed publisher (live claim, no URL) blocks others until the lease expires, then recovers', async () => {
+    const orderId = await submitted();
+    const order = state.orders.get(orderId)!;
+    const { withPublishClaim, PUBLISH_LEASE_MS } = await import('@/lib/report-delivery');
+    order.notes = withPublishClaim(order.notes, crypto.randomUUID(), Date.now());
+    expect((await publishPost(workbenchBody(orderId))).status).toBe(409);
+    expect(state.stored).toHaveLength(0);
+
+    order.notes = withPublishClaim(order.notes, crypto.randomUUID(), Date.now() - PUBLISH_LEASE_MS - 1);
+    expect((await publishPost(workbenchBody(orderId))).status).toBe(200);
+    expect(state.stored).toHaveLength(1);
+    expect(order.notes).not.toMatch(/PUBLISH_CLAIM/);
+  });
+
+  it('a failed URL write after the PDF was stored releases the claim so the admin can retry', async () => {
+    const orderId = await submitted();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    state.failReportWrites = 1;
+    expect((await publishPost(workbenchBody(orderId))).status).toBe(500);
+    expect(state.orders.get(orderId)!.notes).not.toMatch(/QI_REPORT|PUBLISH_CLAIM/);
+    expect(customerEmails()).toHaveLength(0);
+    expect((await publishPost(workbenchBody(orderId))).status).toBe(200);
+    expect(customerEmails()).toHaveLength(1);
   });
 });
 
 describe('customer report lookup', () => {
   it('needs the paying email, says "not yet" before publish, and returns the URL after', async () => {
     const orderId = await paidOrder('standard');
+    await submitDocs(orderId);
     const get = (email: string) => reportApi.GET(new Request(`http://localhost/api/quote-intelligence/report?order=${orderId}&email=${encodeURIComponent(email)}`));
 
     expect((await get('someone@else.com')).status).toBe(403);
