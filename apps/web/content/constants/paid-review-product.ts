@@ -47,7 +47,7 @@ export type ReviewTierConfig = {
 export const WELL_INSTALLED_REVIEW_PRODUCT = {
   slug: 'well-installed-review',
   /** Owner approval required before the price or checkout is shown publicly. */
-  priceConfirmed: false,
+  priceConfirmed: false as boolean,
   name: 'Well-Installed Quote Review',
   deliverable:
     'A written read of up to three quotes you already have, scored against the Ecowoods Well-Installed Framework and the published scope items. Every item is marked stated, not specified, unclear, cannot determine, or inspection needed — with the page and wording it was read from — followed by risk flags, the exact questions to send back in writing and, when you hold more than one quote, whether they price the same job.',
