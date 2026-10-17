@@ -275,3 +275,43 @@ jobs:
         run: pnpm --filter @ecowoods/web test
       - name: Production build
         run: pnpm --filter @ecowoods/web build
+
+  appointment-postgres:
+    name: Appointment capacity (PostgreSQL Serializable)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ecowoods_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d ecowoods_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/ecowoods_test?schema=ecowoods&connection_limit=20"
+      DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/ecowoods_test?schema=ecowoods&connection_limit=20"
+      RUN_POSTGRES_INTEGRATION: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm --filter @ecowoods/web exec prisma generate
+      - name: Create isolated PostgreSQL schema
+        run: pnpm --filter @ecowoods/web exec prisma db push --schema prisma/schema.prisma --skip-generate
+      - name: Run real PostgreSQL concurrency test
+        run: pnpm --filter @ecowoods/web exec vitest run tests/appointments-capacity.postgres.integration.test.ts
