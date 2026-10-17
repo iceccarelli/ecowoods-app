@@ -17,12 +17,13 @@
  *
  * That is a prepared patch, not a confirmed price. "New public price
  * claims" and "changes to commercial terms" are Class C — human business
- * confirmation required before the claim goes live to a real customer. This
- * PR ships on a factory branch behind a pull request precisely so that gate
- * exists: nothing here reaches a paying customer until the business owner
- * reviews this figure, changes it or confirms it, and merges and deploys with
- * live Stripe keys. Do not treat this constant as owner-confirmed pricing —
- * treat it as the number the PR is asking the owner to confirm.
+ * confirmation required before the claim goes live to a real customer.
+ * `priceConfirmed` remains false until the owner confirms the commercial
+ * term. The product page hides the proposal and checkout form while it is
+ * false, and the API returns 503 before creating an Order or Stripe session.
+ * Only an owner-approved change should set it to true.
+ * Do not treat this constant as owner-confirmed pricing — treat the number
+ * below as a proposal awaiting that decision.
  *
  * WHAT THIS PRODUCT IS AND IS NOT
  *
