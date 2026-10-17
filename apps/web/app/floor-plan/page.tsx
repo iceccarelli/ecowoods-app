@@ -11,7 +11,7 @@ import { NextStep } from '@/app/components/NextStep';
 export const metadata: Metadata = {
   title: 'Personal Floor Plan — written specification PDF, Ecowoods',
   description: FLOOR_PLAN_PRODUCT.priceConfirmed
-    ? `Turn the floor you configured in Floor Studio into a written specification you can email a spouse, a designer, or a condo board. ${FLOOR_PLAN_PRODUCT.priceCad} CAD, one time.`
+    ? `Turn the floor you configured in Floor Studio into a written specification you can email a spouse, a designer, or a condo board. $${FLOOR_PLAN_PRODUCT.priceCad} CAD, one time.`
     : 'Turn the floor you configured in Floor Studio into a written specification. Contact Ecowoods about current availability.',
   alternates: { canonical: '/floor-plan' },
   /* Out of the index and out of the sitemap until the price is confirmed —
@@ -51,7 +51,7 @@ export default function FloorPlanPage() {
             <Link href="/">Home</Link> <span aria-hidden="true">/</span>{' '}
             <span>Personal Floor Plan</span>
           </nav>
-          <p className="tlx-kicker">{FLOOR_PLAN_PRODUCT.priceConfirmed ? `${FLOOR_PLAN_PRODUCT.priceCad} CAD, one time` : 'Availability by request'}</p>
+          <p className="tlx-kicker">{FLOOR_PLAN_PRODUCT.priceConfirmed ? `$${FLOOR_PLAN_PRODUCT.priceCad} CAD, one time` : 'Availability by request'}</p>
           <h1 className="tlx-title">Turn your design into a specification</h1>
           <p className="tlx-lede">{FLOOR_PLAN_PRODUCT.deliverable}</p>
           <p className="tlx-note">
