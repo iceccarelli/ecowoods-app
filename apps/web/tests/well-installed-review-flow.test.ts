@@ -37,6 +37,8 @@ const state = vi.hoisted(() => ({
   emails: [] as Array<{ to: string; subject: string; html: string; attachments?: unknown[] }>,
   stored: [] as Array<{ filename: string; buffer: Buffer }>,
   failNextEmail: false,
+  emailGate: null as null | Promise<void>,
+  failFulfilWrites: 0,
 }));
 
 vi.mock('@/lib/db', () => {
@@ -64,6 +66,19 @@ vi.mock('@/lib/db', () => {
         },
         findUnique: async ({ where, include }: { where: { id: string }; include?: { user?: boolean } }) =>
           withUser(state.orders.get(where.id), include),
+        updateMany: async ({ where, data }: { where: { id: string; status?: string; notes?: string | null }; data: Partial<Order> }) => {
+          const o = state.orders.get(where.id);
+          // Check-and-set with no await between, like a single-statement UPDATE.
+          if (!o || (where.status !== undefined && o.status !== where.status) || (where.notes !== undefined && o.notes !== where.notes)) {
+            return { count: 0 };
+          }
+          if (data.status === 'FULFILLED' && state.failFulfilWrites > 0) {
+            state.failFulfilWrites--;
+            throw new Error('db down');
+          }
+          Object.assign(o, data);
+          return { count: 1 };
+        },
         update: async ({ where, data }: { where: { id: string }; data: Partial<Order> }) => {
           const o = state.orders.get(where.id)!;
           Object.assign(o, data);
@@ -89,6 +104,7 @@ vi.mock('@/lib/stripe', () => ({
 
 vi.mock('@/lib/email', () => ({
   sendEmail: async (msg: { to: string; subject: string; html: string; attachments?: unknown[] }) => {
+    if (state.emailGate) await state.emailGate;
     if (state.failNextEmail) {
       state.failNextEmail = false;
       throw new Error('smtp down');
@@ -173,6 +189,8 @@ beforeEach(() => {
   state.stored.length = 0;
   state.session = null;
   state.failNextEmail = false;
+  state.emailGate = null;
+  state.failFulfilWrites = 0;
   logs = [];
   vi.spyOn(console, 'info').mockImplementation((line: unknown) => {
     logs.push(String(line));
@@ -275,6 +293,94 @@ describe('submit — product binding', () => {
     expect(state.orders.get(orderId)!.status).toBe('PAID');
     expect((await submitDocs(orderId)).status).toBe(201);
     expect(state.emails).toHaveLength(1);
+  });
+});
+
+describe('submit — concurrency and recovery', () => {
+  it('two simultaneous valid submissions send exactly one email', async () => {
+    const orderId = await paidOrder();
+    let open!: () => void;
+    state.emailGate = new Promise<void>((r) => (open = r));
+    const first = submitDocs(orderId);
+    const second = submitDocs(orderId);
+    await new Promise((r) => setTimeout(r, 20));
+    open();
+    const statuses = (await Promise.all([first, second])).map((r) => r.status).sort();
+    expect(statuses).toEqual([201, 409]);
+    expect(state.emails).toHaveLength(1);
+    expect(state.orders.get(orderId)!.status).toBe('FULFILLED');
+  });
+
+  it('many simultaneous submissions still send one', async () => {
+    const orderId = await paidOrder();
+    const results = await Promise.all(Array.from({ length: 8 }, () => submitDocs(orderId)));
+    expect(results.filter((r) => r.status === 201)).toHaveLength(1);
+    expect(state.emails).toHaveLength(1);
+  });
+
+  it('a request that is in flight is answered "in progress", not "already received"', async () => {
+    const orderId = await paidOrder();
+    let open!: () => void;
+    state.emailGate = new Promise<void>((r) => (open = r));
+    const first = submitDocs(orderId);
+    await new Promise((r) => setTimeout(r, 20));
+    const second = await submitDocs(orderId);
+    expect(second.status).toBe(409);
+    expect((await second.json()).message).toMatch(/already processing/);
+    open();
+    expect((await first).status).toBe(201);
+  });
+
+  it('a failed email releases the claim and the notes keep only the tier line', async () => {
+    const orderId = await paidOrder();
+    const tierLine = state.orders.get(orderId)!.notes;
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    state.failNextEmail = true;
+    expect((await submitDocs(orderId)).status).toBe(500);
+    expect(state.orders.get(orderId)!.notes).toBe(tierLine);
+    expect((await submitDocs(orderId)).status).toBe(201);
+    expect(state.emails).toHaveLength(1);
+  });
+
+  it('a request that died mid-send is recoverable once its lease expires, and not before', async () => {
+    const orderId = await paidOrder();
+    const order = state.orders.get(orderId)!;
+    const { withIntakeClaim, INTAKE_LEASE_MS } = await import('@/lib/quote-intelligence/notes');
+    order.notes = withIntakeClaim(order.notes, crypto.randomUUID(), Date.now()); // crashed holder, fresh lease
+    expect((await submitDocs(orderId)).status).toBe(409);
+    expect(state.emails).toHaveLength(0);
+
+    order.notes = withIntakeClaim(order.notes, crypto.randomUUID(), Date.now() - INTAKE_LEASE_MS - 1);
+    expect((await submitDocs(orderId)).status).toBe(201);
+    expect(state.emails).toHaveLength(1);
+    expect(order.notes).not.toMatch(/QI_INTAKE_CLAIM/);
+  });
+
+  it('email sent but the FULFILLED write fails: customer is told received, no second email on the next click while the lease holds', async () => {
+    const orderId = await paidOrder();
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    state.failFulfilWrites = 3;
+    const res = await submitDocs(orderId);
+    expect(res.status).toBe(201);
+    expect(state.emails).toHaveLength(1);
+    expect(state.orders.get(orderId)!.status).toBe('PAID');
+    expect(err.mock.calls.some((c) => String(c[0]).includes('fulfil_write_failed'))).toBe(true);
+    expect((await submitDocs(orderId)).status).toBe(409);
+    expect(state.emails).toHaveLength(1);
+  });
+
+  it('a transient FULFILLED-write failure is retried and the order completes', async () => {
+    const orderId = await paidOrder();
+    state.failFulfilWrites = 1;
+    expect((await submitDocs(orderId)).status).toBe(201);
+    expect(state.orders.get(orderId)!.status).toBe('FULFILLED');
+    expect(state.orders.get(orderId)!.notes).not.toMatch(/QI_INTAKE_CLAIM/);
+  });
+
+  it('every email carries a submission id so a duplicate is recognisable', async () => {
+    const orderId = await paidOrder();
+    await submitDocs(orderId);
+    expect(state.emails[0].html).toMatch(/Submission<\/td><td[^>]*><strong>[0-9a-f-]{36}</);
   });
 });
 
