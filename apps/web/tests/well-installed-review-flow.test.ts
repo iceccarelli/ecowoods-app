@@ -36,6 +36,7 @@ const state = vi.hoisted(() => ({
   stripeCalls: [] as Array<Record<string, unknown>>,
   emails: [] as Array<{ to: string; subject: string; html: string; attachments?: unknown[] }>,
   stored: [] as Array<{ filename: string; buffer: Buffer }>,
+  failNextEmail: false,
 }));
 
 vi.mock('@/lib/db', () => {
@@ -88,6 +89,10 @@ vi.mock('@/lib/stripe', () => ({
 
 vi.mock('@/lib/email', () => ({
   sendEmail: async (msg: { to: string; subject: string; html: string; attachments?: unknown[] }) => {
+    if (state.failNextEmail) {
+      state.failNextEmail = false;
+      throw new Error('smtp down');
+    }
     state.emails.push(msg);
   },
 }));
@@ -167,6 +172,7 @@ beforeEach(() => {
   state.emails.length = 0;
   state.stored.length = 0;
   state.session = null;
+  state.failNextEmail = false;
   logs = [];
   vi.spyOn(console, 'info').mockImplementation((line: unknown) => {
     logs.push(String(line));
@@ -224,6 +230,50 @@ describe('submit', () => {
     expect(events().at(-1)).toMatchObject({ event: 'well_installed_review.documents_received', orderId, tier: 'rush', documentCount: 2 });
 
     expect((await submitDocs(orderId)).status).toBe(409);
+    expect(state.emails).toHaveLength(1);
+  });
+});
+
+describe('submit — product binding', () => {
+  it.each([
+    ['listing floor report', 'Listing Floor Report (photo)'],
+    ['personal floor plan', 'Personal Floor Plan\nFP_DESIGN:abc'],
+    ['renovation credits', 'Renovation Credits (starter-40)'],
+    ['unknown tier', 'Well-Installed Quote Review (Platinum)'],
+  ])('a PAID %s order with the right id and email is rejected: no email, order untouched', async (_n, notes) => {
+    const orderId = await paidOrder();
+    state.orders.get(orderId)!.notes = notes;
+    const before = { ...state.orders.get(orderId)! };
+
+    const res = await submitDocs(orderId);
+    expect(res.status).toBe(404);
+    expect((await res.json()).message).toBe('We could not find that order.');
+    expect(state.emails).toHaveLength(0);
+    expect(state.orders.get(orderId)).toEqual(before);
+    expect(events().filter((e) => e.event === 'well_installed_review.documents_received')).toHaveLength(0);
+  });
+
+  it('a missing order is rejected with the same answer as a wrong product', async () => {
+    const res = await submitDocs(crypto.randomUUID());
+    expect(res.status).toBe(404);
+    expect(state.emails).toHaveLength(0);
+  });
+
+  it('a genuine Standard order still submits and is fulfilled', async () => {
+    const orderId = await paidOrder('standard');
+    expect((await submitDocs(orderId)).status).toBe(201);
+    expect(state.emails).toHaveLength(1);
+    expect(state.orders.get(orderId)!.status).toBe('FULFILLED');
+    expect(events().at(-1)).toMatchObject({ tier: 'standard' });
+  });
+
+  it('an email-send failure leaves a genuine order PAID so the customer can retry', async () => {
+    const orderId = await paidOrder();
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    state.failNextEmail = true;
+    expect((await submitDocs(orderId)).status).toBe(500);
+    expect(state.orders.get(orderId)!.status).toBe('PAID');
+    expect((await submitDocs(orderId)).status).toBe(201);
     expect(state.emails).toHaveLength(1);
   });
 });
