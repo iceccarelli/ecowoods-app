@@ -16,6 +16,8 @@
 
 export const FLOOR_PLAN_PRODUCT = {
   slug: 'floor-plan',
+  /** Owner approval required before the price or checkout is shown publicly. */
+  priceConfirmed: false,
   name: 'Personal Floor Plan',
   priceCad: 99,
   deliverable:
