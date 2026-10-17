@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { CheckoutForm } from './CheckoutForm';
 import { FLOOR_PLAN_PRODUCT } from '@/content/constants/floor-plan-product';
 import { SITE_URL } from '@/lib/seo-data';
@@ -9,8 +10,9 @@ import { NextStep } from '@/app/components/NextStep';
 
 export const metadata: Metadata = {
   title: 'Personal Floor Plan — written specification PDF, Ecowoods',
-  description:
-    'Turn the floor you configured in Floor Studio into a written specification you can email a spouse, a designer, or a condo board. $99 CAD, one time.',
+  description: FLOOR_PLAN_PRODUCT.priceConfirmed
+    ? `Turn the floor you configured in Floor Studio into a written specification you can email a spouse, a designer, or a condo board. ${FLOOR_PLAN_PRODUCT.priceCad} CAD, one time.`
+    : 'Turn the floor you configured in Floor Studio into a written specification. Contact Ecowoods about current availability.',
   alternates: { canonical: '/floor-plan' },
   /* Out of the index and out of the sitemap until the price is confirmed —
      the same hold /well-installed-review is under. `follow: true` because the
@@ -49,7 +51,7 @@ export default function FloorPlanPage() {
             <Link href="/">Home</Link> <span aria-hidden="true">/</span>{' '}
             <span>Personal Floor Plan</span>
           </nav>
-          <p className="tlx-kicker">${FLOOR_PLAN_PRODUCT.priceCad} CAD, one time</p>
+          <p className="tlx-kicker">{FLOOR_PLAN_PRODUCT.priceConfirmed ? `${FLOOR_PLAN_PRODUCT.priceCad} CAD, one time` : 'Availability by request'}</p>
           <h1 className="tlx-title">Turn your design into a specification</h1>
           <p className="tlx-lede">{FLOOR_PLAN_PRODUCT.deliverable}</p>
           <p className="tlx-note">
@@ -59,11 +61,22 @@ export default function FloorPlanPage() {
         </div>
       </header>
 
-      <section className="tlx-section">
-        <div className="shell">
-          <CheckoutForm />
-        </div>
-      </section>
+      {FLOOR_PLAN_PRODUCT.priceConfirmed ? (
+        <section className="tlx-section">
+          <div className="shell">
+            <CheckoutForm />
+          </div>
+        </section>
+      ) : (
+        <section className="tlx-section">
+          <div className="shell">
+          <div className="tlx-note" role="status">
+            Paid checkout is paused while this product's price is awaiting owner confirmation. Please call{' '}
+            <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a> to discuss availability.
+          </div>
+          </div>
+        </section>
+      )}
 
       <section className="tlx-section">
         <div className="shell">
