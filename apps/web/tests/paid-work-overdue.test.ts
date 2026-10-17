@@ -28,7 +28,7 @@ describe('findOverdueOrders', () => {
   it('ignores published reviews, unpaid or not-yet-submitted ones, other products, and anything older than 30 days', () => {
     const items = findOverdueOrders(
       [
-        row({ id: 'published', notes: 'Well-Installed Quote Review (Standard)\nQI_REPORT:https://x.test/a.pdf' }),
+        row({ id: 'published', notes: 'Well-Installed Quote Review (Standard)\nQI_REPORT:https://x.test/a.pdf\nREPORT_NOTIFIED:1792238400000' }),
         row({ id: 'no-docs-yet', status: 'PAID' }),
         row({ id: 'pending', status: 'PENDING' }),
         row({ id: 'shop', notes: 'Shop order' }),
@@ -39,6 +39,20 @@ describe('findOverdueOrders', () => {
     );
     expect(items).toEqual([]);
   });
+  it('flags stored reports with an unconfirmed customer email after four hours, until notification is recorded', () => {
+    const items = findOverdueOrders(
+      [
+        row({ id: 'qi-notify-late', notes: 'Well-Installed Quote Review (Standard)\nQI_REPORT:https://x.test/qi.pdf', updatedAt: ago(5) }),
+        row({ id: 'qi-notify-early', notes: 'Well-Installed Quote Review (Standard)\nQI_REPORT:https://x.test/qi-early.pdf', updatedAt: ago(3) }),
+        row({ id: 'qi-notified', notes: 'Well-Installed Quote Review (Standard)\nQI_REPORT:https://x.test/qi-sent.pdf\nREPORT_NOTIFIED:1792238400000', updatedAt: ago(5) }),
+        row({ id: 'lfr-notify-late', status: 'FULFILLED', notes: 'Listing Floor Report (photo)\nLFR_INTAKE:received\nLFR_REPORT:https://x.test/lfr.pdf', updatedAt: ago(5) }),
+        row({ id: 'lfr-notified', status: 'FULFILLED', notes: 'Listing Floor Report (photo)\nLFR_INTAKE:received\nLFR_REPORT:https://x.test/lfr-sent.pdf\nREPORT_NOTIFIED:1792238400000', updatedAt: ago(5) }),
+      ],
+      NOW,
+    );
+    expect(items.map((i) => i.orderId).sort()).toEqual(['lfr-notify-late', 'qi-notify-late']);
+    expect(items.every((item) => item.detail.includes('notification not confirmed'))).toBe(true);
+  });
   it('flags a photo listing report with intake and no report after 48 h, not onsite, not published, not without intake', () => {
     const lfr = (extra: string) => `Listing Floor Report (${extra})`;
     const items = findOverdueOrders(
@@ -47,7 +61,7 @@ describe('findOverdueOrders', () => {
         row({ id: 'photo-early', status: 'PAID', notes: `${lfr('photo')}\nLFR_INTAKE:received`, updatedAt: ago(47) }),
         row({ id: 'photo-no-intake', status: 'PAID', notes: lfr('photo'), updatedAt: ago(90) }),
         row({ id: 'onsite', status: 'PAID', notes: `${lfr('onsite')}\nLFR_INTAKE:received`, updatedAt: ago(90) }),
-        row({ id: 'published', status: 'FULFILLED', notes: `${lfr('photo')}\nLFR_INTAKE:received\nLFR_REPORT:https://x.test/a.pdf`, updatedAt: ago(90) }),
+        row({ id: 'published', status: 'FULFILLED', notes: `${lfr('photo')}\nLFR_INTAKE:received\nLFR_REPORT:https://x.test/a.pdf\nREPORT_NOTIFIED:1792238400000`, updatedAt: ago(90) }),
       ],
       NOW,
     );
