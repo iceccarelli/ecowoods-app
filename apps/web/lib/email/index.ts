@@ -66,6 +66,7 @@ export async function sendEmail({
   html,
   text,
   attachments,
+  idempotencyKey,
 }: {
   to: string;
   subject: string;
@@ -73,6 +74,13 @@ export async function sendEmail({
   text?: string;
   /** Small files only (photo triage sends ≤3 compressed images). */
   attachments?: EmailAttachment[];
+  /**
+   * Sent as Resend's Idempotency-Key so a retry of the same logical message
+   * within Resend's window is not delivered twice. Keep the payload identical
+   * across retries. SMTP has no equivalent and ignores it, so over SMTP this
+   * is still at-least-once.
+   */
+  idempotencyKey?: string;
 }) {
   // ── Dev mode — log to console, no real email ────────────────────────────
   if (transport === 'dev') {
@@ -96,14 +104,17 @@ export async function sendEmail({
 
   // ── Resend ──────────────────────────────────────────────────────────────
   if (transport === 'resend' && resend) {
-    const result = await resend.emails.send({
-      from: `Ecowoods <${FROM}>`,
-      to,
-      subject,
-      html,
-      text,
-      ...(attachments?.length ? { attachments } : {}),
-    });
+    const result = await resend.emails.send(
+      {
+        from: `Ecowoods <${FROM}>`,
+        to,
+        subject,
+        html,
+        text,
+        ...(attachments?.length ? { attachments } : {}),
+      },
+      idempotencyKey ? { idempotencyKey } : undefined,
+    );
     if (result.error) {
       throw new Error(`Resend error: ${result.error.message}`);
     }

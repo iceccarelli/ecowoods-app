@@ -29,18 +29,22 @@ export function Workbench({
   meta,
   alreadyPublished,
   existingReportUrl,
+  notificationPending = false,
 }: {
   orderId: string;
   sku: 'photo' | 'onsite';
   meta: ListingMeta;
   alreadyPublished: boolean;
   existingReportUrl: string | null;
+  /** Report is stored but the customer email has not been confirmed sent. */
+  notificationPending?: boolean;
 }) {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [preview, setPreview] = useState<ListingFloorReport | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [published, setPublished] = useState(alreadyPublished);
   const [publishedUrl, setPublishedUrl] = useState<string | null>(existingReportUrl);
+  const [emailPending, setEmailPending] = useState(notificationPending);
   const [busy, setBusy] = useState<'idle' | 'previewing' | 'publishing'>('idle');
 
   async function callApi(path: 'compose' | 'publish') {
@@ -72,9 +76,24 @@ export function Workbench({
     if (ok) {
       setPublished(true);
       setPublishedUrl(json.url);
+      setEmailPending(json.notified === false);
     } else {
       setErrors(json.errors ?? [json.error ?? 'Something went wrong.']);
     }
+    setBusy('idle');
+  }
+
+  async function onRetryEmail() {
+    setBusy('publishing');
+    setErrors([]);
+    const res = await fetch(`/api/listing-floor-report/publish`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ orderId }),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (res.ok && json.notified !== false) setEmailPending(false);
+    else setErrors([json.notificationError ?? json.error ?? 'Something went wrong.']);
     setBusy('idle');
   }
 
@@ -82,6 +101,17 @@ export function Workbench({
     return (
       <div className="portal-card">
         <h2>Published</h2>
+        {emailPending && (
+          <div role="alert">
+            <p>The report is saved, but the customer email has not been confirmed as sent.</p>
+            <button type="button" className="btn btn-copper" disabled={busy !== 'idle'} onClick={onRetryEmail}>
+              {busy === 'publishing' ? 'Sending…' : 'Retry customer email'}
+            </button>
+            {errors.map((e) => (
+              <p key={e}>{e}</p>
+            ))}
+          </div>
+        )}
         {publishedUrl && (
           <p>
             <a href={publishedUrl} target="_blank" rel="noopener noreferrer">

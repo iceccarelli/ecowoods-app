@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { hasReportNotified } from '@/lib/report-delivery';
 import { Workbench } from './Workbench';
 import { extractListingReportSku, extractListingReportUrl, extractMeta, isListingFloorReportOrder } from '@/lib/listing-floor-report/notes';
 import { listingReportSkuConfig } from '@/content/constants/listing-floor-report-product';
@@ -56,6 +57,7 @@ export default async function ListingFloorReportDeskPage({
           sku={sku}
           meta={meta}
           alreadyPublished={!!existingReportUrl}
+          notificationPending={!!existingReportUrl && !hasReportNotified(order.notes)}
           existingReportUrl={existingReportUrl}
         />
       )}

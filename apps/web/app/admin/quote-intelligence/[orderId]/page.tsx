@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { hasReportNotified } from '@/lib/report-delivery';
 import { Workbench } from './Workbench';
 import { extractReportUrl, extractTierId, isWellInstalledReviewOrder } from '@/lib/quote-intelligence/notes';
 import { reviewTierConfig } from '@/content/constants/paid-review-product';
@@ -54,7 +55,8 @@ export default async function QuoteIntelligenceDeskPage({
           {order.status === 'PAID' && ' — customer has not uploaded a quote document yet'}
         </p>
       </div>
-      <Workbench orderId={order.id} alreadyPublished={!!existingReportUrl} existingReportUrl={existingReportUrl} />
+      <Workbench orderId={order.id} alreadyPublished={!!existingReportUrl}
+        notificationPending={!!existingReportUrl && !hasReportNotified(order.notes)} existingReportUrl={existingReportUrl} />
     </div>
   );
 }

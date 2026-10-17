@@ -1,18 +1,20 @@
 /**
  * POST /api/listing-floor-report/publish — ADMIN only.
  *
- * Composes, renders the PDF, stores it, appends LFR_REPORT: to Order.notes
- * (never overwriting the sku/meta lines already there), emails the customer,
- * and only THEN moves Order.status to FULFILLED — per this spec,
- * documents-received is not fulfillment; a generated report is. Idempotent:
- * a second publish returns the existing URL rather than a second PDF and a
- * second customer email.
+ * Needs a Pre-List Floor Condition Report order that is paid (PAID, or
+ * FULFILLED once published) and has an intake on file. Composes, renders and
+ * stores the PDF, persists LFR_REPORT: in Order.notes (never overwriting the
+ * sku/meta lines), and moves Order.status to FULFILLED at that point — a
+ * generated report is fulfilment; documents received alone is not. The
+ * customer email follows and is tracked separately (lib/report-delivery.ts):
+ * a second publish returns the stored report and, if the email never went
+ * out, retries only the email.
  */
 
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { sendEmail } from '@/lib/email';
+import { publishReport } from '@/lib/report-delivery';
 import { compose } from '@/lib/listing-floor-report/compose';
 import { storeListingFloorReport } from '@/lib/listing-floor-report/store';
 import {
@@ -35,60 +37,53 @@ export async function POST(req: Request) {
   }
 
   const body = (await req.json().catch(() => null)) as Partial<ComposeInput> | null;
-  if (!body?.orderId) {
+  if (!body?.orderId || typeof body.orderId !== 'string') {
     return NextResponse.json({ error: 'Missing orderId' }, { status: 400 });
   }
 
-  const order = await db.order.findUnique({ where: { id: body.orderId }, include: { user: true } });
+  const order = await db.order.findUnique({ where: { id: body.orderId }, include: { user: true } }).catch(() => null);
   if (!order || !isListingFloorReportOrder(order.notes)) {
     return NextResponse.json({ error: 'Not a listing floor report order' }, { status: 404 });
   }
-
-  const existingUrl = extractListingReportUrl(order.notes);
-  if (existingUrl) {
-    return NextResponse.json({ url: existingUrl, alreadyPublished: true });
+  if (order.status !== 'PAID' && order.status !== 'FULFILLED') {
+    return NextResponse.json({ error: 'This order is not paid.' }, { status: 409 });
   }
 
+  const existingUrl = extractListingReportUrl(order.notes);
   const meta = extractMeta(order.notes);
-  if (!meta) {
+  if (!existingUrl && !meta) {
     return NextResponse.json({ error: 'No intake submitted for this order yet.' }, { status: 409 });
   }
 
   const sku = extractListingReportSku(order.notes);
-  const result = compose({
-    orderId: order.id,
-    sku,
-    photographyDate: meta.photographyDate,
-    recommendation: body.recommendation ?? 'cannot_determine_from_photos',
-    findings: body.findings ?? { finishWear: 'not_specified', woodDamage: 'not_specified', moisture: 'inspection_needed' },
-    present: body.present ?? '',
-    missing: body.missing ?? '',
-    askInWriting: body.askInWriting,
-  });
-
-  if (!result.ok) {
-    return NextResponse.json({ errors: result.errors }, { status: 400 });
+  let composed: Extract<ReturnType<typeof compose>, { ok: true }> | null = null;
+  if (!existingUrl) {
+    const result = compose({
+      orderId: order.id,
+      sku,
+      photographyDate: meta!.photographyDate,
+      recommendation: body.recommendation ?? 'cannot_determine_from_photos',
+      findings: body.findings ?? { finishWear: 'not_specified', woodDamage: 'not_specified', moisture: 'inspection_needed' },
+      present: body.present ?? '',
+      missing: body.missing ?? '',
+      askInWriting: body.askInWriting,
+    });
+    if (!result.ok) return NextResponse.json({ errors: result.errors }, { status: 400 });
+    composed = result;
   }
-
-  let url: string;
-  try {
-    url = await storeListingFloorReport(result.report);
-  } catch (err) {
-    console.error('[listing-floor-report publish] PDF generation failed:', err);
-    return NextResponse.json({ error: 'PDF generation failed' }, { status: 500 });
-  }
-
-  await db.order.update({
-    where: { id: order.id },
-    data: { notes: appendListingReportMarker(order.notes, url), status: 'FULFILLED' },
-  });
 
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
   const reportLink = `${origin}/listing-floor-report/report?order=${order.id}&email=${encodeURIComponent(order.user.email)}`;
   const skuConfig = listingReportSkuConfig(sku);
 
-  try {
-    await sendEmail({
+  const outcome = await publishReport({
+    orderId: order.id,
+    allowedStatuses: ['PAID', 'FULFILLED'],
+    productTag: 'listing_floor_report',
+    extractUrl: extractListingReportUrl,
+    appendUrl: appendListingReportMarker,
+    renderAndStore: composed ? () => storeListingFloorReport(composed!.report) : null,
+    email: {
       to: order.user.email,
       subject: 'Your Pre-List Floor Condition Report is ready',
       html:
@@ -96,12 +91,24 @@ export async function POST(req: Request) {
         `<p style="margin:0 0 16px;">Read it here: <a href="${reportLink}">${reportLink}</a></p>` +
         `<p style="margin:0 0 16px;">${skuConfig?.sla ?? ''}</p>`,
       text: `Your Pre-List Floor Condition Report is ready: ${reportLink}`,
-    });
-  } catch (err) {
-    console.error('[listing-floor-report publish] customer email failed:', err);
+    },
+  });
+
+  if (outcome.kind === 'busy') {
+    return NextResponse.json({ error: 'A publish for this order is already in progress. Try again in a minute.' }, { status: 409, headers: { 'Retry-After': '60' } });
+  }
+  if (outcome.kind === 'not_eligible') return NextResponse.json({ error: 'This order cannot be published.' }, { status: 409 });
+  if (outcome.kind === 'failed') {
+    return NextResponse.json({ error: outcome.stage === 'render' ? 'PDF generation failed' : 'The report was generated but could not be saved. Try again.' }, { status: 500 });
   }
 
-  console.log(JSON.stringify({ event: 'listing_floor_report.report_generated', orderId: order.id }));
-
-  return NextResponse.json({ url, alreadyPublished: false });
+  if (!outcome.alreadyPublished) {
+    console.log(JSON.stringify({ event: 'listing_floor_report.report_generated', orderId: order.id }));
+  }
+  return NextResponse.json({
+    url: outcome.url,
+    alreadyPublished: outcome.alreadyPublished,
+    notified: outcome.notified,
+    ...(outcome.notified ? {} : { notificationError: 'The report is saved but the customer email did not send. Publish again to retry the email.' }),
+  });
 }
