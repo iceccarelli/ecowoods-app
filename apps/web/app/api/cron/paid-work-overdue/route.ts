@@ -51,12 +51,12 @@ export async function GET(request: Request) {
   try {
     await sendEmail({
       to: process.env.ADMIN_EMAIL ?? BUSINESS_NAP.email,
-      subject: `${overdue.length} paid report(s) waiting on the desk`,
-      text: `Paid reports not yet published:\n\n${lines.join('\n')}\n\nPublish from /admin/quote-intelligence/<orderId> or /admin/listing-floor-report/<orderId>.`,
+      subject: `${overdue.length} paid report(s) need desk action`,
+      text: `Paid reports needing desk action:\n\n${lines.join('\n')}\n\nOpen /admin/quote-intelligence/<orderId> or /admin/listing-floor-report/<orderId> to publish the report or retry a pending customer email.`,
       html:
-        `<h2 style="margin:0 0 8px;">Paid reports waiting on the desk</h2><ul>` +
+        `<h2 style="margin:0 0 8px;">Paid reports needing desk action</h2><ul>` +
         overdue.map((o) => `<li>${o.product} — <code>${o.orderId}</code> — ${o.detail} — waiting ${o.hoursWaiting}h</li>`).join('') +
-        `</ul><p>Publish from <code>/admin/quote-intelligence/&lt;orderId&gt;</code> or <code>/admin/listing-floor-report/&lt;orderId&gt;</code>.</p>`,
+        `</ul><p>Open the corresponding admin workbench to publish the report or retry a pending customer notification.</p>`,
     });
   } catch (err) {
     console.error(JSON.stringify({ event: 'paid_work_overdue.alert_failed', overdue: overdue.length, error: err instanceof Error ? err.message : 'unknown' }));
