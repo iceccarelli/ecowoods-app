@@ -39,3 +39,16 @@ export function extractReportUrl(notes: string | null): string | null {
   const match = notes.match(new RegExp(`${REPORT_MARKER}(\\S+)`));
   return match ? match[1] : null;
 }
+
+const NOTIFIED_MARKER = 'FP_NOTIFIED:';
+
+/** True once the "your specification is ready" email has been accepted by the mail provider. */
+export function hasNotifiedMarker(notes: string | null): boolean {
+  return !!notes && notes.split('\n').some((l) => l.startsWith(NOTIFIED_MARKER));
+}
+
+export function appendNotifiedMarker(existingNotes: string | null, at: number): string {
+  const base = existingNotes ?? '';
+  if (hasNotifiedMarker(base)) return base;
+  return `${base}\n${NOTIFIED_MARKER}${at}`.trim();
+}

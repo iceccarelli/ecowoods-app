@@ -37,6 +37,8 @@ import { db } from '@/lib/db';
 import { grantCreditsForOrder } from '@/lib/credit-ledger';
 import { recordFunnelEvent } from '@/lib/funnel-ledger';
 import { CREDIT_PACK } from '@/lib/assistant-workspace/credits-config';
+import { deliverFloorPlanOrder } from '@/lib/floor-plan/deliver';
+import { isFloorPlanOrder } from '@/lib/floor-plan/notes';
 
 /** Order.notes prefix written by /api/assistant/analysis/checkout. */
 const CREDITS_NOTES_PREFIX = 'Renovation Credits (';
@@ -119,6 +121,11 @@ async function handleOrderSession(session: Stripe.Checkout.Session, orderId: str
   if (claimed.count === 1) log('stripe_fulfillment.order_paid', { orderId });
 
   if (isRenovationCreditsOrder(order.notes)) return fulfilCreditsOrder(order);
+  if (isFloorPlanOrder(order.notes)) {
+    // Throws on a transient failure (webhook answers 5xx and Stripe redelivers).
+    const delivery = await deliverFloorPlanOrder(orderId);
+    if (delivery.status === 'rejected') return reject(delivery.reason, { orderId, sessionId: session.id });
+  }
   return { status: 'fulfilled', kind: 'order' };
 }
 
@@ -240,6 +247,29 @@ export async function reconcilePendingFulfillments(options: { olderThanMs?: numb
           error: err instanceof Error ? err.message : 'unknown',
         }),
       );
+    }
+  }
+  // Paid Personal Floor Plans whose report/email a webhook delivery did not finish.
+  const floorPlans = await db.order.findMany({
+    where: {
+      status: { in: ['PAID', 'FULFILLED'] },
+      notes: { startsWith: 'Personal Floor Plan' },
+      NOT: { notes: { contains: 'FP_NOTIFIED:' } },
+      paidAt: { lte: cutoff, gte: new Date(Date.now() - 30 * 86_400_000) },
+    },
+    select: { id: true },
+    orderBy: { paidAt: 'asc' },
+    take: options.batch ?? 25,
+  });
+  summary.examined += floorPlans.length;
+  for (const order of floorPlans) {
+    try {
+      const outcome = await deliverFloorPlanOrder(order.id);
+      if (outcome.status === 'delivered' || outcome.status === 'already_delivered') summary.fulfilled += 1;
+      else summary.failed += 1;
+    } catch (err) {
+      summary.failed += 1;
+      console.error(JSON.stringify({ event: 'stripe_fulfillment.unresolved', orderId: order.id, error: err instanceof Error ? err.message : 'unknown' }));
     }
   }
   return summary;
