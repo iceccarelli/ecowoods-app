@@ -4,10 +4,11 @@
  * commercial term of this business.
  *
  * Same Class C posture as content/constants/paid-review-product.ts (EW-0001):
- * the $349/$799 figures are the ecowoods-product agent's researched
- * recommendation, not an owner-confirmed price. A new public price claim
- * is Class C — this file, and the PR it ships in, is the prepared patch
- * waiting on that confirmation, not a live commercial term.
+ * the $349/$799 figures are researched recommendations, not owner-confirmed
+ * prices. `priceConfirmed` remains false until the owner confirms the
+ * commercial term. The product page hides the proposal and checkout form
+ * while it is false, and the API refuses checkout before writing an Order or
+ * creating a Stripe session. Only an owner-approved change should set it true.
  *
  * This product prints the EXISTING published service bands
  * (content/constants/pricing.ts — SCREEN_RECOAT, FULL_SAND_FINISH) via
