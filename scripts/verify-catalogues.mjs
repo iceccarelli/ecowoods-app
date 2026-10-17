@@ -5,9 +5,9 @@
  *
  * WHY THIS ONE MATTERS MORE THAN IT LOOKS
  *
- * Every other guard here protects a page. This one protects eleven files that
- * leave the site: a homeowner downloads one, prints it, and puts it in front of
- * a spouse or a condo board. A broken page is a bad minute; a catalogue that
+ * Every other guard here protects a page. This one protects catalogue files
+ * that leave the site: a homeowner downloads one, prints it, and puts it in front
+ * of a spouse or a condo board. A broken page is a bad minute; a catalogue that
  * 404s from a link somebody forwarded is the company failing in front of the
  * person the reader was trying to convince.
  *

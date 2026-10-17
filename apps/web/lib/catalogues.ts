@@ -106,7 +106,7 @@ export type Catalogue = {
 };
 
 /**
- * The eleven published catalogues.
+ * The published catalogue editions.
  *
  * `pages` and `trim` are properties of the exported file and are the same for
  * every one of them — they are written per record anyway, because the day a
@@ -114,20 +114,6 @@ export type Catalogue = {
  * whole index quietly starts lying about it.
  */
 export const CATALOGUES: Catalogue[] = [
-  {
-    id: '01',
-    slug: 'company-overview',
-    file: 'Ecowoods_01_Company_Overview.pdf',
-    title: 'Company Overview',
-    kicker: 'Toronto · the house',
-    series: 'house',
-    purpose:
-      'One company, salaried craftsmen and no revolving subcontractors — the six services, and how a fixed price is arrived at after a free in-home measure.',
-    related: [{ href: '/about', label: 'About Ecowoods — legal identity, crew model, what we do not do' }],
-    pages: 6,
-    trim: '14 × 10 in',
-    year: 2026,
-  },
   {
     id: '02',
     slug: 'dust-free-refinishing',
@@ -146,23 +132,6 @@ export const CATALOGUES: Catalogue[] = [
     year: 2026,
   },
   {
-    id: '03',
-    slug: 'hardwood-installation',
-    file: 'Ecowoods_03_Hardwood_Installation.pdf',
-    title: 'New Hardwood, Laid to the House',
-    kicker: 'Installation · solid & engineered',
-    series: 'service',
-    purpose:
-      'Why Toronto is a hard room for wood, and how the substrate rather than the budget decides between nail-down, glue-down and floating — with the moisture readings and the acclimation that come before any of them.',
-    related: [
-      { href: '/hardwood-flooring-toronto', label: 'Hardwood flooring in Toronto' },
-      { href: '/guides/nail-down-glue-down-or-floating', label: 'Which installation method, and why' },
-    ],
-    pages: 6,
-    trim: '14 × 10 in',
-    year: 2026,
-  },
-  {
     id: '04',
     slug: 'stairs-maple-vaughan',
     file: 'Ecowoods_04_Stairs_Maple_Vaughan.pdf',
@@ -174,40 +143,6 @@ export const CATALOGUES: Catalogue[] = [
     related: [
       { href: '/projects/maple-vaughan-curved-stair', label: 'The same flight, photographed — eighteen plates and two chapter films' },
       { href: '/hardwood-stairs-toronto', label: 'Hardwood stairs in Toronto — the four jobs that are all called stairs' },
-    ],
-    pages: 6,
-    trim: '14 × 10 in',
-    year: 2026,
-  },
-  {
-    id: '05',
-    slug: 'well-installed-framework',
-    file: 'Ecowoods_05_Well_Installed_Framework.pdf',
-    title: 'The Well-Installed Framework',
-    kicker: 'Standards · the published specification',
-    series: 'standard',
-    purpose:
-      'The framework in the form you can carry into a meeting: the pillars, the criteria, and the ones that are critical. Choosing a contractor is a filter, not a comparison — any critical criterion answered “no” is a defect in the quote.',
-    related: [
-      { href: '/framework', label: 'The framework in full, with the self-assessment' },
-      { href: '/standards', label: 'The external standards this work answers to' },
-    ],
-    pages: 6,
-    trim: '14 × 10 in',
-    year: 2026,
-  },
-  {
-    id: '06',
-    slug: 'cost-guide',
-    file: 'Ecowoods_06_Cost_Guide_Toronto_Buffalo.pdf',
-    title: 'How Much Does Hardwood Cost?',
-    kicker: 'The question people actually type',
-    series: 'decision',
-    purpose:
-      'The three published bands, each with a thousand-square-foot worked example, and what a material box price leaves outside it. Not a quote — the number is fixed in writing after the measure.',
-    related: [
-      { href: '/guides/hardwood-flooring-cost-toronto', label: 'What hardwood flooring costs in Toronto' },
-      { href: '/pricing', label: 'The published bands, in full' },
     ],
     pages: 6,
     trim: '14 × 10 in',
@@ -361,17 +296,9 @@ export const getPublishedCatalogues = (): Catalogue[] =>
  * on purpose: the papers are a different family and their pages stay untouched.
  */
 export const CATALOGUE_RAILS: Record<string, string[]> = {
-  '/': ['01'],
-  '/about': ['01'],
-  '/contact': ['01', '06'],
-  '/estimate': ['01', '06'],
   '/hardwood-floor-refinishing-toronto': ['02', '07'],
   '/guides/dustless-hardwood-refinishing-toronto': ['02'],
-  '/hardwood-flooring-toronto': ['03', '06'],
   '/hardwood-stairs-toronto': ['04'],
-  '/framework': ['05'],
-  '/standards': ['05'],
-  '/guides/hardwood-flooring-cost-toronto': ['06'],
   '/guides/solid-vs-engineered-hardwood-toronto': ['08'],
   '/equipment': ['10'],
   '/guides/white-oak-flooring-toronto': ['11', '09'],
