@@ -3,6 +3,9 @@ import { photoTriageSchema } from '@ecowoods/shared/schemas';
 import { db } from '@/lib/db';
 import { sniffFile, safeFilename, type SniffedImage } from '@/lib/image-sniff';
 import { sendAdminPhotoTriageEmail, type EmailAttachment } from '@/lib/email';
+import { withinMs } from '@/lib/with-timeout';
+import { runAfterResponse } from '@/lib/background';
+import { sendLeadAlert } from '@/lib/lead-alert';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 import { recordAssessment, storeAssessmentPhotos, type PhotoInput } from '@/lib/floor-graph';
 import { grantConsent, readCheckbox } from '@/lib/floor-graph/consent';
@@ -170,7 +173,7 @@ export async function POST(request: Request) {
   // 3. Best-effort DB persistence (same QuoteRequest table the measure track uses).
   let quoteId: string | null = null;
   try {
-    const quote = await db.quoteRequest.create({
+    const quote = await withinMs(db.quoteRequest.create({
       data: {
         name: lead.name,
         email: lead.email,
@@ -188,7 +191,7 @@ export async function POST(request: Request) {
           .filter(Boolean)
           .join('\n'),
       },
-    });
+    }), 6000, 'photo-triage create');
     quoteId = quote.id;
   } catch (err) {
     console.error(
@@ -200,6 +203,17 @@ export async function POST(request: Request) {
       }),
     );
   }
+
+  /* The desk is texted for a photo lead exactly as for a measure lead — the
+     'photos' alert kind existed and was never sent. An unsaved one says so. */
+  runAfterResponse(sendLeadAlert({
+    kind: quoteId ? 'photos' : 'lead (NOT SAVED)',
+    name: lead.name,
+    phone: lead.phone ?? null,
+    where: lead.area ?? null,
+    service: `photo triage: ${lead.intent}`,
+    source: 'estimate-form',
+  }));
 
   // 4. Best-effort internal email with the photos attached.
   try {
@@ -227,13 +241,13 @@ export async function POST(request: Request) {
   // 5. FLOOR GRAPH — strictly downstream. Nothing below this line may change
   //    the response, and nothing below this line may throw out of the route.
   try {
-    const assessment = await recordAssessment({
+    const assessment = await withinMs(recordAssessment({
       source: 'PHOTO_TRIAGE',
       quoteRequestId: quoteId,
       statedIntent: lead.intent,
       statedSqFt: lead.sqft ?? null,
       city: lead.area,
-    });
+    }), 6000, 'floor-graph assessment');
 
     /* Photographs only past this point, and only with a live grant. The
        consent row is written BEFORE the first byte is stored, so there is no
