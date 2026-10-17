@@ -6,6 +6,7 @@
  * for the (authenticated) shop checkout.
  */
 
+import { isWellInstalledReviewOrder } from '@/lib/quote-intelligence/notes';
 import { REVIEW_TIERS, reviewTierConfig, type ReviewTierConfig } from '@/content/constants/paid-review-product';
 
 export type OrderLineItem = {
@@ -36,12 +37,13 @@ export function buildReviewOrderItem(tier: ReviewTierConfig): OrderLineItem {
 export type SubmissionEligibility =
   | { ok: true }
   | { ok: false; reason: 'not_found' }
+  | { ok: false; reason: 'wrong_product' }
   | { ok: false; reason: 'unpaid' }
   | { ok: false; reason: 'already_submitted' }
   | { ok: false; reason: 'email_mismatch' };
 
 /**
- * Whether a paid order may accept the customer's quote document(s).
+ * Whether a paid Well-Installed Quote Review order may accept the customer's quote document(s).
  *
  * Reuses the existing OrderStatus enum instead of adding a schema field:
  * PAID -> eligible once; the submit route moves it to FULFILLED, which then
@@ -52,10 +54,12 @@ export function checkSubmissionEligibility(
   /** `status` is typed as `string` rather than Prisma's OrderStatus enum so this
    *  file stays free of a @prisma/client import — it is unit-tested without a
    *  database, the same way lib/shop.ts is. */
-  order: { status: string; userEmail: string } | null,
+  order: { status: string; userEmail: string; notes: string | null } | null,
   submittedEmail: string,
 ): SubmissionEligibility {
   if (!order) return { ok: false, reason: 'not_found' };
+  // Product identity first: a PAID order for any other SKU must never reach this intake.
+  if (!isWellInstalledReviewOrder(order.notes)) return { ok: false, reason: 'wrong_product' };
   if (order.status === 'FULFILLED') return { ok: false, reason: 'already_submitted' };
   if (order.status !== 'PAID') return { ok: false, reason: 'unpaid' };
   if (order.userEmail.trim().toLowerCase() !== submittedEmail.trim().toLowerCase()) {

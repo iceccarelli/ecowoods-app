@@ -9,6 +9,8 @@
  * tier line is still there for the desk to read after a report ships.
  */
 
+import { REVIEW_TIERS } from '@/content/constants/paid-review-product';
+
 const MARKER = 'QI_REPORT:';
 
 export function appendReportMarker(existingNotes: string | null, pdfUrl: string): string {
@@ -33,6 +35,15 @@ export function extractTierId(notes: string | null): 'standard' | 'rush' {
   return match?.[1]?.trim().toLowerCase() === 'rush' ? 'rush' : 'standard';
 }
 
+/**
+ * True only when the FIRST line of the notes is the exact tier line checkout
+ * writes (`Well-Installed Quote Review (<a REVIEW_TIERS name>)`). A substring
+ * test would accept any order whose notes merely mention the product — the
+ * notes of other products carry customer-influenced text — and an unknown
+ * tier is not an order this product ever created.
+ */
 export function isWellInstalledReviewOrder(notes: string | null): boolean {
-  return !!notes && notes.includes('Well-Installed Quote Review');
+  if (!notes) return false;
+  const firstLine = notes.split('\n', 1)[0]!.trim();
+  return REVIEW_TIERS.some((t) => firstLine === `Well-Installed Quote Review (${t.name})`);
 }

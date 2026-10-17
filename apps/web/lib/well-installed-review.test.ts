@@ -24,10 +24,28 @@ describe('buildReviewOrderItem', () => {
 });
 
 describe('checkSubmissionEligibility', () => {
-  const base = { status: 'PAID' as const, userEmail: 'Jane@Example.com' };
+  const base = { status: 'PAID' as const, userEmail: 'Jane@Example.com', notes: 'Well-Installed Quote Review (Standard)' };
 
   it('rejects a missing order', () => {
     expect(checkSubmissionEligibility(null, 'jane@example.com')).toEqual({ ok: false, reason: 'not_found' });
+  });
+
+  it.each([
+    ['listing report', 'Listing Floor Report (photo)'],
+    ['floor plan', 'Personal Floor Plan\nFP_DESIGN:abc'],
+    ['renovation credits', 'Renovation Credits (starter-40)'],
+    ['shop order', 'Shop order'],
+    ['product name only mentioned later', 'Listing Floor Report (photo)\nWell-Installed Quote Review (Standard)'],
+    ['unknown tier', 'Well-Installed Quote Review (Platinum)'],
+    ['no notes', null],
+  ])('rejects a PAID %s order as the wrong product, before status or email', (_n, notes) => {
+    expect(checkSubmissionEligibility({ ...base, notes }, 'jane@example.com')).toEqual({ ok: false, reason: 'wrong_product' });
+  });
+
+  it('accepts both real tiers', () => {
+    for (const notes of ['Well-Installed Quote Review (Standard)', 'Well-Installed Quote Review (Rush)']) {
+      expect(checkSubmissionEligibility({ ...base, notes }, 'jane@example.com')).toEqual({ ok: true });
+    }
   });
 
   it('rejects an unpaid order', () => {

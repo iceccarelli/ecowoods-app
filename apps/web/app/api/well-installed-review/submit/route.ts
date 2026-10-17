@@ -49,6 +49,7 @@ const fieldsSchema = z.object({
 function reasonMessage(reason: string): string {
   switch (reason) {
     case 'not_found':
+    case 'wrong_product': // indistinguishable from not_found: no probe of other products' order ids
       return 'We could not find that order.';
     case 'unpaid':
       return 'This order has not been paid yet. If you just paid, wait a few seconds and refresh — Stripe can take a moment to confirm.';
@@ -123,13 +124,13 @@ export async function POST(request: Request) {
 
   const order = await db.order.findUnique({ where: { id: orderId }, include: { user: true } });
   const eligibility = checkSubmissionEligibility(
-    order ? { status: order.status, userEmail: order.user.email } : null,
+    order ? { status: order.status, userEmail: order.user.email, notes: order.notes } : null,
     email,
   );
   if (!eligibility.ok) {
     return NextResponse.json(
       { success: false, message: reasonMessage(eligibility.reason) },
-      { status: eligibility.reason === 'not_found' ? 404 : 409 },
+      { status: eligibility.reason === 'not_found' || eligibility.reason === 'wrong_product' ? 404 : 409 },
     );
   }
 
