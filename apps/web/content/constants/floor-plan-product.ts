@@ -12,7 +12,7 @@
  * `priceCad: null`, `published: false` — and that file is deliberately not
  * edited here. Publishing a figure by editing that file is the one thing its
  * own header comment says no engineer or agent gets to do in a patch.
- *
+ */
 
 export const FLOOR_PLAN_PRODUCT = {
   slug: 'floor-plan',
