@@ -17,6 +17,7 @@ const s = vi.hoisted(() => ({
   lostRace: 0,
 }));
 
+vi.mock('@/lib/stripe', () => ({ stripe: { checkout: { sessions: { list: () => (async function* () {})() } } } }));
 vi.mock('@/lib/funnel-ledger', () => ({ recordFunnelEvent: () => undefined }));
 vi.mock('@/lib/credit-ledger', () => ({ grantCreditsForOrder: async () => ({ reason: 'x' }) }));
 vi.mock('@/lib/email', () => ({

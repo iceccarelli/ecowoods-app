@@ -123,7 +123,7 @@ vi.mock('@/lib/db', () => {
   };
 });
 
-vi.mock('@/lib/stripe', () => ({ stripe: { webhooks: Stripe.webhooks } }));
+vi.mock('@/lib/stripe', () => ({ stripe: { webhooks: Stripe.webhooks, checkout: { sessions: { list: () => (async function* () {})() } } } }));
 vi.mock('next/headers', () => ({ headers: async () => ({ get: (k: string) => (k === 'stripe-signature' ? s.signature : null) }) }));
 
 const webhook = await import('@/app/api/webhooks/stripe/route');
