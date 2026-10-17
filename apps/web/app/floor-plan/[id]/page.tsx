@@ -70,6 +70,13 @@ export default async function FloorPlanUnlockPage({
             </p>
           )}
 
+          {eligible && result && !result.ok && result.reason === 'storage_failed' && (
+            <p className="ef-err ef-err--block" role="alert">
+              Your payment is confirmed but we could not save the specification just now. Refresh this
+              page in a minute, or call {BUSINESS_NAP.phoneDisplay} and we will send it directly.
+            </p>
+          )}
+
           {eligible && result && result.ok && (
             <>
               <p className="tlx-note">Your specification is ready.</p>

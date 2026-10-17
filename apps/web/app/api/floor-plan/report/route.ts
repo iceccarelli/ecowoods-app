@@ -8,6 +8,7 @@
 
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { ensureFloorPlanReport } from '@/lib/floor-plan/generate';
 import { isFloorPlanOrder } from '@/lib/floor-plan/notes';
 
@@ -15,6 +16,10 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
+  /* Public lookup keyed by order id + email: bound guessing (same limit as the other report lookups). */
+  if (!checkRateLimit(`fp-report:${getClientIp(req)}`, { windowMs: 60_000, maxRequests: 20 }).allowed) {
+    return NextResponse.json({ error: 'Too many requests.' }, { status: 429, headers: { 'Retry-After': '60' } });
+  }
   const { searchParams } = new URL(req.url);
   const orderId = searchParams.get('order');
   const email = searchParams.get('email');
@@ -33,7 +38,7 @@ export async function GET(req: Request) {
 
   const result = await ensureFloorPlanReport(orderId);
   if (!result.ok) {
-    const status = result.reason === 'not_paid' ? 402 : result.reason === 'bad_design' ? 422 : 404;
+    const status = result.reason === 'not_paid' ? 402 : result.reason === 'bad_design' ? 422 : result.reason === 'storage_failed' ? 503 : 404;
     return NextResponse.json({ published: false, reason: result.reason }, { status });
   }
 
