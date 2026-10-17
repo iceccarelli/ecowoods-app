@@ -95,7 +95,7 @@ async function sendVerificationEmail({
             <p>Click the button below to verify your email and activate your account.</p>
             <p style="color:#6b5d52;font-size:13px;">This link expires in 30 minutes.</p>
             <div style="text-align:center;margin:28px 0;">
-              <a href="${verifyUrl}"
+              <a href="${escapeHtml(verifyUrl)}"
                  style="background:#c87e4f;color:#fdfbf6;padding:14px 28px;text-decoration:none;border-radius:6px;font-weight:600;display:inline-block;">
                 Verify my email
               </a>

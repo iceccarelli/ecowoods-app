@@ -16,3 +16,8 @@ export function detailRowsHtml(rows: ReadonlyArray<readonly [string, string]>): 
     .map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#6b5d4f;">${escapeHtml(k)}</td><td style="padding:4px 0;"><strong>${escapeHtml(v)}</strong></td></tr>`)
     .join('');
 }
+
+/** Free text with line breaks kept: escape first, then turn newlines into <br>. */
+export function nl2br(value: unknown): string {
+  return escapeHtml(value).replace(/\r?\n/g, '<br>');
+}
