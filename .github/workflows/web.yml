@@ -22,17 +22,13 @@ on:
       - 'pnpm-workspace.yaml'
       - 'turbo.json'
       - '.github/workflows/web.yml'
+  # No `paths` filter on pull_request, deliberately: Guards, Typecheck & Build and
+  # the PostgreSQL job are REQUIRED status checks on main. A path-filtered
+  # workflow never reports on a PR that touches only other files, and a required
+  # check that never reports blocks the merge forever. The push trigger keeps its
+  # filter: nothing is required there.
   pull_request:
     branches: [main]
-    paths:
-      - 'apps/web/**'
-      - 'packages/**'
-      - 'scripts/**'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
-      - 'turbo.json'
-      - '.github/workflows/web.yml'
 
 # A newer push makes an in-flight run irrelevant. Without this, queues pile up
 # during a GitHub Actions incident and every stale run competes for a runner.
