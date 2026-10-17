@@ -125,6 +125,15 @@ vi.mock('@/lib/email', () => ({
 
 vi.mock('@/lib/auth', () => ({ auth: async () => state.session }));
 
+vi.mock('@/content/constants/paid-review-product', async () => {
+  const actual = await vi.importActual<typeof import('@/content/constants/paid-review-product')>('@/content/constants/paid-review-product');
+  return {
+    ...actual,
+    WELL_INSTALLED_REVIEW_PRODUCT: { ...actual.WELL_INSTALLED_REVIEW_PRODUCT, priceConfirmed: true },
+  };
+});
+
+
 vi.mock('@/lib/pdf/storage', () => ({
   storePdf: async (buffer: Buffer, filename: string) => {
     state.stored.push({ filename, buffer });

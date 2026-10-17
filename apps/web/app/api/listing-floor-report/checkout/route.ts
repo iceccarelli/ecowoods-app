@@ -24,6 +24,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { stripe } from '@/lib/stripe';
 import { round2 } from '@/lib/shop';
+import { LISTING_FLOOR_REPORT_PRODUCT } from '@/content/constants/listing-floor-report-product';
 import { buildListingReportOrderItem, resolveListingReportSku } from '@/lib/listing-floor-report';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 
@@ -40,6 +41,13 @@ const checkoutSchema = z.object({
 export async function POST(req: Request) {
   if (!isTrustedBrowserOrigin(req)) {
     return NextResponse.json({ error: 'Origin not allowed.' }, { status: 403 });
+  }
+
+  if (!LISTING_FLOOR_REPORT_PRODUCT.priceConfirmed) {
+    return NextResponse.json(
+      { error: 'Checkout is unavailable while product pricing awaits owner confirmation.' },
+      { status: 503 },
+    );
   }
 
   const rl = checkRateLimit(getClientIp(req), LEAD_POST_LIMIT);

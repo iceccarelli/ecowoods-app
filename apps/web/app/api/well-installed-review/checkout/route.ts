@@ -20,6 +20,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { stripe } from '@/lib/stripe';
 import { round2 } from '@/lib/shop';
+import { WELL_INSTALLED_REVIEW_PRODUCT } from '@/content/constants/paid-review-product';
 import { buildReviewOrderItem, resolveReviewTier } from '@/lib/well-installed-review';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 import { recordQuoteReviewEvent } from '@/lib/quote-intelligence/events';
@@ -36,6 +37,13 @@ const checkoutSchema = z.object({
 export async function POST(req: Request) {
   if (!isTrustedBrowserOrigin(req)) {
     return NextResponse.json({ error: 'Origin not allowed.' }, { status: 403 });
+  }
+
+  if (!WELL_INSTALLED_REVIEW_PRODUCT.priceConfirmed) {
+    return NextResponse.json(
+      { error: 'Checkout is unavailable while product pricing awaits owner confirmation.' },
+      { status: 503 },
+    );
   }
 
   const rl = checkRateLimit(getClientIp(req), LEAD_POST_LIMIT);

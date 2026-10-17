@@ -18,6 +18,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { stripe } from '@/lib/stripe';
 import { round2 } from '@/lib/shop';
+import { FLOOR_PLAN_PRODUCT } from '@/content/constants/floor-plan-product';
 import { buildFloorPlanOrderItem } from '@/lib/floor-plan';
 import { buildCheckoutNotes } from '@/lib/floor-plan/notes';
 import { parseShareCode } from '@/lib/floor-plan/share-code';
@@ -37,6 +38,13 @@ const checkoutSchema = z.object({
 export async function POST(req: Request) {
   if (!isTrustedBrowserOrigin(req)) {
     return NextResponse.json({ error: 'Origin not allowed.' }, { status: 403 });
+  }
+
+  if (!FLOOR_PLAN_PRODUCT.priceConfirmed) {
+    return NextResponse.json(
+      { error: 'Checkout is unavailable while product pricing awaits owner confirmation.' },
+      { status: 503 },
+    );
   }
 
   const rl = checkRateLimit(getClientIp(req), LEAD_POST_LIMIT);
