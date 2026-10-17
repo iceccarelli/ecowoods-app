@@ -10,6 +10,7 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { sendAdminNewInquiryEmail, sendInquiryReplyEmail } from '@/lib/email';
+import { generateInquiryReply } from '@/lib/ai';
 
 // ─── Submit general inquiry (public) ────────────────────────────────────────
 const inquirySchema = z.object({
@@ -51,6 +52,17 @@ export async function submitInquiry(data: InquiryFormData) {
 }
 
 // ─── Admin: reply to inquiry ─────────────────────────────────────────────────
+/** Admin-only AI draft. Runs on the server: lib/ai reads the database and holds the provider key. */
+export async function draftInquiryReply(input: { subject: string; customerName: string; message?: string }): Promise<string> {
+  const session = await auth();
+  if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
+  return generateInquiryReply({
+    subject: String(input.subject ?? '').slice(0, 200),
+    customerName: String(input.customerName ?? '').slice(0, 120),
+    message: input.message ? String(input.message).slice(0, 3000) : undefined,
+  });
+}
+
 export async function replyToInquiry(inquiryId: string, content: string) {
   const session = await auth();
   if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
