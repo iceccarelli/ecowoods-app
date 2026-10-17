@@ -27,6 +27,8 @@ export type ListingReportSkuConfig = {
 
 export const LISTING_FLOOR_REPORT_PRODUCT = {
   slug: 'listing-floor-report',
+  /** Owner approval required before the price or checkout is shown publicly. */
+  priceConfirmed: false,
   name: 'Pre-List Floor Condition Report',
   deliverable:
     'A dated, written condition read of your hardwood before the listing photos: what the finish shows, what the wood shows, and — when a photo can support the call — whether a recoat before photography is realistic on your timeline.',
