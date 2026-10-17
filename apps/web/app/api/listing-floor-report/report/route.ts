@@ -9,6 +9,7 @@
 
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 import { extractListingReportSku, extractListingReportUrl, isListingFloorReportOrder } from '@/lib/listing-floor-report/notes';
 import { listingReportSkuConfig } from '@/content/constants/listing-floor-report-product';
 
@@ -16,6 +17,10 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
+  /* Public lookup keyed by order id + email: bound guessing (same limit as the other report lookups). */
+  if (!checkRateLimit(`lfr-report:${getClientIp(req)}`, { windowMs: 60_000, maxRequests: 20 }).allowed) {
+    return NextResponse.json({ error: 'Too many requests.' }, { status: 429, headers: { 'Retry-After': '60' } });
+  }
   const { searchParams } = new URL(req.url);
   const orderId = searchParams.get('order');
   const email = searchParams.get('email');

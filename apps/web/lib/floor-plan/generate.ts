@@ -6,14 +6,14 @@
  * configuration, so there is no expert judgment call for a human to make
  * (unlike EW-0002/EW-0003, where a human reads someone else's document).
  *
- * Called from the [id] page itself the first time it renders for a PAID
- * order with no report yet. Idempotency is enforced by
- * appendReportMarker()'s own no-op-if-present check; two concurrent first
- * views of the same order could in principle each render a PDF before either
- * write lands, which would store one wasted extra blob but would still
- * leave every reader seeing the SAME url afterwards (extractReportUrl reads
- * the first marker in the string). That tradeoff is accepted for the SSV
- * rather than adding a locking column to Order for a $99 digital product.
+ * Called from the [id] page itself and from /api/floor-plan/report the first
+ * time either runs for a PAID order with no report yet. The URL is persisted
+ * with a compare-and-swap on the exact notes text, so of any number of
+ * concurrent first views exactly one write lands; the losers discard their
+ * (wasted) PDF and return the URL that did land. Every reader therefore ends
+ * up with the same stored report. No lease or extra column is needed: the
+ * only side effect before the write is rendering a PDF, and an extra blob is
+ * the whole cost of a lost race.
  */
 
 import { db } from '@/lib/db';
@@ -24,7 +24,7 @@ import { appendReportMarker, extractDesignCode, extractReportUrl, isFloorPlanOrd
 
 export type GenerateResult =
   | { ok: true; url: string }
-  | { ok: false; reason: 'not_found' | 'not_paid' | 'bad_design' };
+  | { ok: false; reason: 'not_found' | 'not_paid' | 'bad_design' | 'storage_failed' };
 
 export async function ensureFloorPlanReport(orderId: string): Promise<GenerateResult> {
   const order = await db.order.findUnique({ where: { id: orderId } });
@@ -42,12 +42,26 @@ export async function ensureFloorPlanReport(orderId: string): Promise<GenerateRe
   if (!design) return { ok: false, reason: 'bad_design' };
 
   const spec = buildFloorPlanSpec(order.id, design);
-  const url = await storeFloorPlanSpec(spec);
+  let url: string;
+  try {
+    url = await storeFloorPlanSpec(spec);
+  } catch (err) {
+    console.error(JSON.stringify({ event: 'floor_plan.store_failed', orderId: order.id, error: err instanceof Error ? err.message : 'unknown' }));
+    return { ok: false, reason: 'storage_failed' };
+  }
 
-  await db.order.update({
-    where: { id: order.id },
+  const won = await db.order.updateMany({
+    where: { id: order.id, notes: order.notes },
     data: { notes: appendReportMarker(order.notes, url), status: 'FULFILLED' },
   });
+  if (won.count !== 1) {
+    // Another request persisted a report (or touched the row) first: serve what is stored.
+    const latest = await db.order.findUnique({ where: { id: order.id } });
+    const stored = latest ? extractReportUrl(latest.notes) : null;
+    if (stored) return { ok: true, url: stored };
+    console.error(JSON.stringify({ event: 'floor_plan.report_not_persisted', orderId: order.id, orphanUrl: url }));
+    return { ok: false, reason: 'storage_failed' };
+  }
 
   console.log(JSON.stringify({ event: 'floor_plan.report_generated', orderId: order.id }));
 
