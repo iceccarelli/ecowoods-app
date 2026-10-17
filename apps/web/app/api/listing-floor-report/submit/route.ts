@@ -25,6 +25,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { sendEmail, type EmailAttachment } from '@/lib/email';
+import { detailRowsHtml } from '@/lib/email/html';
 import { safeFilename, sniffFile, type SniffedImage } from '@/lib/image-sniff';
 import { checkListingReportSubmissionEligibility } from '@/lib/listing-floor-report';
 import { appendIntakeMarker, appendMetaMarker, extractListingReportSku, hasIntakeMarker, isListingFloorReportOrder } from '@/lib/listing-floor-report/notes';
@@ -225,7 +226,7 @@ export async function POST(request: Request) {
     for (const f of files.slice(0, MAX_PHOTOS)) {
       attachments.push({ filename: safeFilename(f.name, sniffedByFile.get(f)!.ext), content: Buffer.from(await f.arrayBuffer()) });
     }
-    const rows = [
+    const rows = detailRowsHtml([
       ['Order', order!.id],
       ['Submission', token],
       ['SKU', sku],
@@ -238,9 +239,7 @@ export async function POST(request: Request) {
       ['Email', data.email],
       ['Message', data.message ?? '—'],
       ['Photos retained in Floor Graph', String(retainedPhotoCount)],
-    ]
-      .map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#6b5d4f;">${k}</td><td style="padding:4px 0;"><strong>${v}</strong></td></tr>`)
-      .join('');
+    ] as const);
 
     await sendEmail({
       to: process.env.ADMIN_EMAIL ?? BUSINESS_NAP.email,

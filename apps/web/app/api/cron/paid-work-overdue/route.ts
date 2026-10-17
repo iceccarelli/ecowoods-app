@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { sendEmail } from '@/lib/email';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { findOverdueOrders, MAX_AGE_DAYS } from '@/lib/paid-work-overdue';
+import { escapeHtml } from '@/lib/email/html';
 
 /**
  * GET /api/cron/paid-work-overdue — tells the desk when a paid report has sat
@@ -55,7 +56,7 @@ export async function GET(request: Request) {
       text: `Paid reports needing desk action:\n\n${lines.join('\n')}\n\nOpen /admin/quote-intelligence/<orderId> or /admin/listing-floor-report/<orderId> to publish the report or retry a pending customer email.`,
       html:
         `<h2 style="margin:0 0 8px;">Paid reports needing desk action</h2><ul>` +
-        overdue.map((o) => `<li>${o.product} — <code>${o.orderId}</code> — ${o.detail} — waiting ${o.hoursWaiting}h</li>`).join('') +
+        overdue.map((o) => `<li>${escapeHtml(o.product)} — <code>${escapeHtml(o.orderId)}</code> — ${escapeHtml(o.detail)} — waiting ${o.hoursWaiting}h</li>`).join('') +
         `</ul><p>Open the corresponding admin workbench to publish the report or retry a pending customer notification.</p>`,
     });
   } catch (err) {

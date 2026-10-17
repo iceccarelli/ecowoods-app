@@ -27,6 +27,7 @@
 
 import { Resend } from 'resend';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, LIVE_REVIEW_DESTINATIONS } from '@ecowoods/shared/constants';
+import { detailRowsHtml, escapeHtml } from './html';
 
 // ── Transport selection ────────────────────────────────────────────────────────
 
@@ -174,7 +175,7 @@ export async function sendAdminPhotoTriageEmail({
   designSummary?: string;
   attachments: EmailAttachment[];
 }) {
-  const rows = [
+  const rows = detailRowsHtml([
     ['Name', name],
     ['Phone', phone],
     ['Email', email],
@@ -183,12 +184,7 @@ export async function sendAdminPhotoTriageEmail({
     ['Approx. sq ft', sqft ? String(sqft) : '—'],
     ['Floor designer config', designSummary ?? '—'],
     ['Lead id', leadId],
-  ]
-    .map(
-      ([k, v]) =>
-        `<tr><td style="padding:4px 12px 4px 0;color:#6b5d4f;">${k}</td><td style="padding:4px 0;"><strong>${v}</strong></td></tr>`,
-    )
-    .join('');
+  ]);
 
   await sendEmail({
     to: ADMIN_EMAIL,
@@ -229,7 +225,7 @@ export async function sendWelcomeEmail({
           <p style="color:#c87e4f;margin:4px 0 0;font-size:12px;">TORONTO HARDWOOD FLOORING</p>
         </div>
         <div style="padding:32px;">
-          <h2 style="color:#1a0f08;">Welcome, ${name}!</h2>
+          <h2 style="color:#1a0f08;">Welcome, ${escapeHtml(name)}!</h2>
           <p>Your Ecowoods account has been created. You can now:</p>
           <ul style="line-height:2;">
             <li>Track your quote requests</li>
@@ -298,9 +294,9 @@ export async function sendInvoiceEmail({
           <h1 style="color:#fdfbf6;margin:0;font-size:20px;font-weight:300;letter-spacing:2px;">ECOWOODS</h1>
         </div>
         <div style="padding:32px;">
-          <h2 style="color:#1a0f08;">Invoice Ready — ${invoiceNumber}</h2>
-          <p>Hi ${name},</p>
-          <p>An invoice has been issued for <strong>${projectTitle}</strong>.</p>
+          <h2 style="color:#1a0f08;">Invoice Ready — ${escapeHtml(invoiceNumber)}</h2>
+          <p>Hi ${escapeHtml(name)},</p>
+          <p>An invoice has been issued for <strong>${escapeHtml(projectTitle)}</strong>.</p>
           <div style="background:#f5efe6;padding:16px;border-radius:8px;margin:20px 0;text-align:center;">
             <div style="font-size:13px;color:#6b5d52;">Amount Due</div>
             <div style="font-size:28px;font-weight:700;color:#c87e4f;">${totalStr}</div>
@@ -663,7 +659,7 @@ export function reviewRequestEmail({ name, projectTitle }: { name: string; proje
         </div>
         <div style="padding:32px;">
           <h2 style="color:#1a0f08;margin-top:0;">Thank you, ${firstName}.</h2>
-          <p>Your project — <strong>${projectTitle}</strong> — is complete. If you have two minutes, a review
+          <p>Your project — <strong>${escapeHtml(projectTitle)}</strong> — is complete. If you have two minutes, a review
              on the platform you prefer helps the next homeowner choose with confidence.</p>
           ${destinations
             .map(

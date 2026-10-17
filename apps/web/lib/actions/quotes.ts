@@ -12,6 +12,7 @@ import { revalidatePath } from 'next/cache';
 import { recordPrediction } from '@/lib/floor-graph/prediction';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { recordFunnelEvent } from '@/lib/funnel-ledger';
+import { escapeHtml } from '@/lib/email/html';
 
 // ─── Zod schema for the full quote form ─────────────────────────────────────
 const quoteFormSchema = z.object({
@@ -180,7 +181,7 @@ export async function sendEstimateEmail(quoteId: string) {
           <h1 style="color:#fdfbf6;margin:0;font-size:18px;font-weight:300;letter-spacing:2px;">ECOWOODS</h1>
         </div>
         <div style="padding:32px;">
-          <h2>Hi ${quote.name},</h2>
+          <h2>Hi ${escapeHtml(quote.name)},</h2>
           <p>Thank you for reaching out. Please find your personalized estimate via the link below.</p>
           <div style="background:#faf6ef;padding:16px;border-radius:8px;margin:20px 0;text-align:center;">
             <div style="font-size:13px;color:#6b5d52;margin-bottom:4px;">Estimated Total (incl. HST)</div>
