@@ -79,8 +79,14 @@ describe('isListingFloorReportOrder', () => {
     expect(isListingFloorReportOrder('Listing Floor Report (photo)')).toBe(true);
   });
 
-  it('rejects null, unrelated, and EW-0002 notes, so this desk never operates on the wrong Order', () => {
+  it('accepts only the exact checkout-written product and SKU line, so this desk never operates on the wrong Order', () => {
+    expect(isListingFloorReportOrder('Listing Floor Report (photo)')).toBe(true);
+    expect(isListingFloorReportOrder('Listing Floor Report (onsite)')).toBe(true);
     expect(isListingFloorReportOrder(null)).toBe(false);
     expect(isListingFloorReportOrder('Well-Installed Quote Review (Standard)')).toBe(false);
+    expect(isListingFloorReportOrder('Shop order')).toBe(false);
+    expect(isListingFloorReportOrder('Shop order\nListing Floor Report (photo)')).toBe(false);
+    expect(isListingFloorReportOrder('Listing Floor Report (unknown-sku)')).toBe(false);
+    expect(isListingFloorReportOrder('Some note mentioning Listing Floor Report')).toBe(false);
   });
 });

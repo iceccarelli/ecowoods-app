@@ -18,7 +18,8 @@ export function buildCheckoutNotes(designCode: string): string {
 }
 
 export function isFloorPlanOrder(notes: string | null): boolean {
-  return !!notes && notes.includes(PRODUCT_MARKER);
+  if (!notes) return false;
+  return notes.split('\n', 1)[0]!.trim() === PRODUCT_MARKER;
 }
 
 export function extractDesignCode(notes: string | null): string | null {

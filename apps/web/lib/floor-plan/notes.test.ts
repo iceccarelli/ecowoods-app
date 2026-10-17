@@ -8,10 +8,12 @@ describe('buildCheckoutNotes / extractDesignCode / isFloorPlanOrder', () => {
     expect(extractDesignCode(notes)).toBe('c=white-oak.satin.herringbone.5&a=900');
   });
 
-  it('rejects null, unrelated, and other products\' notes, so this page never operates on the wrong Order', () => {
+  it('requires the exact checkout-written product line, not a later-line or substring match', () => {
     expect(isFloorPlanOrder(null)).toBe(false);
     expect(isFloorPlanOrder('Well-Installed Quote Review (Standard)')).toBe(false);
     expect(isFloorPlanOrder('Listing Floor Report (photo)')).toBe(false);
+    expect(isFloorPlanOrder('Shop order\nPersonal Floor Plan\nFP_DESIGN:abc')).toBe(false);
+    expect(isFloorPlanOrder('Some note mentioning Personal Floor Plan')).toBe(false);
     expect(extractDesignCode('Well-Installed Quote Review (Standard)')).toBeNull();
   });
 });

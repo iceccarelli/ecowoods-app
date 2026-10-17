@@ -27,7 +27,9 @@ export function extractListingReportSku(notes: string | null): 'photo' | 'onsite
 }
 
 export function isListingFloorReportOrder(notes: string | null): boolean {
-  return !!notes && notes.includes('Listing Floor Report');
+  if (!notes) return false;
+  const firstLine = notes.split('\n', 1)[0]!.trim();
+  return firstLine === 'Listing Floor Report (photo)' || firstLine === 'Listing Floor Report (onsite)';
 }
 
 /**

@@ -90,6 +90,8 @@ describe('ensureFloorPlanReport', () => {
     state.order!.status = 'PAID';
     state.order!.notes = 'Personal Floor Plan\nFP_DESIGN:garbage';
     expect(await ensureFloorPlanReport(ID)).toEqual({ ok: false, reason: 'bad_design' });
+    state.order!.notes = 'Shop order\nPersonal Floor Plan\nFP_DESIGN:' + code;
+    expect(await ensureFloorPlanReport(ID)).toEqual({ ok: false, reason: 'not_found' });
     expect(state.stored).toBe(0);
   });
 });
