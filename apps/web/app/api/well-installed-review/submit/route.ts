@@ -15,6 +15,7 @@
  * never written to disk or blob storage.
  */
 
+import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
@@ -24,7 +25,7 @@ import { safeFilename, sniffDocumentFile, type SniffedDocument } from '@/lib/ima
 import { checkSubmissionEligibility } from '@/lib/well-installed-review';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 import { recordQuoteReviewEvent } from '@/lib/quote-intelligence/events';
-import { extractTierId } from '@/lib/quote-intelligence/notes';
+import { extractTierId, isIntakeClaimLive, stripIntakeClaim, withIntakeClaim } from '@/lib/quote-intelligence/notes';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -46,6 +47,8 @@ function reasonMessage(reason: string): string {
       return 'We could not find that order.';
     case 'unpaid':
       return 'This order has not been paid yet. If you just paid, wait a few seconds and refresh — Stripe can take a moment to confirm.';
+    case 'in_progress':
+      return 'We are already processing a submission for this order. If it does not complete in a couple of minutes, try again.';
     case 'already_submitted':
       return 'A quote has already been received for this order.';
     case 'email_mismatch':
@@ -132,6 +135,28 @@ export async function POST(request: Request) {
     );
   }
 
+  /* Claim the order before anything leaves the building. The compare-and-swap
+     on the exact notes text means that of any number of simultaneous requests
+     exactly one wins; the rest are told it is in progress. The claim is a
+     lease, so a request that dies mid-send frees the order when it expires. */
+  const now = Date.now();
+  if (isIntakeClaimLive(order!.notes, now)) {
+    return NextResponse.json({ success: false, message: reasonMessage('in_progress') }, { status: 409, headers: { 'Retry-After': '120' } });
+  }
+  const token = randomUUID();
+  const claimedNotes = withIntakeClaim(order!.notes, token, now);
+  const claim = await db.order.updateMany({
+    where: { id: orderId, status: 'PAID', notes: order!.notes },
+    data: { notes: claimedNotes },
+  });
+  if (claim.count !== 1) {
+    return NextResponse.json({ success: false, message: reasonMessage('in_progress') }, { status: 409, headers: { 'Retry-After': '120' } });
+  }
+  const release = () =>
+    db.order
+      .updateMany({ where: { id: orderId, status: 'PAID', notes: claimedNotes }, data: { notes: stripIntakeClaim(claimedNotes) } })
+      .catch(() => undefined); // lease expiry covers a failed release
+
   try {
     const attachments: EmailAttachment[] = [];
     for (const f of files.slice(0, MAX_FILES)) {
@@ -139,6 +164,7 @@ export async function POST(request: Request) {
     }
     const rows = [
       ['Order', order!.id],
+      ['Submission', token],
       ['Tier', order!.notes ?? '—'],
       ['Paid', `$${Number(order!.total).toFixed(2)} CAD`],
       ['Email', email],
@@ -154,7 +180,7 @@ export async function POST(request: Request) {
         `<h2 style="margin:0 0 8px;">Paid quote review — reply per the tier's turnaround</h2>` +
         `<p style="margin:0 0 16px;">${attachments.length} document(s) attached. Reply with what is wrong, what is missing, and what is fine.</p>` +
         `<table style="border-collapse:collapse;">${rows}</table>`,
-      text: `Paid quote review, order ${order!.id}. ${attachments.length} document(s). Note: ${message ?? 'none'}`,
+      text: `Paid quote review, order ${order!.id}, submission ${token}. ${attachments.length} document(s). Note: ${message ?? 'none'}`,
       attachments,
     });
   } catch (err) {
@@ -165,13 +191,34 @@ export async function POST(request: Request) {
         error: err instanceof Error ? err.message : 'unknown',
       }),
     );
+    await release();
     return NextResponse.json(
       { success: false, message: 'Something went wrong sending that. Please call and we will pick it up directly.' },
       { status: 500 },
     );
   }
 
-  await db.order.update({ where: { id: orderId }, data: { status: 'FULFILLED' } });
+  /* The email is out. Email cannot be made exactly-once, so the order is
+     marked FULFILLED with a short retry; if that write still fails the
+     customer is told the truth (received) rather than invited to resend, and
+     the "Submission" id in the email lets the desk spot a duplicate if the
+     lease later expires and they do resubmit. */
+  let marked = false;
+  for (let attempt = 0; attempt < 3 && !marked; attempt++) {
+    try {
+      const done = await db.order.updateMany({
+        where: { id: orderId, status: 'PAID', notes: claimedNotes },
+        data: { status: 'FULFILLED', notes: stripIntakeClaim(claimedNotes) },
+      });
+      marked = done.count === 1;
+      if (!marked) break; // someone else changed the row; nothing more to write
+    } catch {
+      /* retry */
+    }
+  }
+  if (!marked) {
+    console.error(JSON.stringify({ event: 'well_installed_review.fulfil_write_failed', orderId, submission: token }));
+  }
 
   recordQuoteReviewEvent('well_installed_review.documents_received', {
     orderId,

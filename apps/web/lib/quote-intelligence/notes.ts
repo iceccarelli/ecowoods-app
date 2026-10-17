@@ -47,3 +47,38 @@ export function isWellInstalledReviewOrder(notes: string | null): boolean {
   const firstLine = notes.split('\n', 1)[0]!.trim();
   return REVIEW_TIERS.some((t) => firstLine === `Well-Installed Quote Review (${t.name})`);
 }
+
+/* ── Intake claim ─────────────────────────────────────────────────────────
+   The submit route must not let two requests send the same paid order's
+   documents at once. No schema field exists for "an intake is in flight", so
+   it is a lease line in Order.notes, written with a compare-and-swap on the
+   notes text (see claimIntake). The lease expires, so a request that dies
+   mid-send cannot lock the customer out. */
+
+const CLAIM_MARKER = 'QI_INTAKE_CLAIM:';
+const CLAIM_RE = /(?:^|\n)QI_INTAKE_CLAIM:([0-9a-f-]{36}):(\d+)(?=\n|$)/;
+
+/** Longer than the email send can take, shorter than a customer would wait to retry. */
+export const INTAKE_LEASE_MS = 2 * 60 * 1000;
+
+export type IntakeClaim = { token: string; at: number };
+
+export function readIntakeClaim(notes: string | null): IntakeClaim | null {
+  const m = notes?.match(CLAIM_RE);
+  return m ? { token: m[1]!, at: Number(m[2]) } : null;
+}
+
+export function isIntakeClaimLive(notes: string | null, now: number): boolean {
+  const claim = readIntakeClaim(notes);
+  return claim !== null && now - claim.at < INTAKE_LEASE_MS;
+}
+
+export function stripIntakeClaim(notes: string | null): string | null {
+  if (!notes) return notes;
+  return notes.replace(CLAIM_RE, '').trim();
+}
+
+/** Replaces any (expired) claim line; the tier line and other markers are untouched. */
+export function withIntakeClaim(notes: string | null, token: string, now: number): string {
+  return `${stripIntakeClaim(notes) ?? ''}\n${CLAIM_MARKER}${token}:${now}`.trim();
+}

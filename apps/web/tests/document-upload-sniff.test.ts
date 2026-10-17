@@ -29,6 +29,11 @@ vi.mock('@/lib/db', () => ({
     order: {
       findUnique: async () => (s.order ? { ...s.order } : null),
       update: async (a: unknown) => void s.orderUpdates.push(a),
+      // The intake claim and release are not "consuming" the order; only the FULFILLED write is.
+      updateMany: async (a: { data: { status?: string } }) => {
+        if (a.data.status === 'FULFILLED') s.orderUpdates.push(a);
+        return { count: 1 };
+      },
     },
   },
 }));
