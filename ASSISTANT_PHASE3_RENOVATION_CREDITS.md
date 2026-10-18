@@ -129,8 +129,8 @@ client-side in this codebase, not as a Postgres default).
 **STRIPE PAYMENT NOT NETWORK-VERIFIED — CREDENTIALS/INFRASTRUCTURE
 UNAVAILABLE.**
 
-This environment has no `STRIPE_SECRET_KEY`/`STRIPE_PUBLISHABLE_KEY` test
-credentials configured (only the `.env.example` template), and outbound
+This environment was not configured with a test `STRIPE_SECRET_KEY` or
+`STRIPE_WEBHOOK_SECRET` (only the `.env.example` template), and outbound
 network access to Stripe's API was not attempted for a real test-mode
 Checkout Session or payment. No claim of a completed Stripe test-mode
 purchase is made.
