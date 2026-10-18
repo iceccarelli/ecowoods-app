@@ -12,17 +12,17 @@
  *
  * 2. GET YOUR API KEYS
  *    Stripe Dashboard → Developers → API Keys
- *    Test keys:  STRIPE_SECRET_KEY=sk_test_...  STRIPE_PUBLISHABLE_KEY=pk_test_...
- *    Live keys:  STRIPE_SECRET_KEY=sk_live_...  STRIPE_PUBLISHABLE_KEY=pk_live_...
+ *    Web app: STRIPE_SECRET_KEY=sk_test_... for test mode, or sk_live_...
+ *    for production. This app redirects to Stripe-hosted Checkout and does
+ *    not use a browser publishable key in its web checkout routes.
  *
- *    CRITICAL: Never commit live keys. Store in Vercel Environment Variables.
+ *    CRITICAL: Never commit secret keys. Store them in Vercel Environment Variables.
  *
  * 3. SET UP WEBHOOK
  *    Stripe Dashboard → Developers → Webhooks → Add Endpoint
  *    Endpoint URL: https://yourdomain.ca/api/webhooks/stripe
- *    Events to listen for:
+ *    Events this handler consumes:
  *      · checkout.session.completed
- *      · payment_intent.succeeded
  *      · payment_intent.payment_failed
  *    Copy the Webhook Signing Secret → STRIPE_WEBHOOK_SECRET in .env
  *
