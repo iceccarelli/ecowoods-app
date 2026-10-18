@@ -129,8 +129,8 @@ client-side in this codebase, not as a Postgres default).
 **STRIPE PAYMENT NOT NETWORK-VERIFIED — CREDENTIALS/INFRASTRUCTURE
 UNAVAILABLE.**
 
-This environment has no `STRIPE_SECRET_KEY`/`STRIPE_PUBLISHABLE_KEY` test
-credentials configured (only the `.env.example` template), and outbound
+This environment was not configured with a test `STRIPE_SECRET_KEY` or
+`STRIPE_WEBHOOK_SECRET` (only the `.env.example` template), and outbound
 network access to Stripe's API was not attempted for a real test-mode
 Checkout Session or payment. No claim of a completed Stripe test-mode
 purchase is made.
@@ -144,8 +144,8 @@ result path, with only the Checkout Session **creation** call
 
 **Manual verification procedure for the owner** (requires real Stripe test
 keys and, for the fastest loop, the Stripe CLI):
-1. Set `STRIPE_SECRET_KEY=sk_test_...`, `STRIPE_PUBLISHABLE_KEY=pk_test_...`
-   in `apps/web/.env`.
+1. Set `STRIPE_SECRET_KEY=sk_test_...` in `apps/web/.env`; this web flow uses
+   Stripe-hosted Checkout, so it does not require a publishable key.
 2. `stripe listen --forward-to localhost:3000/api/webhooks/stripe` — copy the
    printed `whsec_...` into `STRIPE_WEBHOOK_SECRET`.
 3. Sign in, open `/assistant`, build enough context (e.g. the Rexdale

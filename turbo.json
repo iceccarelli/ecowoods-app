@@ -24,7 +24,6 @@
         "AUTH_GOOGLE_ID",
         "AUTH_GOOGLE_SECRET",
         "STRIPE_SECRET_KEY",
-        "STRIPE_PUBLISHABLE_KEY",
         "RESEND_API_KEY",
         "RESEND_FROM_EMAIL",
         "ADMIN_EMAIL",
