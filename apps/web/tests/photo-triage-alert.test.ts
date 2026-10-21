@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { create, alert, email } = vi.hoisted(() => ({
+const { create, alert, email, funnel } = vi.hoisted(() => ({
+  funnel: vi.fn(async (_a: unknown) => undefined),
   create: vi.fn(async (): Promise<{ id: string }> => ({ id: 'q1' })),
   alert: vi.fn(async (_a: unknown) => undefined),
   email: vi.fn(async () => undefined),
 }));
 vi.mock('@/lib/db', () => ({ db: { quoteRequest: { create } } }));
 vi.mock('@/lib/email', () => ({ sendAdminPhotoTriageEmail: email }));
+vi.mock('@/lib/funnel-ledger', () => ({ recordFunnelEvent: funnel, sanitiseSource: (v?: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null) }));
 vi.mock('@/lib/lead-alert', () => ({ sendLeadAlert: alert }));
 vi.mock('@/lib/floor-graph', () => ({ recordAssessment: vi.fn(async () => ({ ok: false })), storeAssessmentPhotos: vi.fn() }));
 vi.mock('@/lib/floor-graph/consent', () => ({ grantConsent: vi.fn(), readCheckbox: vi.fn(() => false) }));
@@ -43,6 +45,14 @@ describe('POST /api/photo-triage — desk alert', () => {
     const res = await post();
     expect(res.status).toBe(201);
     expect(alert.mock.calls[0]?.[0]).toMatchObject({ kind: 'photos', phone: '(416) 555-0142' });
+  });
+  it('records a LEAD_CAPTURED funnel event for a saved triage, and none when it was not saved', async () => {
+    await post();
+    expect(funnel.mock.calls[0]?.[0]).toMatchObject({ stage: 'LEAD_CAPTURED', quoteId: 'q1', source: 'photo-triage' });
+    funnel.mockClear();
+    create.mockRejectedValue(new Error('db down'));
+    await post();
+    expect(funnel).not.toHaveBeenCalled();
   });
   it('says NOT SAVED when the database write fails, and still emails the photos', async () => {
     create.mockRejectedValue(new Error('db down'));

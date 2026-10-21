@@ -29,6 +29,22 @@ import { Resend } from 'resend';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, LIVE_REVIEW_DESTINATIONS } from '@ecowoods/shared/constants';
 import { detailRowsHtml, escapeHtml, nl2br } from './html';
 
+/**
+ * Origin for every link placed in an email. NEXT_PUBLIC_SITE_URL is the site's
+ * own canonical origin (the same value SITE_URL in lib/seo-data resolves to);
+ * NEXTAUTH_URL is only a fallback, since it can be a preview or localhost URL
+ * that must never end up in a customer's inbox.
+ */
+export function emailSiteBase(): string {
+  return (process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXTAUTH_URL ?? 'https://ecowoods.ca').replace(/\/+$/, '');
+}
+
+/** One line, no control characters: a typed name must not be able to add headers or break the subject. */
+export function sanitizeSubject(subject: string): string {
+  // eslint-disable-next-line no-control-regex
+  return subject.replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, ' ').replace(/\s{2,}/g, ' ').trim().slice(0, 200);
+}
+
 // ── Transport selection ────────────────────────────────────────────────────────
 
 function getTransport(): 'resend' | 'smtp' | 'dev' {
@@ -83,6 +99,7 @@ export async function sendEmail({
    */
   idempotencyKey?: string;
 }) {
+  subject = sanitizeSubject(subject);
   // ── Dev mode — log to console, no real email ────────────────────────────
   if (transport === 'dev') {
     /* In production an unconfigured mailer must be LOUD. Logging "would send"
@@ -235,7 +252,7 @@ export async function sendWelcomeEmail({
           </ul>
           ${linkedMsg}
           <div style="text-align:center;margin:32px 0;">
-            <a href="${process.env.NEXTAUTH_URL ?? 'https://ecowoods.ca'}/mypage"
+            <a href="${emailSiteBase()}/mypage"
                style="background:#c87e4f;color:#fdfbf6;padding:14px 28px;text-decoration:none;border-radius:6px;font-weight:600;display:inline-block;">
               View My Account
             </a>
@@ -252,7 +269,7 @@ export async function sendWelcomeEmail({
     text: `Welcome to Ecowoods, ${name}!
 
 Your account is ready.
-View your account: ${process.env.NEXTAUTH_URL ?? 'https://ecowoods.ca'}/mypage`,
+View your account: ${emailSiteBase()}/mypage`,
   });
 }
 
@@ -281,7 +298,7 @@ export async function sendInvoiceEmail({
     ? `Due: ${new Intl.DateTimeFormat('en-CA', { dateStyle: 'long' }).format(dueDate)}`
     : '';
 
-  const baseUrl = (process.env.NEXTAUTH_URL ?? 'https://ecowoods.ca').replace(/\/$/, '');
+  const baseUrl = emailSiteBase();
   const payUrl = `${baseUrl}/mypage/invoices/${invoiceId}/pay`;
   const viewUrl = `${baseUrl}/docs/invoice/${invoiceId}`;
 
@@ -347,26 +364,34 @@ export async function sendAdminNewQuoteEmail(data: {
   species?: string[];
   squareFeet?: number;
   service?: string;
+  timeline?: string;
+  source?: string;
   notes?: string;
 }) {
-  const adminUrl = `${process.env.NEXTAUTH_URL ?? 'https://ecowoods.ca'}/admin/quotes/${data.quoteId}`;
+  const adminUrl = `${emailSiteBase()}/admin/quotes/${data.quoteId}`;
+  // "Toronto, ON", "Toronto" or "—" — never "Unknown, " or a dangling comma.
+  const location = [data.city, data.province].filter(Boolean).join(', ') || '—';
+  const sqft = data.squareFeet ? `${data.squareFeet.toLocaleString('en-CA')} sq ft` : '—';
+  const rows: Array<[string, string]> = [
+    ['Name', data.name],
+    ['Email', data.email],
+    ['Phone', data.phone ?? '—'],
+    ['Location', location],
+    ['Service', data.service ?? '—'],
+    ['Species', data.species?.join(', ') ?? '—'],
+    ['Square Footage', sqft],
+    ['Timeline', data.timeline ?? '—'],
+    ['Source', data.source ?? '—'],
+  ];
 
   await sendEmail({
     to: ADMIN_EMAIL,
-    subject: `🌲 New Quote Request — ${data.name} (${data.city ?? 'Unknown'}, ${data.province ?? ''})`,
+    subject: `New Quote Request — ${data.name} (${location})`,
     html: `
       <div style="font-family:sans-serif;max-width:600px;color:#1a0f08;">
         <h2>New Quote Request</h2>
         <table style="width:100%;border-collapse:collapse;">
-          ${[
-            ['Name', data.name],
-            ['Email', data.email],
-            ['Phone', data.phone ?? '—'],
-            ['Location', `${data.city ?? '—'}, ${data.province ?? ''}`],
-            ['Service', data.service ?? '—'],
-            ['Species', data.species?.join(', ') ?? '—'],
-            ['Square Footage', data.squareFeet ? `${data.squareFeet.toLocaleString()} sq ft` : '—'],
-          ].map(([label, value]) => `
+          ${rows.map(([label, value]) => `
             <tr>
               <td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;width:40%;color:#6b5d52;">${escapeHtml(label)}</td>
               <td style="padding:8px;border-bottom:1px solid #e8d4b8;">${escapeHtml(value)}</td>
@@ -379,7 +404,9 @@ export async function sendAdminNewQuoteEmail(data: {
         </a>
       </div>
     `,
-    text: `New quote from ${data.name} (${data.email}) — ${adminUrl}`,
+    // The desk reads the plain part on a phone lock screen and in text-only
+    // clients: it carries the same facts as the HTML, not just a link.
+    text: `New quote request\n\n${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}${data.notes ? `\n\nNotes:\n${data.notes}` : ''}\n\nReview: ${adminUrl}`,
   });
 }
 
@@ -391,7 +418,7 @@ export async function sendAdminNewInquiryEmail(data: {
   subject: string;
   message: string;
 }) {
-  const adminUrl = `${process.env.NEXTAUTH_URL ?? 'https://ecowoods.ca'}/admin/inquiries`;
+  const adminUrl = `${emailSiteBase()}/admin/inquiries`;
 
   await sendEmail({
     to: ADMIN_EMAIL,
@@ -425,7 +452,7 @@ export async function sendInquiryReplyEmail(data: {
   replyContent: string;
   inquiryId: string;
 }) {
-  const portalUrl = `${process.env.NEXTAUTH_URL ?? 'https://ecowoods.ca'}/mypage/inquiries`;
+  const portalUrl = `${emailSiteBase()}/mypage/inquiries`;
 
   await sendEmail({
     to: data.to,
@@ -595,7 +622,7 @@ export async function sendAdminNewPilotLeadEmail(data: {
   message?: string;
   program: string;
 }) {
-  const adminUrl = `${process.env.NEXTAUTH_URL ?? 'https://ecowoods.ca'}/admin/pilot-leads/${data.pilotLeadId}`;
+  const adminUrl = `${emailSiteBase()}/admin/pilot-leads/${data.pilotLeadId}`;
   const roleLabel: Record<string, string> = {
     'contractor': 'Contractor',
     'flooring-specialist': 'Flooring Specialist',
@@ -648,7 +675,7 @@ export async function sendAdminNewPilotLeadEmail(data: {
  */
 export function reviewRequestEmail({ name, projectTitle }: { name: string; projectTitle: string }) {
   const firstName = name.trim().split(/\s+/)[0] || 'there';
-  const site = (process.env.NEXTAUTH_URL ?? 'https://ecowoods.ca').replace(/\/$/, '');
+  const site = emailSiteBase();
   const destinations = LIVE_REVIEW_DESTINATIONS;
 
   const html = `

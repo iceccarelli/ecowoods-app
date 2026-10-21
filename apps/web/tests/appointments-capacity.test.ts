@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { computeAvailability, SLOTS_PER_WINDOW } from '@/lib/booking/availability';
 
 const state = vi.hoisted(() => ({
-  rows: [] as Array<{ startsAt: Date; status: string }>,
+  rows: [] as Array<{ id: string; startsAt: Date; status: string; customerEmail: string | null }>,
   quotes: 0,
   isolation: [] as Array<string | undefined>,
   conflictsToThrow: 0,
@@ -23,10 +23,11 @@ vi.mock('@/lib/background', () => ({ runAfterResponse: (p: Promise<unknown>) => 
 vi.mock('@/lib/db', () => {
   const tx = {
     appointment: {
-      findMany: async () => state.rows.filter((r) => r.status === 'SCHEDULED').map((r) => ({ startsAt: r.startsAt })),
-      create: async ({ data }: { data: { startsAt: Date } }) => {
-        state.rows.push({ startsAt: data.startsAt, status: 'SCHEDULED' });
-        return { id: `appt-${state.rows.length}`, startsAt: data.startsAt };
+      findMany: async () => state.rows.filter((r) => r.status === 'SCHEDULED').map((r) => ({ id: r.id, startsAt: r.startsAt, customerEmail: r.customerEmail })),
+      create: async ({ data }: { data: { startsAt: Date; customerEmail?: string | null } }) => {
+        const id = `appt-${state.rows.length + 1}`;
+        state.rows.push({ id, startsAt: data.startsAt, status: 'SCHEDULED', customerEmail: data.customerEmail ?? null });
+        return { id, startsAt: data.startsAt };
       },
     },
     quoteRequest: { create: async () => ({ id: `quote-${++state.quotes}` }) },
@@ -59,7 +60,7 @@ const book = (startsAt = slot, extra: Record<string, unknown> = {}) =>
     new Request('http://localhost/api/appointments', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-forwarded-for': `198.51.100.${++ip}` },
-      body: JSON.stringify({ startsAt, name: 'Jane Homeowner', email: 'jane@example.com', phone: '416-555-0100', postal: 'M5V 2T6', service: 'new-install', ...extra }),
+      body: JSON.stringify({ startsAt, name: 'Jane Homeowner', email: `jane${ip}@example.com`, phone: '416-555-0100', postal: 'M5V 2T6', service: 'new-install', ...extra }),
     }),
   );
 
@@ -107,6 +108,18 @@ describe('POST /api/appointments capacity', () => {
     state.conflictsToThrow = 5;
     expect((await book()).status).toBe(409);
     expect(state.rows).toHaveLength(1);
+  });
+
+  it('a double-submit by the same person for the same slot is one booking, not two', async () => {
+    const first = await book(slot, { email: 'Jane@Example.com' });
+    const again = await book(slot, { email: 'JANE@example.com' });
+    expect(first.status).toBe(201);
+    expect(again.status).toBe(200);
+    expect((await again.json()).id).toBe((await first.json()).id);
+    expect(state.rows).toHaveLength(1);
+    expect(state.quotes).toBe(1);
+    // the window still has its other seat for a different person
+    expect((await book(slot)).status).toBe(201);
   });
 
   it('a different slot is unaffected by a full one', async () => {

@@ -341,6 +341,8 @@ export async function POST(request: Request) {
     phone: lead.phone ? String(lead.phone) : undefined,
     service: lead.service ? String(lead.service) : undefined,
     squareFeet: lead.sqft ? Math.round(Number(lead.sqft)) : undefined,
+    timeline: lead.timeline ? String(lead.timeline) : undefined,
+    source: lead.source ? String(lead.source) : undefined,
     city: lead.city ? String(lead.city) : lead.postal ? String(lead.postal) : undefined,
     notes: (persisted ? '' : `NOT CONFIRMED SAVED (ref ${leadId}) — check /admin/quotes for this email/phone before entering it by hand.\n\n`) + (leadNotes(lead) ?? ''),
   }).catch((err) =>

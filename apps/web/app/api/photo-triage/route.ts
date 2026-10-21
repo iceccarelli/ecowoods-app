@@ -11,6 +11,7 @@ import { recordAssessment, storeAssessmentPhotos, type PhotoInput } from '@/lib/
 import { grantConsent, readCheckbox } from '@/lib/floor-graph/consent';
 import { storePhoto } from '@/lib/floor-graph/photo-storage';
 import { markRecoveryConverted } from '@/lib/quote-recovery';
+import { recordFunnelEvent, sanitiseSource } from '@/lib/funnel-ledger';
 
 /**
  * POST /api/photo-triage — track B of the two-track quote form.
@@ -203,6 +204,17 @@ export async function POST(request: Request) {
         hint: 'Lead is safe in photo_triage.captured above.',
       }),
     );
+  }
+
+  /* MEAS-02 — a saved photo triage is a captured lead exactly as a measure
+     request is; without this row the funnel counted only one of the two form
+     tracks. Not awaited, and only when the lead is actually in the database. */
+  if (quoteId) {
+    runAfterResponse(recordFunnelEvent({
+      stage: 'LEAD_CAPTURED',
+      source: sanitiseSource(lead.source) ?? 'photo-triage',
+      quoteId,
+    }));
   }
 
   // They finished: cancel any pending reminder (best-effort; the cron also checks QuoteRequest).

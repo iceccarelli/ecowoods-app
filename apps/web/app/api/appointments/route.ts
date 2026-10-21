@@ -95,7 +95,10 @@ export async function POST(request: Request) {
        count-then-insert transactions (P2034); it is retried, and on the retry
        it sees the other booking and answers "just taken". */
     const SLOT_TAKEN = Symbol('slot taken');
-    let booked: { quote: { id: string }; appt: { id: string; startsAt: Date } } | typeof SLOT_TAKEN | null = null;
+    const ALREADY_BOOKED = Symbol('already booked');
+    type Booked = { quote: { id: string }; appt: { id: string; startsAt: Date } };
+    let booked: Booked | { [ALREADY_BOOKED]: { id: string; startsAt: Date } } | typeof SLOT_TAKEN | null = null;
+    const emailKey = data.email.trim().toLowerCase();
     for (let attempt = 0; attempt < 3 && booked === null; attempt++) {
       try {
         booked = await db.$transaction(
@@ -105,8 +108,16 @@ export async function POST(request: Request) {
                 status: 'SCHEDULED',
                 startsAt: { gte: new Date(`${dayKey}T00:00:00Z`), lte: new Date(`${dayKey}T23:59:59Z`) },
               },
-              select: { startsAt: true },
+              select: { id: true, startsAt: true, customerEmail: true },
             });
+            /* A double-click or a retried request is the same booking, not a
+               second one: the same address asking for the same instant gets the
+               appointment it already holds (and no second estimator slot, lead
+               row or email) instead of consuming the window's other seat. */
+            const already = sameDay.find(
+              (r) => r.startsAt.getTime() === startsAt.getTime() && (r.customerEmail ?? '').trim().toLowerCase() === emailKey,
+            );
+            if (already) return { [ALREADY_BOOKED]: { id: already.id, startsAt: already.startsAt } };
             const counts = new Map<string, number>();
             for (const r of sameDay) {
               const iso = r.startsAt.toISOString();
@@ -159,7 +170,15 @@ export async function POST(request: Request) {
         { status: 409 },
       );
     }
-    const { quote, appt } = booked;
+    if (typeof booked === 'object' && ALREADY_BOOKED in booked) {
+      const held = booked[ALREADY_BOOKED];
+      console.log(JSON.stringify({ event: 'appointment.duplicate', appointmentId: held.id }));
+      return NextResponse.json(
+        { id: held.id, startsAt: held.startsAt.toISOString(), durationMinutes: SLOT_DURATION_MINUTES, service: data.service },
+        { status: 200 },
+      );
+    }
+    const { quote, appt } = booked as Booked;
 
     /* MEAS-02 — the brief's `appointment` event. Outside the transaction on
        purpose: a measurement row must never be able to roll back a booking

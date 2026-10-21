@@ -21,6 +21,7 @@ describe.skipIf(!enabled)("POST /api/appointments capacity against real PostgreS
   let db: (typeof import("@/lib/db"))["db"] | undefined;
   let route: typeof import("@/app/api/appointments/route") | undefined;
   let marker: string | null = null;
+  const usedMarkers: string[] = [];
   let ip = 0;
 
   beforeAll(async () => {
@@ -42,8 +43,8 @@ describe.skipIf(!enabled)("POST /api/appointments capacity against real PostgreS
   }
 
   async function deleteTaggedRows() {
-    if (!db || !marker) return;
-    const quotes = await db.quoteRequest.findMany({ where: { notes: marker }, select: { id: true } });
+    if (!db || usedMarkers.length === 0) return;
+    const quotes = await db.quoteRequest.findMany({ where: { notes: { in: usedMarkers } }, select: { id: true } });
     const ids = quotes.map((quote) => quote.id);
     if (ids.length) {
       await db.appointment.deleteMany({ where: { quoteRequestId: { in: ids } } });
@@ -51,7 +52,7 @@ describe.skipIf(!enabled)("POST /api/appointments capacity against real PostgreS
     }
   }
 
-  async function book(startsAt: string): Promise<Response> {
+  async function book(startsAt: string, email?: string): Promise<Response> {
     if (!route || !marker) throw new Error("Test route or marker not initialized");
     ip += 1;
     return route.POST(new Request("http://localhost/api/appointments", {
@@ -60,7 +61,9 @@ describe.skipIf(!enabled)("POST /api/appointments capacity against real PostgreS
       body: JSON.stringify({
         startsAt,
         name: "Postgres Integration Test",
-        email: "postgres-integration@example.test",
+        // Distinct customers by default: the same email asking for the same instant is a
+        // double-submit and is answered with the held appointment, not a second seat.
+        email: email ?? "postgres-integration+" + ip + "@example.test",
         phone: "416-555-0100",
         postal: "M5V 2T6",
         service: "new-install",
@@ -80,6 +83,7 @@ describe.skipIf(!enabled)("POST /api/appointments capacity against real PostgreS
 
   it("does not overbook a slot under concurrent Serializable transactions", async () => {
     marker = "appointment-postgres-capacity-" + randomUUID();
+    usedMarkers.push(marker);
     const now = new Date();
     const slot = computeAvailability({ now, bookingCounts: new Map() }).days
       .flatMap((day) => day.slots)
@@ -107,5 +111,24 @@ describe.skipIf(!enabled)("POST /api/appointments capacity against real PostgreS
     expect(rows.quotes).toHaveLength(SLOTS_PER_WINDOW);
     expect((await book(slot!)).status).toBe(409);
     expect((await taggedRows()).appointments).toHaveLength(SLOTS_PER_WINDOW);
+  });
+  it("answers a double-submit from the same address with the held appointment, not a second seat", async () => {
+    marker = "appointment-postgres-dupe-" + randomUUID();
+    usedMarkers.push(marker);
+    const slot = computeAvailability({ now: new Date(), bookingCounts: new Map() }).days
+      .flatMap((day) => day.slots)
+      .filter((candidate) => candidate.available && new Date(candidate.start).getTime() > Date.now() + 36 * 60 * 60 * 1000)
+      .at(-1)?.start; // the capacity test above fills the first open slot; use a different one
+    expect(slot).toBeTruthy();
+
+    const first = await book(slot!, "postgres-dupe@example.test");
+    expect(first.status).toBe(201);
+    const second = await book(slot!, "postgres-dupe@example.test");
+    expect(second.status).toBe(200);
+    expect((await second.json()).id).toBe((await first.json()).id);
+
+    const rows = await taggedRows();
+    expect(rows.appointments).toHaveLength(1);
+    expect(rows.quotes).toHaveLength(1);
   });
 });
