@@ -714,3 +714,26 @@ export async function sendReviewRequestEmail({
   const { subject, html, text } = reviewRequestEmail({ name, projectTitle });
   await sendEmail({ to, subject, html, text });
 }
+
+/**
+ * Double opt-in for the quote-recovery reminder (CASL). Sent to an address a
+ * stranger may have typed, so it is deliberately plain: no name from the form,
+ * one link, and it says what happens if the link is ignored (nothing).
+ */
+export async function sendQuoteRecoveryConfirmEmail({ to, confirmUrl }: { to: string; confirmUrl: string }) {
+  await sendEmail({
+    to,
+    subject: 'Confirm your Ecowoods estimate reminder',
+    html:
+      `<div style="font-family:sans-serif;max-width:600px;color:#1a0f08;">` +
+      `<p>Someone entered this email address on the Ecowoods estimate form and asked for a single reminder if the form was left unfinished.</p>` +
+      `<p><a href="${escapeHtml(confirmUrl)}">Yes, send me that one reminder</a></p>` +
+      `<p>If that was not you, ignore this email: nothing will be sent and we will not email you again.</p>` +
+      `<p style="color:#6b5d52;font-size:13px;">${BUSINESS_NAP.legalName} · ${BUSINESS_ADDRESS_LINE}</p></div>`,
+    text:
+      `Someone entered this email address on the Ecowoods estimate form and asked for a single reminder if the form was left unfinished.\n\n` +
+      `To receive that one reminder, confirm here: ${confirmUrl}\n\n` +
+      `If that was not you, ignore this email: nothing will be sent and we will not email you again.\n\n` +
+      `${BUSINESS_NAP.legalName} · ${BUSINESS_ADDRESS_LINE}`,
+  });
+}

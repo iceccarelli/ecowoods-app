@@ -14,6 +14,7 @@ import { safeLeadSource } from '@/lib/lead-redirect';
 import { findRecentDuplicate } from '@/lib/lead-dedupe';
 import { runAfterResponse } from '@/lib/background';
 import { withinMs } from '@/lib/with-timeout';
+import { enforceRateLimit } from '@/lib/rate-limit-durable';
 
 /**
  * POST /api/leads — THE conversion surface.
@@ -317,7 +318,7 @@ export async function POST(request: Request) {
   if (lead.email && !duplicate) {
     db.quoteRecovery
       .updateMany({
-        where: { email: String(lead.email), sentAt: null, convertedAt: null },
+        where: { email: { equals: String(lead.email).trim().toLowerCase(), mode: 'insensitive' }, sentAt: null, convertedAt: null },
         data: { convertedAt: new Date() },
       })
       .catch((err: unknown) =>
@@ -345,14 +346,29 @@ export async function POST(request: Request) {
     console.error(JSON.stringify({ event: 'lead.email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
   ));
 
-  // 4. Customer acknowledgement — best-effort, never fatal.
-  if (!duplicate) runAfterResponse(sendQuoteReceivedEmail({
-    name: String(lead.name ?? ''),
-    email: String(lead.email ?? ''),
-    leadId: quoteId ?? leadId,
-  }).catch((err) =>
-    console.error(JSON.stringify({ event: 'lead.customer_email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
-  ));
+  // 4. Customer acknowledgement — best-effort, never fatal. It goes to whatever
+  //    address was typed, so it is limited durably per address and per IP; past
+  //    the limit the lead is still captured, only the courtesy email is skipped.
+  if (!duplicate) {
+    const ackEmail = String(lead.email ?? '').trim().toLowerCase();
+    runAfterResponse((async () => {
+      const [byEmail, byIp] = await Promise.all([
+        enforceRateLimit({ routeKey: 'lead-ack-email', identity: ackEmail, config: { windowMs: 60 * 60 * 1000, maxRequests: 2 } }),
+        enforceRateLimit({ routeKey: 'lead-ack-ip', identity: getClientIp(request), config: { windowMs: 60 * 60 * 1000, maxRequests: 5 } }),
+      ]);
+      if (!byEmail.allowed || !byIp.allowed) {
+        console.warn(JSON.stringify({ event: 'lead.ack_suppressed', leadId, byEmail: !byEmail.allowed, byIp: !byIp.allowed }));
+        return;
+      }
+      await sendQuoteReceivedEmail({
+        name: String(lead.name ?? ''),
+        email: String(lead.email ?? ''),
+        leadId: quoteId ?? leadId,
+      });
+    })().catch((err) =>
+      console.error(JSON.stringify({ event: 'lead.customer_email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
+    ));
+  }
 
   // 5. Optional CRM/webhook forward (set LEADS_WEBHOOK_URL to enable).
   //    The URL is validated at use (https, public host, no bare IP, no

@@ -10,6 +10,7 @@ import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } 
 import { recordAssessment, storeAssessmentPhotos, type PhotoInput } from '@/lib/floor-graph';
 import { grantConsent, readCheckbox } from '@/lib/floor-graph/consent';
 import { storePhoto } from '@/lib/floor-graph/photo-storage';
+import { markRecoveryConverted } from '@/lib/quote-recovery';
 
 /**
  * POST /api/photo-triage — track B of the two-track quote form.
@@ -203,6 +204,9 @@ export async function POST(request: Request) {
       }),
     );
   }
+
+  // They finished: cancel any pending reminder (best-effort; the cron also checks QuoteRequest).
+  runAfterResponse(markRecoveryConverted(lead.email));
 
   /* The desk is texted for a photo lead exactly as for a measure lead — the
      'photos' alert kind existed and was never sent. An unsaved one says so. */
