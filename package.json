@@ -72,6 +72,8 @@
     "verify:agentic": "node scripts/verify-agentic.mjs",
     "verify:strategy": "node scripts/verify-strategy.mjs",
     "verify:inputs": "node scripts/verify-market-inputs.mjs",
+    "verify:geodata": "node scripts/verify-geo-data.mjs",
+    "geo:ingest": "node scripts/geo-ingest.mjs",
     "verify:allocation": "node scripts/verify-allocation.mjs",
     "verify:geo:green": "node scripts/verify-geo-green.mjs",
     "test:web": "pnpm --filter @ecowoods/web test",
