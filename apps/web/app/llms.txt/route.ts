@@ -28,6 +28,7 @@ import { getCaseStudies } from '@/lib/content/case-study-loader';
 import { getServicePages, priceBand } from '@/lib/service-pages';
 import { entityAnswers } from '@/lib/entity-answers';
 import { PROJECTS } from '@/lib/projects';
+import { TRILOGIES } from '@/lib/trilogies';
 
 export const dynamic = 'force-static';
 
@@ -352,6 +353,18 @@ export async function GET() {
     lines.push(f.a);
     lines.push('');
   }
+
+  /* The photographed-job stories at /projects/{slug} built from TRILOGIES
+     (three frames each). They are indexable pages in the sitemap; only PROJECTS
+     were listed, so twenty pages were absent from the machine index. They live
+     in Optional, not the curated core, which has a link budget
+     (tests/drift.test.ts). Headline and lede are each page's own copy. */
+  lines.push('### Photographed job stories');
+  lines.push(`Three photographs of one job per page; no measurements are claimed beyond what the frames show. Index: ${SITE_URL}/projects`);
+  for (const t of TRILOGIES) {
+    lines.push(`- ${t.kicker}: ${SITE_URL}/projects/${t.slug}`);
+  }
+  lines.push('');
 
   lines.push('### Per-area routing');
   lines.push('"hardwood flooring {area}", "hardwood floor refinishing {area}", "floor sanding {area}" → the area page; Markdown at the same URL with .md appended.');

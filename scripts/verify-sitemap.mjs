@@ -119,6 +119,68 @@ for (const [needle, detail] of [
   if (!needle.test(src)) problems.push({ where: 'sitemap.ts', detail });
 }
 
+/* ── every indexable generateStaticParams route must be listed ─────────────── */
+/**
+ * The trilogy project pages were built by generateStaticParams for a while
+ * before sitemap.ts listed them (and llms.txt still did not): the page took
+ * `[...projectSlugs(), ...TRILOGIES]` and the sitemap only `projectSlugs()`.
+ * Nothing noticed, because no guard compared the two.
+ *
+ * For every app/<...>/[param]/page.tsx that exports generateStaticParams (and
+ * is not noindex), this requires sitemap.ts to (a) emit that URL prefix and
+ * (b) import each lib module whose export the params function reads. The
+ * exhaustive per-slug check is tests/static-params-sitemap-parity.test.ts.
+ */
+const APP = path.join(ROOT, 'apps/web/app');
+const stripComments = (t) =>
+  t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+const pages = [];
+(function walk(dir) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) walk(full);
+    else if (e.name === 'page.tsx' && /\[[^\]]+\]/.test(path.relative(APP, full))) pages.push(full);
+  }
+})(APP);
+const importsOf = (code) => {
+  const map = new Map(); // identifier -> module
+  for (const m of code.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+'([^']+)'/g)) {
+    for (const part of m[1].split(',')) {
+      const name = part.trim().split(/\s+as\s+/).pop();
+      if (name) map.set(name, m[2]);
+    }
+  }
+  return map;
+};
+const sitemapImports = importsOf(src);
+for (const file of pages) {
+  const code = stripComments(fs.readFileSync(file, 'utf8'));
+  const at = code.search(/generateStaticParams\s*(?:=|\()/);
+  if (at < 0) continue;
+  if (/robots:\s*\{[^}]*index:\s*false|noindex/.test(code)) continue;
+  const rel = path.relative(APP, file).replace(/\\/g, '/');
+  const prefix = '/' + rel.split('/').slice(0, -2).join('/');
+  if (!src.includes(`${prefix}/`)) {
+    problems.push({
+      where: rel,
+      detail: `exports generateStaticParams but sitemap.ts never emits a \`${prefix}/…\` URL. Every statically built, indexable page must be listed.`,
+    });
+    continue;
+  }
+  const body = code.slice(at, at + 400).split(/\n\}\n|\n\);?\n|;\n/)[0];
+  const pageImports = importsOf(code);
+  for (const [name, mod] of pageImports) {
+    if (new RegExp(`\\b${name}\\b`).test(body) && mod.startsWith('@/lib/')) {
+      if (![...sitemapImports.values()].includes(mod)) {
+        problems.push({
+          where: rel,
+          detail: `generateStaticParams reads \`${name}\` from ${mod}, which sitemap.ts does not import — pages built from it are likely missing from the sitemap.`,
+        });
+      }
+    }
+  }
+}
+
 const liveMatch = src.match(/const LIVE = new Set\(\[([\s\S]*?)\]\)/);
 const live = liveMatch
   ? [...liveMatch[1].matchAll(/'([^']+)'/g)].map((m) => m[1])
