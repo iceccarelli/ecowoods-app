@@ -54,13 +54,15 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     const filename = `estimate-${quote.id}-${Date.now()}.pdf`;
     const url = await storePdf(buffer, filename);
 
+    // Store the PDF; only a PENDING/QUOTED request moves to QUOTED, so regenerating the PDF
+    // of an ACCEPTED or closed quote never rewinds its status.
     await db.quoteRequest.update({
       where: { id },
-      data: {
-        quotePdfUrl: url,
-        quoteIssuedAt: new Date(),
-        status: 'QUOTED',
-      },
+      data: { quotePdfUrl: url, quoteIssuedAt: new Date() },
+    });
+    await db.quoteRequest.updateMany({
+      where: { id, status: 'PENDING' },
+      data: { status: 'QUOTED' },
     });
 
     return NextResponse.json({ url });

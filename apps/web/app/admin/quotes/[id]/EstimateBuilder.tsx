@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { estimateAmounts, roundCents } from '@/lib/money';
 import { saveEstimate, sendEstimateEmail, type EstimateLineItem } from '@/lib/actions/quotes';
 import { format } from 'date-fns';
 
@@ -48,9 +49,8 @@ export default function EstimateBuilder({
   const [sending, setSending] = useState(false);
   const [isEditing, setIsEditing] = useState(!existingAmount);
 
-  const subtotal = lines.reduce((s, l) => s + l.amount, 0);
-  const taxAmt = subtotal * taxRate / 100;
-  const total = subtotal + taxAmt;
+  const subtotal = roundCents(lines.reduce((s, l) => s + l.amount, 0));
+  const { tax: taxAmt, total } = estimateAmounts(subtotal, taxRate);
 
   const updateLine = (i: number, field: keyof EstimateLineItem, val: string | number) => {
     setLines(prev => {

@@ -28,6 +28,7 @@
 import { Resend } from 'resend';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, LIVE_REVIEW_DESTINATIONS } from '@ecowoods/shared/constants';
 import { detailRowsHtml, escapeHtml, nl2br } from './html';
+import { siteOrigin } from '../site-origin';
 
 /**
  * Origin for every link placed in an email. NEXT_PUBLIC_SITE_URL is the site's
@@ -35,9 +36,7 @@ import { detailRowsHtml, escapeHtml, nl2br } from './html';
  * NEXTAUTH_URL is only a fallback, since it can be a preview or localhost URL
  * that must never end up in a customer's inbox.
  */
-export function emailSiteBase(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXTAUTH_URL ?? 'https://ecowoods.ca').replace(/\/+$/, '');
-}
+export const emailSiteBase = siteOrigin;
 
 /** One line, no control characters: a typed name must not be able to add headers or break the subject. */
 export function sanitizeSubject(subject: string): string {

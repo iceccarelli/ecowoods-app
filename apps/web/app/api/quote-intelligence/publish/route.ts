@@ -14,6 +14,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { publishReport } from '@/lib/report-delivery';
+import { siteOrigin } from '@/lib/site-origin';
 import { compose } from '@/lib/quote-intelligence/compose';
 import { storeQuoteIntelligenceReport } from '@/lib/quote-intelligence/store';
 import { appendReportMarker, extractReportUrl, extractTierId, isWellInstalledReviewOrder } from '@/lib/quote-intelligence/notes';
@@ -59,7 +60,7 @@ export async function POST(req: Request) {
     composed = result;
   }
 
-  const origin = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+  const origin = siteOrigin();
   const reportLink = `${origin}/well-installed-review/report?order=${order.id}&email=${encodeURIComponent(order.user.email)}`;
 
   const outcome = await publishReport({

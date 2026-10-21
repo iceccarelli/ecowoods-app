@@ -13,6 +13,8 @@ import { recordPrediction } from '@/lib/floor-graph/prediction';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { recordFunnelEvent } from '@/lib/funnel-ledger';
 import { escapeHtml } from '@/lib/email/html';
+import { estimateAmounts, isValidAmount } from '@/lib/money';
+import { siteOrigin } from '@/lib/site-origin';
 
 // ─── Zod schema for the full quote form ─────────────────────────────────────
 const quoteFormSchema = z.object({
@@ -93,6 +95,13 @@ export async function saveEstimate(
   const session = await auth();
   if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
 
+  if (!isValidAmount(data.quotedAmount) || data.quotedAmount <= 0) throw new Error('The estimate amount must be greater than 0.');
+  if (!isValidAmount(data.quoteTaxRate, 100)) throw new Error('The tax rate must be between 0 and 100.');
+  if (!Array.isArray(data.quoteLineItems) || data.quoteLineItems.length === 0) throw new Error('Add at least one line item.');
+  if (data.validDays !== undefined && (!Number.isInteger(data.validDays) || data.validDays < 1 || data.validDays > 365)) {
+    throw new Error('Validity must be between 1 and 365 days.');
+  }
+
   const validUntil = new Date();
   validUntil.setDate(validUntil.getDate() + (data.validDays ?? 30));
 
@@ -100,8 +109,11 @@ export async function saveEstimate(
   const lineItemsJson = JSON.parse(JSON.stringify(data.quoteLineItems));
 
   try {
-    await db.quoteRequest.update({
-      where: { id: quoteId },
+    /* An ACCEPTED quote (or one already converted to a project) is a signed-off
+       price: rewriting it silently would change what the customer agreed to and
+       drop it back to PENDING. */
+    const written = await db.quoteRequest.updateMany({
+      where: { id: quoteId, status: { not: 'ACCEPTED' }, projectId: null },
       data: {
         quotedAmount:    data.quotedAmount,
         quoteTaxRate:    data.quoteTaxRate,
@@ -112,6 +124,7 @@ export async function saveEstimate(
         status:          'PENDING' as const,
       },
     });
+    if (written.count !== 1) throw new Error('This quote is accepted or already converted to a project and its estimate cannot be changed.');
   } catch (err: unknown) {
     console.error('[saveEstimate] DB update failed:', err);
     throw err;
@@ -159,18 +172,20 @@ export async function sendEstimateEmail(quoteId: string) {
     throw new Error('Please click "Generate PDF" again to create a shareable link before sending.');
   }
 
+  if (!quote.quotedAmount || Number(quote.quotedAmount) <= 0) throw new Error('Save the estimate before sending.');
+
   const { sendEmail } = await import('@/lib/email');
   const settings = await db.settings.findFirst();
 
-  // Build absolute URL (required for email links)
-  const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  // Absolute URL on the canonical site origin (never a preview/localhost URL in a customer's inbox)
+  const baseUrl = siteOrigin();
   const pdfUrl = quote.quotePdfUrl.startsWith('http')
     ? quote.quotePdfUrl
     : `${baseUrl}${quote.quotePdfUrl}`;
   const viewUrl = `${baseUrl}/docs/quote/${quoteId}`;
 
   const totalFormatted = new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' })
-    .format(Number(quote.quotedAmount ?? 0) * (1 + Number(quote.quoteTaxRate ?? 13) / 100));
+    .format(estimateAmounts(Number(quote.quotedAmount ?? 0), Number(quote.quoteTaxRate ?? 13)).total);
 
   await sendEmail({
     to: quote.email,
@@ -200,12 +215,12 @@ export async function sendEstimateEmail(quoteId: string) {
           </div>
           <p style="color:#6b5d52;font-size:13px;">
             To accept this estimate and proceed, simply reply to this email or call us at
-            <strong>${settings?.companyPhone ?? BUSINESS_NAP.phoneDisplay}</strong>.
+            <strong>${escapeHtml(settings?.companyPhone ?? BUSINESS_NAP.phoneDisplay)}</strong>.
             We will then prepare a formal contract for your review.
           </p>
         </div>
         <div style="background:#f5efe6;padding:14px 32px;text-align:center;font-size:12px;color:#6b5d52;">
-          ${settings?.companyName ?? 'Ecowoods Hardwood Flooring Inc.'} · ${settings?.companyAddress ?? ''}
+          ${escapeHtml(settings?.companyName ?? 'Ecowoods Hardwood Flooring Inc.')} · ${escapeHtml(settings?.companyAddress ?? '')}
         </div>
       </div>
     `,
@@ -220,10 +235,13 @@ Download PDF: ${pdfUrl}
 To proceed, reply to this email or call ${settings?.companyPhone ?? BUSINESS_NAP.phoneDisplay}.`,
   });
 
-  await db.quoteRequest.update({
-    where: { id: quoteId },
+  /* Only PENDING/QUOTED move to QUOTED. Re-sending an estimate to a customer who
+     already ACCEPTED (or an archived/REJECTED one) must not rewind that status. */
+  const issued = await db.quoteRequest.updateMany({
+    where: { id: quoteId, status: { in: ['PENDING', 'QUOTED'] } },
     data: { quoteIssuedAt: new Date(), status: 'QUOTED' },
   });
+  if (issued.count === 0) await db.quoteRequest.update({ where: { id: quoteId }, data: { quoteIssuedAt: new Date() } });
 
   /* MEAS-02 — the brief's `estimate` event: a price, in writing, in the
      customer's hands. The amount is the quoted total BEFORE tax, because that
@@ -244,10 +262,11 @@ To proceed, reply to this email or call ${settings?.companyPhone ?? BUSINESS_NAP
 export async function updateQuoteStatus(quoteId: string, status: string, adminNotes?: string) {
   const session = await auth();
   if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
+  if (!(['PENDING', 'QUOTED', 'ACCEPTED', 'REJECTED'] as const).includes(status as never)) throw new Error('Unknown quote status.');
 
   await db.quoteRequest.update({
     where: { id: quoteId },
-    data: { status: status as never, adminNotes },
+    data: { status: status as 'PENDING' | 'QUOTED' | 'ACCEPTED' | 'REJECTED', adminNotes },
   });
 
   revalidatePath('/admin/quotes');
@@ -277,34 +296,52 @@ export async function convertQuoteToProject(
     db.settings.findFirst(),
   ]);
 
-  const project = await db.project.create({
-    data: {
-      userId: projectData.userId,
-      title: projectData.title,
-      description: projectData.description,
-      address: quote.address,
-      city: quote.city,
-      province: quote.province,
-      species: quote.species as import('@prisma/client').Prisma.InputJsonValue | undefined ?? undefined,
-      squareFeet: quote.squareFeet,
-      /* MEAS-01 — carry the design forward. This single line is what makes
-         "of the last 100 deposits, how many began in Floor Studio" answerable
-         without walking Payment → Invoice → Project → QuoteRequest. Copied
-         once, here, at the moment a request becomes a job. */
-      designId: quote.designId,
-      contractValue: projectData.contractValue,
-      depositPct: projectData.depositPct ?? settings?.defaultDepositPct ?? 30,
-      midpointPct: projectData.midpointPct ?? settings?.defaultMidpointPct ?? 40,
-      finalPct: projectData.finalPct ?? settings?.defaultFinalPct ?? 30,
-      taxRate: projectData.taxRate ?? settings?.defaultTaxRate ?? 13,
-      startDate: projectData.startDate ? new Date(projectData.startDate) : null,
-    },
-  });
+  if (quote.projectId) {
+    throw new Error('This quote has already been converted to a project.');
+  }
+  if (!isValidAmount(projectData.contractValue) || projectData.contractValue <= 0) {
+    throw new Error('Contract value must be greater than 0.');
+  }
+  const optionalPcts = [projectData.depositPct, projectData.midpointPct, projectData.finalPct, projectData.taxRate];
+  if (optionalPcts.some((p) => p !== undefined && !isValidAmount(p, 100))) {
+    throw new Error('Percentages must be between 0 and 100.');
+  }
 
-  // Link quote to project and mark as converted
-  await db.quoteRequest.update({
-    where: { id: quoteId },
-    data: { projectId: project.id, status: 'ACCEPTED' },
+  /* One transaction, and the link is a conditional write: of two concurrent
+     conversions exactly one claims the quote and the other's project insert
+     rolls back, so a double click cannot leave two projects (and two sets of
+     invoices to bill) for one accepted quote. */
+  const project = await db.$transaction(async (tx) => {
+    const created = await tx.project.create({
+      data: {
+        userId: projectData.userId,
+        title: projectData.title,
+        description: projectData.description,
+        address: quote.address,
+        city: quote.city,
+        province: quote.province,
+        species: quote.species as import('@prisma/client').Prisma.InputJsonValue | undefined ?? undefined,
+        squareFeet: quote.squareFeet,
+        /* MEAS-01 — carry the design forward. This single line is what makes
+           "of the last 100 deposits, how many began in Floor Studio" answerable
+           without walking Payment → Invoice → Project → QuoteRequest. Copied
+           once, here, at the moment a request becomes a job. */
+        designId: quote.designId,
+        contractValue: projectData.contractValue,
+        depositPct: projectData.depositPct ?? settings?.defaultDepositPct ?? 30,
+        midpointPct: projectData.midpointPct ?? settings?.defaultMidpointPct ?? 40,
+        finalPct: projectData.finalPct ?? settings?.defaultFinalPct ?? 30,
+        taxRate: projectData.taxRate ?? settings?.defaultTaxRate ?? 13,
+        startDate: projectData.startDate ? new Date(projectData.startDate) : null,
+      },
+    });
+    // Link quote to project and mark as converted
+    const linked = await tx.quoteRequest.updateMany({
+      where: { id: quoteId, projectId: null },
+      data: { projectId: created.id, status: 'ACCEPTED' },
+    });
+    if (linked.count !== 1) throw new Error('This quote has already been converted to a project.');
+    return created;
   });
 
   /* MEAS-02 — the brief's `acceptance` event. */

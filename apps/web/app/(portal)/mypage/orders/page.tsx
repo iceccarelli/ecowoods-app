@@ -17,7 +17,12 @@ const statusBadge: Record<string, string> = {
   CANCELLED: 'portal-badge-cancelled',
 };
 
-export default async function MyOrdersPage() {
+export default async function MyOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ checkout?: string; order?: string }>;
+}) {
+  const { checkout, order: justPaidId } = await searchParams;
   const session = await auth();
   if (!session?.user) redirect('/login');
 
@@ -27,8 +32,24 @@ export default async function MyOrdersPage() {
     include: { items: true },
   });
 
+  /* Back from Stripe: the payment webhook may not have landed yet, so say so
+     rather than showing a bare PENDING row. Only the signed-in owner's order is read. */
+  const justPaid = checkout === 'success' && justPaidId ? orders.find((o) => o.id === justPaidId) : undefined;
+
   return (
     <div className="portal-page">
+      {justPaid && justPaid.status === 'PENDING' && (
+        <div className="portal-card" role="status" style={{ marginBottom: '1rem' }}>
+          Confirming your payment for order #{justPaid.id.slice(0, 8).toUpperCase()} — this usually takes a few
+          seconds. Refresh this page to see the update. If it still shows pending after a few minutes, call us and we
+          will check it directly.
+        </div>
+      )}
+      {justPaid && justPaid.status !== 'PENDING' && justPaid.status !== 'CANCELLED' && (
+        <div className="portal-card" role="status" style={{ marginBottom: '1rem' }}>
+          Payment received for order #{justPaid.id.slice(0, 8).toUpperCase()}. Thank you.
+        </div>
+      )}
       <div className="portal-header">
         <div>
           <h1 className="portal-title">My Orders</h1>

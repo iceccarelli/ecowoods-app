@@ -11,6 +11,7 @@ import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { sendAdminNewInquiryEmail, sendInquiryReplyEmail } from '@/lib/email';
 import { generateInquiryReply } from '@/lib/ai';
+import { isValidAmount } from '@/lib/money';
 
 // ─── Submit general inquiry (public) ────────────────────────────────────────
 const inquirySchema = z.object({
@@ -128,11 +129,31 @@ export async function updateSettings(data: {
   const session = await auth();
   if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
 
+  /* The default tax rate and stage percentages feed every checkout and invoice:
+     reject NaN, negatives and nonsense here rather than at the first payment. */
+  for (const pct of [data.defaultDepositPct, data.defaultMidpointPct, data.defaultFinalPct, data.defaultTaxRate]) {
+    if (pct !== undefined && !isValidAmount(pct, 100)) throw new Error('Percentages must be between 0 and 100.');
+  }
+
+  /* Whitelist: only the fields this form edits. */
+  const clean = {
+    defaultDepositPct: data.defaultDepositPct,
+    defaultMidpointPct: data.defaultMidpointPct,
+    defaultFinalPct: data.defaultFinalPct,
+    defaultTaxRate: data.defaultTaxRate,
+    companyName: data.companyName,
+    companyAddress: data.companyAddress,
+    companyPhone: data.companyPhone,
+    companyEmail: data.companyEmail,
+    companyNumberHst: data.companyNumberHst,
+    aiBankTransferInstructions: data.aiBankTransferInstructions,
+    aiEnabled: data.aiEnabled,
+  };
   const existing = await db.settings.findFirst();
   if (existing) {
-    await db.settings.update({ where: { id: existing.id }, data });
+    await db.settings.update({ where: { id: existing.id }, data: clean });
   } else {
-    await db.settings.create({ data });
+    await db.settings.create({ data: clean });
   }
 
   revalidatePath('/admin/settings');

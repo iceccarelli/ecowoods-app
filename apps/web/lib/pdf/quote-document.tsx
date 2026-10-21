@@ -9,6 +9,7 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import type { QuoteRequest, Settings } from '@prisma/client';
 import { format, addDays } from 'date-fns';
+import { estimateAmounts } from '@/lib/money';
 
 const WALNUT = '#1a0f08';
 const COPPER = '#c87e4f';
@@ -83,8 +84,7 @@ export function QuoteDocument({
 
   const taxRate     = Number(quote.quoteTaxRate ?? settings.defaultTaxRate ?? 13);
   const subtotal    = Number(quote.quotedAmount ?? items.reduce((s, i) => s + i.amount, 0));
-  const taxAmt      = subtotal * taxRate / 100;
-  const grandTotal  = subtotal + taxAmt;
+  const { tax: taxAmt, total: grandTotal } = estimateAmounts(subtotal, taxRate);
   const validUntil  = quote.quoteValidUntil ?? addDays(new Date(), 30);
   const quoteRef    = `EST-${format(new Date(), 'yyyy')}-${quote.id.slice(0, 6).toUpperCase()}`;
 

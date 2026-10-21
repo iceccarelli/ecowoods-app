@@ -127,7 +127,7 @@ export async function POST(req: Request) {
         kind: 'listing-floor-report',
         sku: sku.id,
       },
-      success_url: `${origin}/listing-floor-report/success?order=${order.id}`,
+      success_url: `${origin}/listing-floor-report/success?order=${order.id}&email=${encodeURIComponent(email)}`,
       cancel_url: `${origin}/listing-floor-report?checkout=cancelled`,
       payment_method_types: ['card'],
     });

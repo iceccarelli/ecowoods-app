@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { format } from 'date-fns';
+import { estimateAmounts } from '@/lib/money';
 import { BUSINESS_ADDRESS_LINE, BUSINESS_NAP } from '@ecowoods/shared/constants';
 
 function formatCAD(n: number | { toNumber(): number }) {
@@ -37,7 +38,7 @@ export default async function PublicQuotePage({
 
   const subtotal = quote.quotedAmount ? Number(quote.quotedAmount) : null;
   const taxRate = quote.quoteTaxRate ? Number(quote.quoteTaxRate) : 13;
-  const total = subtotal != null ? subtotal * (1 + taxRate / 100) : null;
+  const total = subtotal != null ? estimateAmounts(subtotal, taxRate).total : null;
 
   return (
     <div style={{ minHeight: '100vh', background: '#fdfbf6', fontFamily: 'sans-serif', color: '#1a0f08' }}>

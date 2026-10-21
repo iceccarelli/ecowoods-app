@@ -32,6 +32,9 @@ export default async function InvoicePayPage({
   if (!invoice || invoice.project.userId !== session.user.id) {
     redirect('/mypage/invoices');
   }
+  // A DRAFT is not yet issued to the customer; a VOID one cannot be paid.
+  if (invoice.status === 'DRAFT') redirect('/mypage/invoices');
+  const settings = await db.settings.findFirst();
 
   if (invoice.status === 'PAID') {
     return (
@@ -42,6 +45,22 @@ export default async function InvoicePayPage({
         <div className="portal-card" style={{ textAlign: 'center', padding: '3rem' }}>
           <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>✅</div>
           <p>Invoice #{invoice.number} has already been paid. Thank you!</p>
+          <Link href="/mypage/invoices" className="btn btn-copper btn-sm" style={{ marginTop: '1.5rem' }}>
+            Back to Invoices
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (invoice.status === 'VOID') {
+    return (
+      <div className="portal-page">
+        <div className="portal-header">
+          <h1 className="portal-title">Invoice Cancelled</h1>
+        </div>
+        <div className="portal-card" style={{ textAlign: 'center', padding: '3rem' }}>
+          <p>Invoice #{invoice.number} has been cancelled and does not need to be paid.</p>
           <Link href="/mypage/invoices" className="btn btn-copper btn-sm" style={{ marginTop: '1.5rem' }}>
             Back to Invoices
           </Link>
@@ -90,8 +109,12 @@ export default async function InvoicePayPage({
 
         <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)', marginTop: '1rem', textAlign: 'center' }}>
           Secured by Stripe. Accepts Visa, Mastercard, Amex, Apple Pay, Google Pay.
-          <br />
-          HST #: {invoice.project.user.email}
+          {settings?.companyNumberHst && (
+            <>
+              <br />
+              HST #: {settings.companyNumberHst}
+            </>
+          )}
         </p>
       </div>
     </div>
