@@ -22,6 +22,7 @@
  * pre-refill count and both being allowed through.
  */
 import { createHmac } from 'node:crypto';
+import { NextResponse } from 'next/server';
 import { db } from './db';
 import { Prisma } from '@prisma/client';
 import { checkRateLimit as inMemoryCheckRateLimit } from './rate-limit';
@@ -45,7 +46,26 @@ interface BucketRow {
  */
 type DurableCheckResult =
   | { dbReachable: true; allowed: boolean; remaining: number; retryAfterSeconds: number }
-  | { dbReachable: false };
+  | { dbReachable: false; cause: UnavailableCause };
+
+/**
+ * Why the durable limiter could not answer. `schema_missing` means Postgres
+ * answered but the limiter's table/function does not exist (migrations behind
+ * the code) — an operator problem, not an outage — and is logged distinctly so
+ * it is not mistaken for a database outage.
+ */
+export type UnavailableCause = 'schema_missing' | 'db_error';
+
+/** Postgres undefined_table / undefined_function, surfaced by Prisma raw queries. */
+export function classifyLimiterError(err: unknown): UnavailableCause {
+  const e = err as { code?: unknown; meta?: { code?: unknown; message?: unknown }; message?: unknown } | null;
+  const pg = typeof e?.meta?.code === 'string' ? e.meta.code : undefined;
+  if (pg === '42P01' || pg === '42883' || pg === '3F000') return 'schema_missing';
+  if (e?.code === 'P2021') return 'schema_missing'; // table does not exist
+  const msg = `${typeof e?.message === 'string' ? e.message : ''} ${typeof e?.meta?.message === 'string' ? e.meta.message : ''}`;
+  if (/rate_limit_consume|RateLimitBucket/.test(msg) && /does not exist/i.test(msg)) return 'schema_missing';
+  return 'db_error';
+}
 
 /**
  * Every raw identity (an IP address today) that reaches Postgres is HMAC'd
@@ -90,13 +110,15 @@ async function checkDurableRateLimit(hashedKey: string, config: DurableRateLimit
       retryAfterSeconds,
     };
   } catch (err) {
+    const cause = classifyLimiterError(err);
     console.error(
       JSON.stringify({
         event: 'rate_limit.durable_unavailable',
-        error: err instanceof Error ? err.message : 'unknown',
+        cause,
+        error: err instanceof Error ? err.message.slice(0, 300) : 'unknown',
       }),
     );
-    return { dbReachable: false };
+    return { dbReachable: false, cause };
   }
 }
 
@@ -106,6 +128,33 @@ export interface RateLimitDecision {
   retryAfterSeconds: number;
   /** True when Postgres was unreachable and this decision came from the degraded fallback tier (or a fail-closed default) instead. */
   degraded: boolean;
+  /**
+   * True only when a `failClosed` caller was denied because the limiter could
+   * not run (not because the caller is over its limit). Callers must answer
+   * this with a retryable 503 — see `rateLimitDeniedResponse` — never a 429.
+   */
+  unavailable: boolean;
+  /** Set with `unavailable`; names why the limiter could not run. */
+  unavailableCause?: UnavailableCause;
+}
+
+/**
+ * The one response a denied `RateLimitDecision` should become. A genuine
+ * over-limit decision is a 429; a fail-closed denial caused by the limiter
+ * being unavailable is an explicit, retryable 503 (still a denial — abuse
+ * paths do not become fail-open).
+ */
+export function rateLimitDeniedResponse(rl: RateLimitDecision): NextResponse {
+  if (rl.unavailable) {
+    return NextResponse.json(
+      { error: 'This service is temporarily unavailable. Please try again shortly.', code: 'rate_limiter_unavailable' },
+      { status: 503, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
+    );
+  }
+  return NextResponse.json(
+    { error: 'Please wait a moment before trying again.' },
+    { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
+  );
 }
 
 /**
@@ -147,11 +196,26 @@ export async function enforceRateLimit(input: {
       remaining: result.remaining,
       retryAfterSeconds: result.retryAfterSeconds,
       degraded: false,
+      unavailable: false,
     };
   }
 
   if (input.failClosed) {
-    return { allowed: false, remaining: 0, retryAfterSeconds: 60, degraded: true };
+    console.error(
+      JSON.stringify({
+        event: 'rate_limit.fail_closed_denied',
+        routeKey: input.routeKey,
+        cause: result.cause,
+      }),
+    );
+    return {
+      allowed: false,
+      remaining: 0,
+      retryAfterSeconds: 30,
+      degraded: true,
+      unavailable: true,
+      unavailableCause: result.cause,
+    };
   }
 
   const fallback = inMemoryCheckRateLimit(`${input.routeKey}:${input.identity}`, input.config);
@@ -160,6 +224,7 @@ export async function enforceRateLimit(input: {
     remaining: fallback.remaining,
     retryAfterSeconds: Math.max(1, Math.ceil((fallback.resetAt - Date.now()) / 1000)),
     degraded: true,
+    unavailable: false,
   };
 }
 

@@ -9,7 +9,7 @@ vi.mock('@/lib/db', () => ({
   },
 }));
 
-import { enforceRateLimit, cleanupIdleRateLimitBuckets } from './rate-limit-durable';
+import { enforceRateLimit, cleanupIdleRateLimitBuckets, rateLimitDeniedResponse, classifyLimiterError } from './rate-limit-durable';
 
 /**
  * The atomic refill+consume math itself is verified against a real
@@ -35,7 +35,7 @@ describe('enforceRateLimit', () => {
       config: { windowMs: 60_000, maxRequests: 20 },
     });
 
-    expect(result).toEqual({ allowed: true, remaining: 4, retryAfterSeconds: 0, degraded: false });
+    expect(result).toEqual({ allowed: true, remaining: 4, retryAfterSeconds: 0, degraded: false, unavailable: false });
     const sql = queryRawMock.mock.calls[0]![0] as { values: unknown[] };
     // The raw IP never reaches the query — only its HMAC does.
     expect(sql.values[0]).not.toContain('203.0.113.9');
@@ -93,7 +93,46 @@ describe('enforceRateLimit', () => {
       config: { windowMs: 60_000, maxRequests: 5 },
       failClosed: true,
     });
-    expect(result).toEqual({ allowed: false, remaining: 0, retryAfterSeconds: 60, degraded: true });
+    expect(result).toMatchObject({ allowed: false, remaining: 0, degraded: true, unavailable: true, unavailableCause: 'db_error' });
+  });
+
+  it('missing RateLimitBucket/function (Postgres 42P01/42883) fails closed as unavailable, logged as schema_missing, and maps to a retryable 503', async () => {
+    const err = Object.assign(new Error('Raw query failed. Code: `42883`. Message: `function ecowoods.rate_limit_consume does not exist`'), {
+      code: 'P2010',
+      meta: { code: '42883', message: 'function "ecowoods"."rate_limit_consume"(text, double precision, double precision) does not exist' },
+    });
+    queryRawMock.mockRejectedValueOnce(err);
+    const logSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const result = await enforceRateLimit({
+      routeKey: 'shop-checkout',
+      identity: 'u1',
+      config: { windowMs: 60_000, maxRequests: 5 },
+      failClosed: true,
+    });
+    expect(result.allowed).toBe(false);
+    expect(result.unavailable).toBe(true);
+    expect(result.unavailableCause).toBe('schema_missing');
+    const events = logSpy.mock.calls.map((c) => JSON.parse(String(c[0])));
+    logSpy.mockRestore();
+    expect(events).toContainEqual(expect.objectContaining({ event: 'rate_limit.durable_unavailable', cause: 'schema_missing' }));
+    expect(events).toContainEqual(expect.objectContaining({ event: 'rate_limit.fail_closed_denied', routeKey: 'shop-checkout', cause: 'schema_missing' }));
+
+    const res = rateLimitDeniedResponse(result);
+    expect(res.status).toBe(503);
+    expect(res.headers.get('Retry-After')).toBe('30');
+    expect((await res.json()).code).toBe('rate_limiter_unavailable');
+  });
+
+  it('a genuine over-limit decision is still a 429, not a 503', async () => {
+    queryRawMock.mockResolvedValueOnce([{ tokens: 0, allowed: false }]);
+    const result = await enforceRateLimit({ routeKey: 'r', identity: 'k', config: { windowMs: 1000, maxRequests: 2 }, failClosed: true });
+    expect(result.unavailable).toBe(false);
+    expect(rateLimitDeniedResponse(result).status).toBe(429);
+  });
+
+  it('classifies Prisma P2021 and plain connection errors', () => {
+    expect(classifyLimiterError({ code: 'P2021' })).toBe('schema_missing');
+    expect(classifyLimiterError(new Error('connection terminated'))).toBe('db_error');
   });
 
   it('the in-memory fallback tier itself still enforces a real limit, not unlimited access', async () => {
@@ -109,7 +148,7 @@ describe('enforceRateLimit', () => {
   it('fails open on an unexpectedly empty result set (treated as dbReachable with full bucket)', async () => {
     queryRawMock.mockResolvedValueOnce([]);
     const result = await enforceRateLimit({ routeKey: 'r', identity: 'k', config: { windowMs: 1000, maxRequests: 3 } });
-    expect(result).toEqual({ allowed: true, remaining: 3, retryAfterSeconds: 0, degraded: false });
+    expect(result).toEqual({ allowed: true, remaining: 3, retryAfterSeconds: 0, degraded: false, unavailable: false });
   });
 });
 

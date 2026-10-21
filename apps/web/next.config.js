@@ -66,6 +66,13 @@ const nextConfig = {
   // Fixes ChunkLoadError with next-auth v5 beta (ESM/CJS interop issue).
   transpilePackages: ['next-auth', '@auth/core', '@auth/prisma-adapter', 'ai', '@ai-sdk/anthropic', 'zod'],
 
+  // /api/internal/schema-status compares the migrations this build ships against
+  // the database (lib/schema-drift.ts reads prisma/migrations at runtime; names
+  // only), so the directory must be traced into that function's bundle.
+  outputFileTracingIncludes: {
+    '/api/internal/schema-status': ['./prisma/migrations/**/*'],
+  },
+
   // Required for @react-pdf/renderer (uses canvas under the hood)
   serverExternalPackages: ['@react-pdf/renderer'],
 
