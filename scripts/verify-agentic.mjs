@@ -145,8 +145,32 @@ for (const e of endpoints) {
 }
 
 const declared = new Set(endpoints.map((e) => `${e.file}|${e.method}`));
+
+/*
+ * Routes removed from the public contract on purpose. They stay as a 410 Gone
+ * so a stale client gets an unambiguous answer, and they are deliberately NOT
+ * in ENDPOINTS, the manifest or the OpenAPI document. The guard still demands
+ * that each one really answers 410 (via handleOpportunity) and is not declared.
+ * /opportunity: the market opportunity model is internal and now lives behind
+ * /api/internal/market-intelligence.
+ */
+const REMOVED_ROUTES = new Map([['opportunity', 'handleOpportunity']]);
+const handlersSrc = existsSync(join(ROOT, 'apps/web/lib/registry/handlers.ts')) ? strip(read(join(ROOT, 'apps/web/lib/registry/handlers.ts'))) : '';
+for (const [key, handlerName] of REMOVED_ROUTES) {
+  const src = routeSources.get(routeFileFor(key));
+  if (src === undefined) continue;
+  const body = handlersSrc.split(`function ${handlerName}`)[1] ?? '';
+  if (!src.includes(handlerName) || !/410/.test(body.slice(0, 600))) {
+    fail(rel(routeFileFor(key)), `is on the removed-route list but does not delegate to ${handlerName} answering 410 Gone`);
+  }
+  if (endpoints.some((e) => e.file === key)) {
+    fail(`ENDPOINTS file '${key}'`, 'is declared although the route is on the removed-route list — a removed route must not be advertised');
+  }
+}
+
 for (const [file, src] of routeSources) {
   const key = rel(file).replace(/^apps\/web\/app\/api\/v1\/?/, '').replace(/\/?route\.ts$/, '');
+  if (REMOVED_ROUTES.has(key)) continue;
   const has = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].filter((m) => exportsMethod(src, m));
   if (has.length === 0) fail(rel(file), 'exports no GET or POST — a route file that answers nothing');
   for (const m of has) {

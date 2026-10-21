@@ -41,16 +41,9 @@ import {
   CORRIDORS,
   corridorStops,
   assess as assessMarket,
-  contentQueue,
-  expansionOrder,
-  opportunity,
-  opportunityOrder,
-  unsourcedInputs,
-  MIN_CONFIDENCE,
+  isOperational,
   serviceAreaMarkets,
 } from '@/lib/geo';
-import { INPUT_SPECS } from '@/content/geo/market-inputs';
-import { allocation } from '@/lib/geo/allocation';
 import { SITE_URL } from '@/lib/seo-data';
 
 const meta = (reg: Registry, count: number, extra?: Record<string, unknown>) => ({
@@ -675,27 +668,12 @@ export async function handleQuoteCheck(request: Request) {
 }
 
 /**
- * GET /api/v1/markets — where this company works, and where it does not.
+ * GET /api/v1/markets — the published service areas and their verified facts.
  *
- * WHY THE SHAPE OF THIS RESPONSE IS THE POINT
- *
- * Every flooring company's site answers "do you serve X" with yes. An
- * assistant asked the question therefore learns nothing from any of them, and
- * the honest answer — routine here, unconfirmed there, and this one is a
- * two-hour drive that belongs in the quote — is the answer a homeowner
- * actually needs.
- *
- * So each market carries its status, the sentence that can honestly be said
- * about serving it, and the date somebody confirmed that. A market nobody has
- * confirmed says so, in the payload, rather than borrowing the confidence of
- * the ones beside it. `service_area` lists the confirmed municipalities, on
- * both sides of the border since the owner's New York confirmation of
- * 2026-09-10; since GEO-001 every one of them has a page, and Toronto is served
- * through the pages of its districts and neighbourhoods.
- *
- * `content_queue` is published deliberately. It is the list of markets that do
- * not yet have a page and the reason each one does not, which is a more useful
- * and more falsifiable statement about a company's coverage than any map.
+ * Each entry carries the sentence that can honestly be said about serving the
+ * municipality and the date and person that confirmed it. Only markets with a
+ * dated confirmation are listed. Expansion priorities, scoring and content
+ * planning are internal and are served from /api/internal/market-intelligence.
  */
 export async function handleMarkets(request: Request) {
   const reg = await getRegistry();
@@ -703,7 +681,7 @@ export async function handleMarkets(request: Request) {
   const corridorFilter = url.searchParams.get('corridor');
   const statusFilter = url.searchParams.get('status');
 
-  let rows = MARKETS;
+  let rows = MARKETS.filter((x) => isOperational(x));
   if (corridorFilter) rows = rows.filter((x) => (x.corridors as string[]).includes(corridorFilter));
   if (statusFilter) rows = rows.filter((x) => x.status === statusFilter);
 
@@ -711,24 +689,22 @@ export async function handleMarkets(request: Request) {
     {
       meta: meta(reg, rows.length),
       note:
-        'Markets in the Ecowoods geographic model, each with the status and the operational statement that can honestly be made about it. A market being listed is not a claim that it is served.',
+        'The areas Ecowoods serves, each with the status and the operational statement that can honestly be made about it and the date somebody confirmed it.',
       confirmation_basis:
         "verified_by names who confirmed a market's operational position. \"owner\" means the owner of this " +
         'business stated on that date what coverage of that municipality means. It is not a record of ' +
         'documented completed work in that municipality: that is has_page, which requires published local ' +
-        'content and is false for most confirmed markets. The two are reported separately because they are ' +
-        'different facts and conflating them is how a coverage list becomes a portfolio it has not earned.',
+        'content. The two are reported separately because they are different facts.',
       refuses: [
-        'no market is claimed as served without a dated confirmation — an unconfirmed market carries an empty statement and a null verified_at',
-        'a confirmed operational position is never reported as evidence of work performed; has_page and why_no_page carry that, separately',
-        'no second address, telephone number or set of hours is published for any market: there is one shop and one showroom, in Toronto',
-        'no drive time, coordinate, population or housing figure is published for a market nobody has worked in',
+        'no area is listed without a dated confirmation',
+        'a confirmed operational position is never reported as evidence of work performed',
+        'no second address, telephone number or set of hours is published for any area: there is one shop and one showroom, in Toronto',
+        'no drive time, coordinate, population or housing figure is published for an area nobody has worked in',
       ],
       service_area: serviceAreaMarkets().map((x) => ({ slug: x.slug, name: x.name, region: x.region })),
       status_legend: {
         'core-active': 'worked routinely from the Toronto shop',
         'active-expansion': 'taking work; coverage established, not yet routine',
-        'corridor-target': 'on the route and in the plan; no confirmed operational position',
         'travel-by-confirmation': 'reachable, scheduled as a trip, priced with the distance in the written quote',
         'us-active': 'New York State; taking work, scheduled like any other job',
         'us-by-confirmation': 'New York State; scheduled as a trip and confirmed in advance',
@@ -752,113 +728,25 @@ export async function handleMarkets(request: Request) {
           verified_by: x.operationalTruth.verifiedBy ?? null,
           has_page: w.indexable,
           page: w.indexable ? `${SITE_URL}/service-areas/${x.slug}` : null,
-          why_no_page: w.indexable ? null : w.blockers,
         };
       }),
-      content_queue: contentQueue(MARKETS)
-        .slice(0, 10)
-        .map((w) => ({ slug: w.slug, score: w.score, blockers: w.blockers })),
-      /*
-       * The expansion order, and the ten economic inputs it deliberately does
-       * not have. Published rather than kept internal because a ranking whose
-       * missing inputs are hidden is a ranking that will be mistaken for one
-       * built on them.
-       */
-      expansion_order: expansionOrder(MARKETS)
-        .slice(0, 12)
-        .map((e) => ({
-          slug: e.slug,
-          name: e.name,
-          score: e.score,
-          components: e.components,
-          next_action: e.nextAction,
-        })),
-      expansion_score_excludes: expansionOrder(MARKETS)[0]?.missing ?? [],
     },
     { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
   );
 }
 
 /**
- * GET /api/v1/opportunity — the market model, and what it does not know.
- *
- * WHY PUBLISH A SCORE THAT IS CURRENTLY NULL EVERYWHERE
- *
- * Because the honest version of a market model is more citable than the
- * confident one. Every competitor's "areas we serve" page asserts a coverage
- * list with no method behind it. This publishes the method: ten weighted
- * inputs, which two are computed from facts we hold, which eight require a
- * census table nobody has opened yet, and the confidence gate that stops a
- * market being ranked on highway access alone.
- *
- * An assistant asked "how does Ecowoods decide where to expand" has a document
- * to quote, with the reason for every classification in the company's own
- * words rather than inferred from a page.
- *
- * New York markets are classified on the same terms as Ontario ones since the
- * owner's confirmation of 2026-09-10 (lib/geo/opportunity.ts); the cap that
- * held every American market at FUTURE described the position before it.
+ * GET /api/v1/opportunity — removed. The market opportunity model is internal
+ * working material and now lives behind /api/internal/market-intelligence.
+ * 410 Gone, so a stale client gets an unambiguous answer and no data. The
+ * public, factual replacement is /api/v1/markets.
  */
-export async function handleOpportunity(request: Request) {
-  const reg = await getRegistry();
-  const url = new URL(request.url);
-  const country = url.searchParams.get('country');
-  const slug = url.searchParams.get('market');
-
-  if (slug) {
-    const one = MARKETS.find((x) => x.slug === slug);
-    if (!one) return error('not_found', `No market with slug "${slug}".`, 404);
-    return json(
-      { meta: meta(reg, 1), market: opportunity(one) },
-      { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
-    );
-  }
-
-  let rows = opportunityOrder(MARKETS);
-  if (country === 'CA' || country === 'US') rows = rows.filter((x) => x.country === country);
-
-  return json(
-    {
-      meta: meta(reg, rows.length),
-      model: {
-        note:
-          'A 0-100 opportunity score per market, weighted across ten inputs. `score` is withheld until enough of the ' +
-          'weighting is sourced to mean it; `partial_score` is the weighted result over whatever is present and is ' +
-          'never a ranking. `confidence` is the share of the weighting actually backed by data.',
-        minimum_confidence_to_classify: MIN_CONFIDENCE,
-        weights: INPUT_SPECS.map((x) => ({
-          id: x.id, weight: x.weight, measures: x.measures, kind: x.kind, obtainable_from: x.obtainableFrom,
-        })),
-        unsourced_inputs: unsourcedInputs().map((x) => ({
-          id: x.id, weight: x.weight, obtainable_from: x.obtainableFrom,
-        })),
-      },
-      refuses: [
-        'no input carries a value without a source URL and a retrieval date; the build fails otherwise',
-        'no market is classified below the confidence gate, so none is ranked on highway access alone',
-        'no United States market is classified above FUTURE — Ecowoods operates in Ontario, from Ontario',
-        'no economic figure is estimated; an unsourced input is reported as missing, with where to obtain it',
-      ],
-      allocation: {
-        target: { canada: 0.8, united_states: 0.2 },
-        measured: allocation().map((x) => ({
-          measure: x.measure, canada: x.ca, united_states: x.us, canada_share: x.caShare, means: x.means,
-        })),
-      },
-      markets: rows.map((x) => ({
-        slug: x.slug,
-        name: x.name,
-        country: x.country,
-        score: x.score,
-        partial_score: x.partialScore,
-        confidence: x.confidence,
-        classification: x.classification,
-        reason: x.reason,
-        components: x.components.map((c) => ({ id: c.id, weight: c.weight, score: c.score, source: c.source })),
-        missing: x.missing.map((c) => ({ id: c.id, weight: c.weight, obtainable_from: c.obtainableFrom })),
-      })),
-    },
-    { request, updatedAt: reg.updated_at, cache: CACHE_PUBLIC, version: reg.version },
+export async function handleOpportunity(_request: Request) {
+  return error(
+    'gone',
+    `/api/v1/opportunity has been removed. Published service areas and their verified facts are at ${SITE_URL}/api/v1/markets.`,
+    410,
+    { replacement: `${SITE_URL}/api/v1/markets` },
   );
 }
 
@@ -1013,7 +901,7 @@ export async function handleCorridors(request: Request) {
         summary: c.summary,
         page: `${SITE_URL}/corridors/${c.id}`,
         markdown: `${SITE_URL}/corridors/${c.id}.md`,
-        members: corridorStops(c.id).map(({ municipality: x, districts }) => ({
+        members: corridorStops(c.id).filter(({ municipality: x }) => isOperational(x)).map(({ municipality: x, districts }) => ({
           slug: x.slug,
           name: x.name,
           country: x.country,
@@ -1023,7 +911,7 @@ export async function handleCorridors(request: Request) {
              municipality containing them, and this endpoint reported Kenmore
              as a stop on the Buffalo metro drive beside Tonawanda, which is the
              town it is part of (GC-016). */
-          districts: districts.map((d) => ({
+          districts: districts.filter((d) => isOperational(d)).map((d) => ({
             slug: d.slug,
             name: d.name,
             country: d.country,

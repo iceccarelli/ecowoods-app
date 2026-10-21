@@ -66,7 +66,7 @@ import type {
 
 /* ── registry metadata ──────────────────────────────────────────────────── */
 
-export const REGISTRY_VERSION = '1.0.0';
+export const REGISTRY_VERSION = '1.1.0';
 
 /**
  * The date the NAP, hours, founding year and price bands were last read on the
@@ -934,9 +934,9 @@ export function buildActions(): ActionPrimitive[] {
         target: abs('/api/v1/markets'),
         method: 'GET',
         description:
-          'Whether a municipality is served, and what can honestly be said about it — routine, active, on the route with no confirmed position, or reachable only by confirmation — with the date somebody confirmed it.',
+          'Whether a municipality is served, and what can honestly be said about it — routine, active, or reachable only by confirmation — with the date somebody confirmed it.',
         outcome:
-          'The status and operational statement per market, the list of markets that may be claimed as served, and for every market without a page, the reason it does not have one.',
+          'The status and operational statement per served market, the list of markets that may be claimed as served, and the page for each.',
         parameters: [
           { name: 'corridor', required: false, description: 'Filter to one route, e.g. niagara-belt.' },
           { name: 'status', required: false, description: 'Filter by coverage status, e.g. core-active.' },

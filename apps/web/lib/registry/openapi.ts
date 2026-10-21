@@ -92,7 +92,6 @@ export function buildOpenApi() {
       '/media/{id}': ref('MediaProject'),
       '/equipment': ref('EquipmentIndex'),
       '/framework': ref('FrameworkSpec'),
-      '/opportunity': ref('OpportunityModel'),
       '/catalogues': ref('CatalogueIndex'),
       '/markets': ref('MarketIndex'),
       '/corridors': ref('CorridorIndex'),
@@ -391,52 +390,6 @@ export function buildOpenApi() {
             machines: { type: 'array', items: { type: 'object' } },
           },
         },
-        OpportunityModel: {
-          type: 'object',
-          description:
-            'A 0-100 opportunity score per market over ten weighted inputs. `score` is null until `confidence` — the share of the weighting actually backed by a sourced figure — reaches minimum_confidence_to_classify; `partial_score` is the weighted result over whatever is present and is never a ranking. `missing` names every unsourced input and where it is obtainable. United States markets are always FUTURE: Ecowoods operates in Ontario, from Ontario.',
-          required: ['meta', 'model', 'refuses', 'allocation', 'markets'],
-          properties: {
-            meta: ref('Meta'),
-            model: {
-              type: 'object',
-              properties: {
-                note: { type: 'string' },
-                minimum_confidence_to_classify: { type: 'number' },
-                weights: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, weight: { type: 'number' }, measures: { type: 'string' }, kind: { type: 'string', enum: ['sourced', 'computed'] }, obtainable_from: { type: 'string' } } } },
-                unsourced_inputs: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, weight: { type: 'number' }, obtainable_from: { type: 'string' } } } },
-              },
-            },
-            refuses: { type: 'array', items: { type: 'string' } },
-            allocation: {
-              type: 'object',
-              description: 'The depth budget, measured from the repository across four measures. Both countries publish on the same terms since 2026-09-10: real local content and a dated confirmation. What differs is how deeply a page is worked, not whether it exists.',
-              properties: {
-                target: { type: 'object', properties: { canada: { type: 'number' }, united_states: { type: 'number' } } },
-                measured: { type: 'array', items: { type: 'object', properties: { measure: { type: 'string' }, canada: { type: 'number' }, united_states: { type: 'number' }, canada_share: { type: 'number' }, means: { type: 'string' } } } },
-              },
-            },
-            markets: {
-              type: 'array',
-              items: {
-                type: 'object',
-                required: ['slug', 'name', 'country', 'score', 'confidence', 'classification'],
-                properties: {
-                  slug: { type: 'string' },
-                  name: { type: 'string' },
-                  country: { type: 'string', enum: ['CA', 'US'] },
-                  score: { type: ['integer', 'null'], minimum: 0, maximum: 100 },
-                  partial_score: { type: ['integer', 'null'], minimum: 0, maximum: 100 },
-                  confidence: { type: 'number', minimum: 0, maximum: 1 },
-                  classification: { type: 'string', enum: ['DOMINATE', 'HIGH_PRIORITY', 'BUILD_AUTHORITY', 'TEST', 'FUTURE', 'UNSCORED'] },
-                  reason: { type: 'string' },
-                  components: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, weight: { type: 'number' }, score: { type: ['number', 'null'] }, source: { type: ['string', 'null'] } } } },
-                  missing: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, weight: { type: 'number' }, obtainable_from: { type: 'string' } } } },
-                },
-              },
-            },
-          },
-        },
         FrameworkSpec: {
           type: 'object',
           description:
@@ -475,7 +428,7 @@ export function buildOpenApi() {
         MarketIndex: {
           type: 'object',
           description:
-            'Markets with their coverage status. `service_area` lists only what may be claimed as served; `markets[].why_no_page` states, per market, why no page exists for it. New York State markets are service areas since 2026-09-10; there is still one address and one telephone number, both in Toronto.',
+            'The published service areas with their verified facts. `service_area` lists the municipalities that may be claimed as served; `markets[]` carries each area\'s status, operational statement and confirmation date. New York State markets are service areas since 2026-09-10; there is still one address and one telephone number, both in Toronto.',
           required: ['meta', 'markets', 'service_area', 'refuses'],
           properties: {
             meta: ref('ListMeta'),
@@ -484,7 +437,6 @@ export function buildOpenApi() {
             service_area: { type: 'array', items: { type: 'object' }, description: 'The only markets that may be claimed as served.' },
             status_legend: { type: 'object' },
             markets: { type: 'array', items: { type: 'object' } },
-            content_queue: { type: 'array', items: { type: 'object' }, description: 'Markets without a page, ranked by how much a page would be worth, each with the reason it does not have one.' },
           },
         },
         CorridorIndex: {
