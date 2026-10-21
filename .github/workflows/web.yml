@@ -175,6 +175,7 @@ jobs:
           pnpm --filter @ecowoods/web exec vitest run
           tests/appointments-capacity.postgres.integration.test.ts
           tests/credits-concurrency.postgres.integration.test.ts
+          tests/schema-structure.postgres.integration.test.ts
           tests/credit-ledger.postgres.integration.test.ts
           tests/rate-limit.postgres.integration.test.ts
           tests/stripe-fulfillment.postgres.integration.test.ts
