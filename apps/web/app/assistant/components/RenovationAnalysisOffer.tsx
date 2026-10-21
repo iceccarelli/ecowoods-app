@@ -103,17 +103,33 @@ export function RenovationAnalysisOffer({
     setPhase('running');
     setErrorText(null);
     track('analysis_started', { creditsCost });
+    /* Set only once the server has actually answered. A thrown fetch (dropped
+       connection, lost response) leaves it unset: the charge may already have
+       committed, so the SAME key must be re-sent — that is what makes the retry
+       replay the saved result instead of charging twice. */
+    let answered: { status: number } | null = null;
     try {
       const res = await fetch('/api/assistant/analysis/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ workspace: workspaceSnapshot, requestIdempotencyKey: idempotencyKeyRef.current }),
       });
-      const data = await res.json();
+      answered = { status: res.status };
+      const data = await res.json().catch(() => ({}));
       if (res.status === 402) {
         setBalance(data.balance ?? 0);
         setPhase('ready-to-buy');
         setErrorText('Not enough Renovation Credits for this — buy more to continue.');
+        return;
+      }
+      if (res.status === 401) {
+        setPhase('failed');
+        setErrorText('Your session has ended. Sign in again to run the analysis. Nothing was charged.');
+        return;
+      }
+      if (res.status === 422 || res.status === 429) {
+        setPhase('failed');
+        setErrorText(typeof data?.error === 'string' ? `${data.error} Nothing was charged.` : "I couldn't run that yet. Nothing was charged.");
         return;
       }
       if (!res.ok) throw new Error(data?.error ?? 'analysis_failed');
@@ -125,8 +141,14 @@ export function RenovationAnalysisOffer({
     } catch {
       setPhase('failed');
       track('analysis_failed', { creditsCost });
-      idempotencyKeyRef.current = mintIdempotencyKey();
-      setErrorText("I couldn't complete that analysis. Nothing was charged.");
+      /* A key conflict (409) is the only answer a replay cannot fix; every other
+         failure keeps the key so a retry can never double-charge. */
+      if (answered?.status === 409) idempotencyKeyRef.current = mintIdempotencyKey();
+      setErrorText(
+        answered
+          ? "I couldn't complete that analysis. Nothing was charged."
+          : "I couldn't confirm that analysis finished. If credits were used, trying again shows the saved result without charging twice.",
+      );
     }
   };
 
@@ -135,7 +157,7 @@ export function RenovationAnalysisOffer({
   }
 
   return (
-    <li className="aha-inline-card aha-analysis-offer" data-card-type="renovation_analysis_offer">
+    <div className="aha-inline-card aha-analysis-offer" data-card-type="renovation_analysis_offer">
       <p className="aha-inline-card-title">Renovation Decision Analysis</p>
       <p className="aha-inline-card-body">
         I&apos;ll turn everything you&apos;ve told me about this project into a prioritized sequence, a cost view from
@@ -170,11 +192,15 @@ export function RenovationAnalysisOffer({
         <button type="button" className="aha-analysis-cta" disabled>
           Opening secure checkout…
         </button>
+      ) : phase === 'failed' ? (
+        <button type="button" className="aha-analysis-cta" onClick={runAnalysis}>
+          Try the analysis again
+        </button>
       ) : (
         <button type="button" className="aha-analysis-cta" onClick={buyCredits}>
           Buy Renovation Credits
         </button>
       )}
-    </li>
+    </div>
   );
 }

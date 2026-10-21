@@ -23,6 +23,8 @@ import { AnswerBlock } from './AnswerBlock';
 import { AssistantMarkdown } from './AssistantMarkdown';
 import { ANALYSIS_CREDIT_COST } from '@/lib/assistant-workspace/credits-config';
 import { compressPhoto } from '@/lib/image-compress';
+import { selectChatHistory } from '@/lib/assistant-workspace/chat-history';
+import { attachmentUploadFailure } from '@/lib/assistant-workspace/attachment-failure';
 
 /** A photo attached to one turn — uploaded, displayed, and (once sent) referenced in the request to /api/assistant/chat. Mirrors StoredAttachment (conversation-store.ts) without importing it directly — that module pulls in Prisma and must never reach the client bundle. */
 interface DisplayAttachment {
@@ -171,13 +173,14 @@ export function ConversationPane({
   onOpenProject?: () => void;
   onOpenEconomics?: () => void;
 }) {
-  const { state, patch, ready } = useWorkspaceState();
+  const { state, patch, ready, startNewConversation } = useWorkspaceState();
   const [draft, setDraft] = useState('');
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [busy, setBusy] = useState(false);
   const [isNarrow, setIsNarrow] = useState(false);
   const [historyRequested, setHistoryRequested] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<DisplayAttachment[]>([]);
+  const [attachmentNotice, setAttachmentNotice] = useState<{ text: string; offerNewConversation: boolean } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -198,16 +201,17 @@ export function ConversationPane({
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { turns?: StoredTranscriptTurn[] } | null) => {
         if (!data?.turns?.length) return;
-        setMessages(
-          data.turns.map((t) => ({
+        const restored: DisplayMessage[] = data.turns.map((t) => ({
             role: t.role,
             text: t.content,
             cards: Array.isArray(t.blocks) && t.blocks.length ? composeAnswerBlocks(t.blocks) : undefined,
             attachments: Array.isArray(t.attachments) && t.attachments.length
               ? t.attachments.map((a) => ({ id: a.id, kind: a.kind, status: a.status as DisplayAttachment['status'], filename: a.filename, previewUrl: a.url }))
               : undefined,
-          })),
-        );
+          }));
+        /* Never replace a conversation the visitor already started while this
+           (slower) read was in flight. */
+        setMessages((prev) => (prev.length ? prev : restored));
       })
       .catch(() => undefined);
   }, [ready, state.designId, historyRequested]);
@@ -366,14 +370,16 @@ export function ConversationPane({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: history.map((m, idx) => {
-            const base = { role: m.role, content: m.text };
+          /* Only the most recent turns that fit the route's limits — see chat-history.ts. */
+          messages: selectChatHistory(history).map(({ index, text: content }) => {
+            const m = history[index]!;
+            const base = { role: m.role, content };
             // Only the newest turn's attachments are ever sent — see
             // attachmentRefSchema's comment (chat-schema.ts). A photo that
             // failed to upload is never forwarded; the server would have
             // nothing to download and no way to tell a client bug from a
             // homeowner's claim that a photo was attached.
-            const uploaded = idx === history.length - 1 ? m.attachments?.filter((a) => a.status === 'uploaded' && a.path) : undefined;
+            const uploaded = index === history.length - 1 ? m.attachments?.filter((a) => a.status === 'uploaded' && a.path) : undefined;
             if (!uploaded?.length) return base;
             return {
               ...base,
@@ -524,6 +530,7 @@ export function ConversationPane({
     const compressed = await compressPhoto(file);
     if (!compressed.ok) {
       setPendingAttachments((prev) => prev.map((a) => (a.id === localId ? { ...a, status: 'failed' } : a)));
+      setAttachmentNotice({ text: "That photo couldn't be prepared. Try a JPEG, PNG, WebP or HEIC image.", offerNewConversation: false });
       return;
     }
 
@@ -532,7 +539,14 @@ export function ConversationPane({
       form.append('photo', compressed.file);
       form.append('designId', state.designId);
       const res = await fetch('/api/assistant/attachments', { method: 'POST', body: form });
-      if (!res.ok) throw new Error('upload failed');
+      if (!res.ok) {
+        const body: { error?: unknown } = await res.json().catch(() => ({}));
+        const failure = attachmentUploadFailure(res.status, typeof body.error === 'string' ? body.error : undefined, res.headers?.get('retry-after'));
+        setPendingAttachments((prev) => prev.map((a) => (a.id === localId ? { ...a, status: 'failed' } : a)));
+        setAttachmentNotice({ text: failure.text, offerNewConversation: failure.offerNewConversation });
+        return;
+      }
+      setAttachmentNotice(null);
       const data: { id: string; kind: 'room_photo'; path: string; previewUrl: string | null; contentType: string; filename: string; consentId: string } =
         await res.json();
       setPendingAttachments((prev) =>
@@ -544,7 +558,17 @@ export function ConversationPane({
       );
     } catch {
       setPendingAttachments((prev) => prev.map((a) => (a.id === localId ? { ...a, status: 'failed' } : a)));
+      setAttachmentNotice({ text: attachmentUploadFailure(0).text, offerNewConversation: false });
     }
+  };
+
+  /** Forbidden upload = this browser lacks the private cookie for the saved design. Start clean under a fresh design id (the old project fields stay). */
+  const beginNewConversation = () => {
+    startNewConversation();
+    setMessages([]);
+    setPendingAttachments([]);
+    setAttachmentNotice(null);
+    setHistoryRequested(false);
   };
 
   const handleFilesSelected = (files: FileList | null) => {
@@ -600,6 +624,17 @@ export function ConversationPane({
       const res = await fetch(`/api/assistant/attachments/${encodeURIComponent(attachmentId)}?designId=${encodeURIComponent(state.designId)}`, {
         method: 'DELETE',
       });
+      if (res.status === 404) {
+        // Nothing by that id in this conversation any more: there is nothing left to remove.
+        setAttachmentStatus(messageIndex, attachmentId, 'unavailable');
+        return;
+      }
+      if (res.status === 403) {
+        // This browser cannot manage that photo (no access to the saved conversation). Retrying cannot help.
+        setAttachmentStatus(messageIndex, attachmentId, 'failed');
+        setAttachmentNotice({ text: "This browser can't remove that photo — it was attached from another browser or device.", offerNewConversation: false });
+        return;
+      }
       if (!res.ok) return; // stays 'deleting' — the retry button is already showing
       const data: { complete?: boolean } = await res.json().catch(() => ({}));
       if (data.complete) setAttachmentStatus(messageIndex, attachmentId, 'unavailable');
@@ -637,6 +672,16 @@ export function ConversationPane({
       }}
       aria-label={`Message ${WORKSPACE_ASSISTANT.name}`}
     >
+      {attachmentNotice && (
+        <p className="aha-message-text" role="alert">
+          {attachmentNotice.text}{' '}
+          {attachmentNotice.offerNewConversation && (
+            <button type="button" className="aha-message-retry" onClick={beginNewConversation}>
+              Start a new conversation
+            </button>
+          )}
+        </p>
+      )}
       {pendingAttachments.length > 0 && (
         <div className="aha-attachment-row" aria-label="Attached photos">
           {pendingAttachments.map((a) => (
