@@ -29,11 +29,18 @@
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
     },
     {
+      "source": "/(floor-plan|listing-floor-report|well-installed-review)/(.+)",
+      "headers": [
+        { "key": "Cache-Control", "value": "private, no-store" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    },
+    {
       "source": "/(admin|mypage|docs)(/.*)?",
       "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
     },
     {
-      "source": "/((?!api/|_next/|admin|mypage|docs/|login|register|verify-email)(?!.*\\.).*)",
+      "source": "/((?!api/|_next/|admin|mypage|docs/|login|register|verify-email|floor-plan/|listing-floor-report/|well-installed-review/)(?!.*\\.).*)",
       "headers": [{ "key": "Cache-Control", "value": "public, s-maxage=300, stale-while-revalidate=86400" }]
     },
     {

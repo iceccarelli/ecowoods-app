@@ -229,7 +229,7 @@ export async function POST(request: Request) {
         city: lead.city ? String(lead.city) : null,
         address: lead.postal ? String(lead.postal) : null,
         service: lead.service ? String(lead.service) : null,
-        squareFeet: lead.sqft ? Number(lead.sqft) : null,
+        squareFeet: lead.sqft ? Math.round(Number(lead.sqft)) : null,
         timeline: lead.timeline ? String(lead.timeline) : null,
         notes: leadNotes(lead),
         /* MEAS-01. Validated by leadSchema before it reaches here, and
@@ -340,7 +340,8 @@ export async function POST(request: Request) {
     email: String(lead.email ?? ''),
     phone: lead.phone ? String(lead.phone) : undefined,
     service: lead.service ? String(lead.service) : undefined,
-    squareFeet: lead.sqft ? Number(lead.sqft) : undefined,
+    squareFeet: lead.sqft ? Math.round(Number(lead.sqft)) : undefined,
+    city: lead.city ? String(lead.city) : lead.postal ? String(lead.postal) : undefined,
     notes: (persisted ? '' : `NOT CONFIRMED SAVED (ref ${leadId}) — check /admin/quotes for this email/phone before entering it by hand.\n\n`) + (leadNotes(lead) ?? ''),
   }).catch((err) =>
     console.error(JSON.stringify({ event: 'lead.email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),

@@ -20,6 +20,7 @@ import { ServiceCard } from './ServiceCard';
 import { ConversionPanel } from './ConversionPanel';
 import { RenovationAnalysisOffer } from './RenovationAnalysisOffer';
 import { AnswerBlock } from './AnswerBlock';
+import { AssistantMarkdown } from './AssistantMarkdown';
 import { ANALYSIS_CREDIT_COST } from '@/lib/assistant-workspace/credits-config';
 import { compressPhoto } from '@/lib/image-compress';
 
@@ -821,9 +822,9 @@ export function ConversationPane({
                       </span>
                     </p>
                   ) : (
-                    <p className="aha-message-text" aria-live={m.streaming ? 'polite' : undefined}>
-                      {m.text}
-                    </p>
+                    <div className="aha-message-text" aria-live={m.streaming ? 'polite' : undefined}>
+                      {m.role === 'assistant' ? <AssistantMarkdown text={m.text} /> : <p>{m.text}</p>}
+                    </div>
                   )}
                   {m.streaming && (
                     <button type="button" className="aha-message-retry aha-message-stop" onClick={stopGenerating}>

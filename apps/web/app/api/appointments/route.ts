@@ -123,7 +123,7 @@ export async function POST(request: Request) {
                 address: data.postal ?? null,
                 city: null,
                 service: data.service,
-                squareFeet: typeof data.sqft === 'number' ? data.sqft : null,
+                squareFeet: typeof data.sqft === 'number' ? Math.round(data.sqft) : null,
                 notes: data.notes ?? null,
                 userId: session?.user?.id ?? null,
                 designId: designId ?? null,

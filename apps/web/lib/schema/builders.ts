@@ -171,7 +171,6 @@ export function buildOrganization(config: OrganizationConfig): Organization {
     slogan: config.slogan,
     description: config.description,
     foundingDate: String(config.foundingYear),
-    priceRange: '$$',
     ...(config.founder
       ? { founder: { '@type': 'Person' as const, name: config.founder.name, url: config.founder.url } }
       : {}),
