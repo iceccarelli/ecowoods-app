@@ -55,6 +55,12 @@ vi.mock('@/lib/db', () => {
       if (data.balance?.decrement) w.balance -= data.balance.decrement;
       return { ...w };
     },
+    updateMany: async ({ where, data }: { where: { id: string; balance?: { gte?: number } }; data: { balance?: { decrement?: number } } }) => {
+      const w = [...state.wallets.values()].find((x) => x.id === where.id);
+      if (!w || (where.balance?.gte !== undefined && w.balance < where.balance.gte)) return { count: 0 };
+      if (data.balance?.decrement) w.balance -= data.balance.decrement;
+      return { count: 1 };
+    },
     findUnique: async ({ where }: { where: { userId: string } }) => {
       const w = state.wallets.get(where.userId);
       return w ? { ...w } : null;
@@ -430,5 +436,31 @@ describe('wallet', () => {
     const body = await res.json();
     expect(body.balance).toBe(40);
     expect(body.analysisCreditCost).toBe(15);
+  });
+});
+
+describe('chargeForAnalysis integrity', () => {
+  it('two parallel charges against a balance for one: exactly one succeeds, balance never negative, one SETTLE row', async () => {
+    const { chargeForAnalysis } = await import('@/lib/credit-ledger');
+    state.wallets.set('u-race', { id: 'wallet-race', userId: 'u-race', balance: 5 });
+    const run = (key: string) =>
+      chargeForAnalysis({ userId: 'u-race', credits: 5, requestIdempotencyKey: key, contextSnapshot: {}, compute: () => ({ ok: 1 }) });
+    const outcomes = await Promise.all([run('race-key-aaaa'), run('race-key-bbbb')]);
+    expect(outcomes.filter((o) => o.ok)).toHaveLength(1);
+    expect(outcomes.filter((o) => !o.ok && o.error === 'insufficient_credits')).toHaveLength(1);
+    expect(state.wallets.get('u-race')!.balance).toBe(0);
+    expect([...state.txns.values()].filter((t) => t.type === 'SETTLE')).toHaveLength(1);
+    expect(state.analyses.size).toBe(1);
+  });
+
+  it("another user's idempotency key never replays their result or charges anyone", async () => {
+    const { chargeForAnalysis } = await import('@/lib/credit-ledger');
+    state.wallets.set('u-a', { id: 'wallet-a', userId: 'u-a', balance: 5 });
+    state.wallets.set('u-b', { id: 'wallet-b', userId: 'u-b', balance: 5 });
+    const first = await chargeForAnalysis({ userId: 'u-a', credits: 5, requestIdempotencyKey: 'shared-key-1', contextSnapshot: {}, compute: () => ({ secret: 'A' }) });
+    expect(first.ok).toBe(true);
+    const second = await chargeForAnalysis({ userId: 'u-b', credits: 5, requestIdempotencyKey: 'shared-key-1', contextSnapshot: {}, compute: () => ({ secret: 'B' }) });
+    expect(second).toEqual({ ok: false, error: 'idempotency_key_conflict' });
+    expect(state.wallets.get('u-b')!.balance).toBe(5);
   });
 });

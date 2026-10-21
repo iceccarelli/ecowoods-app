@@ -112,6 +112,7 @@ export async function getWalletBalance(userId: string): Promise<number> {
 export type ChargeOutcome<T> =
   | { ok: true; result: T; balance: number; analysisId: string; replay: boolean }
   | { ok: false; error: 'insufficient_credits'; balance: number; required: number }
+  | { ok: false; error: 'idempotency_key_conflict' }
   | { ok: false; error: 'compute_failed'; message: string };
 
 /**
@@ -150,6 +151,8 @@ export async function chargeForAnalysis<T>(input: {
 
   const existing = await db.renovationAnalysis.findUnique({ where: { requestIdempotencyKey: input.requestIdempotencyKey } });
   if (existing) {
+    // The key is globally unique but must only ever replay to its owner.
+    if (existing.userId !== input.userId) return { ok: false, error: 'idempotency_key_conflict' };
     if (existing.status === 'FAILED') {
       return { ok: false, error: 'compute_failed', message: existing.failureReason ?? 'Analysis engine failed.' };
     }
@@ -195,11 +198,19 @@ export async function chargeForAnalysis<T>(input: {
   try {
     return await db.$transaction(async (tx) => {
       const wallet = await ensureWallet(tx, input.userId);
-      if (wallet.balance < input.credits) {
+      // Atomic conditional debit: the WHERE clause is evaluated against the
+      // locked, current row, so two concurrent charges can never both pass
+      // against a balance that only covers one (no read-then-write overdraw).
+      const debited = await tx.creditWallet.updateMany({
+        where: { id: wallet.id, balance: { gte: input.credits } },
+        data: { balance: { decrement: input.credits } },
+      });
+      if (debited.count !== 1) {
+        const current = await tx.creditWallet.findUnique({ where: { userId: input.userId } });
         return {
           ok: false as const,
           error: 'insufficient_credits' as const,
-          balance: wallet.balance,
+          balance: current?.balance ?? 0,
           required: input.credits,
         };
       }
@@ -217,7 +228,6 @@ export async function chargeForAnalysis<T>(input: {
           completedAt: new Date(),
         },
       });
-      await tx.creditWallet.update({ where: { id: wallet.id }, data: { balance: { decrement: input.credits } } });
       await tx.creditTransaction.create({
         data: {
           walletId: wallet.id,
@@ -230,10 +240,11 @@ export async function chargeForAnalysis<T>(input: {
         },
       });
 
+      const after = await tx.creditWallet.findUnique({ where: { userId: input.userId } });
       return {
         ok: true as const,
         result: analysis.result as T,
-        balance: wallet.balance - input.credits,
+        balance: after?.balance ?? 0,
         analysisId: analysis.id,
         replay: false,
       };
@@ -243,6 +254,7 @@ export async function chargeForAnalysis<T>(input: {
       // Concurrent request under the same idempotency key won the race.
       const race = await db.renovationAnalysis.findUnique({ where: { requestIdempotencyKey: input.requestIdempotencyKey } });
       if (race) {
+        if (race.userId !== input.userId) return { ok: false, error: 'idempotency_key_conflict' };
         const balance = await getWalletBalance(input.userId);
         return { ok: true, result: race.result as T, balance, analysisId: race.id, replay: true };
       }

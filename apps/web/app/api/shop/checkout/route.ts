@@ -8,17 +8,31 @@
  */
 
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { isTrustedBrowserOrigin } from '@/lib/rate-limit';
+import { enforceRateLimit } from '@/lib/rate-limit-durable';
 import { db } from '@/lib/db';
 import { stripe } from '@/lib/stripe';
 import { parseProductOptions, resolveSelectedOptions, round2 } from '@/lib/shop';
 
-type CartItemInput = {
-  productId: string;
-  quantity: number;
-  selectedOptions?: Record<string, string>;
-};
+/** Upper bounds are abuse guards only; they do not alter any price or term. */
+const MAX_CART_LINES = 50;
+const MAX_LINE_QUANTITY = 100_000;
+
+const checkoutSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        productId: z.string().min(1).max(100),
+        // finite, > 0 (rejects NaN/Infinity/negative/zero), bounded.
+        quantity: z.number().finite().positive().max(MAX_LINE_QUANTITY),
+        selectedOptions: z.record(z.string().max(100), z.string().max(200)).optional(),
+      }),
+    )
+    .min(1, 'Cart is empty')
+    .max(MAX_CART_LINES),
+});
 
 export async function POST(req: Request) {
   if (!isTrustedBrowserOrigin(req)) {
@@ -29,12 +43,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const body = (await req.json()) as { items?: CartItemInput[] };
-  const rawItems = body.items ?? [];
-
-  if (rawItems.length === 0) {
-    return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
+  // Durable + fail-closed: this creates a PENDING Order and a Stripe session.
+  const rl = await enforceRateLimit({
+    routeKey: 'shop-checkout',
+    identity: session.user.id,
+    config: { windowMs: 60_000, maxRequests: 5 },
+    failClosed: true,
+  });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Please wait a moment before trying again.' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
+    );
   }
+
+  const parsed = checkoutSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({ error: 'Invalid cart' }, { status: 400 });
+  }
+  const rawItems = parsed.data.items;
 
   const productIds = [...new Set(rawItems.map((i) => i.productId))];
   const products = await db.product.findMany({
@@ -63,7 +90,7 @@ export async function POST(req: Request) {
     }
 
     const minQuantity = Number(product.minQuantity);
-    const quantity = Math.max(minQuantity, Number(raw.quantity) || 0);
+    const quantity = round2(Math.max(minQuantity, raw.quantity));
 
     const optionGroups = parseProductOptions(product.options);
     const resolvedOptions = resolveSelectedOptions(optionGroups, raw.selectedOptions);
