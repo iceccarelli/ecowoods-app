@@ -70,7 +70,7 @@ const nextConfig = {
   // the database (lib/schema-drift.ts reads prisma/migrations at runtime; names
   // only), so the directory must be traced into that function's bundle.
   outputFileTracingIncludes: {
-    '/api/internal/schema-status': ['./prisma/migrations/**/*'],
+    '/api/internal/schema-status': ['./prisma/migrations/**/*', './prisma/schema.prisma'],
   },
 
   // Required for @react-pdf/renderer (uses canvas under the hood)
