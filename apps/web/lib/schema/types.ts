@@ -295,7 +295,7 @@ export interface Person {
  * page (linked via @id). Standard practice to avoid duplicating the full node.
  */
 export interface OrganizationRef {
-  '@type': 'Organization';
+  '@type'?: 'Organization';
   '@id': string;
   name?: string;
 }

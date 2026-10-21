@@ -1,5 +1,6 @@
-import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
-import { getServicePages, priceBand, bandForPage } from '@/lib/service-pages';
+import { SITE_URL, SERVICE_AREAS, SERVICES } from '@/lib/seo-data';
+import { getServicePages, bandForPage } from '@/lib/service-pages';
+import { priceSpecification } from '@/content/constants/pricing';
 import { OG_IMAGE_URL } from '@/lib/brand-assets';
 import { buildAdministrativeArea } from './builders';
 import { SERVICE_REGION, placeForArea } from './root-schema';
@@ -72,35 +73,37 @@ export function buildCommercialLandingSchema(
   for (const slug of config.serviceSlugs) {
     const page = pages.find((p) => p.slug === slug);
     if (!page) continue;
-    const price = priceBand(page);
     const band = bandForPage(page);
+    /* THE SAME @id MUST CARRY THE SAME NAME. This node shares its @id with the
+       one the root organisation (layout) and /services/<slug> both emit, and it
+       used to say `page.h1` / `page.standfirst` where they say the SERVICES
+       registry's name and blurb — three descriptions of one entity on one page.
+       The registry row is read here too, so the three cannot differ. */
+    const svc = SERVICES.find((s) => s.slug === slug);
     const node: ServiceNode = {
       '@type': 'Service',
       '@id': `${SITE_URL}/services/${slug}#service`,
-      name: page.h1 ?? slug,
-      description: page.standfirst ?? config.description,
-      serviceType: page.h1 ?? slug,
+      name: svc?.name ?? page.h1 ?? slug,
+      description: svc?.blurb ?? page.standfirst ?? config.description,
+      serviceType: svc?.name ?? page.h1 ?? slug,
       url: `${SITE_URL}/services/${slug}`,
       provider: { '@id': `${SITE_URL}/#organization` },
       areaServed: areas,
     };
     /* An Offer only where a band is actually published. A service with no band
        gets no Offer — the absence is the honest signal, and F-195 is why. */
-    if (price) {
+    if (band) {
       /* The currency is the band's, not a literal typed twice (GEO-003). These
          commercial pages are Toronto head terms and the band is a Canadian one,
          which is exactly why the literal survived unnoticed — it was right by
          coincidence, and a coincidence is not a source. */
       node.offers = {
         '@type': 'Offer',
-        priceCurrency: band?.currency ?? 'CAD',
-        priceSpecification: {
-          '@type': 'UnitPriceSpecification',
-          priceCurrency: band?.currency ?? 'CAD',
-          price,
-          unitText: 'per square foot',
-          valueAddedTaxIncluded: false,
-        },
+        priceCurrency: band.currency,
+        /* schema.org `price` is a number; this carried the prose band (a
+           formatted "$low–$high per sq ft" string) as `price`. The numeric
+           min/max come from the same helper the root catalog uses. */
+        priceSpecification: priceSpecification(band),
         availability: 'https://schema.org/InStock',
         url: `${SITE_URL}/services/${slug}`,
         seller: { '@id': `${SITE_URL}/#organization` },

@@ -4,6 +4,7 @@
  */
 
 import { PROFILE_LINKS, BUSINESS_HOURS, GOOGLE_MAPS_URL } from '@ecowoods/shared/constants';
+import { priceSpecification, type PriceBand } from '@/content/constants/pricing';
 import type {
   Organization,
   Service,
@@ -99,7 +100,8 @@ export interface ServiceConfig {
   id: string;
   name: string;
   description: string;
-  priceRange?: string;
+  /** The published band behind this service, or undefined where none is published. */
+  band?: PriceBand;
   areaServed: string[];
 }
 
@@ -204,7 +206,7 @@ export function buildOrganization(config: OrganizationConfig): Organization {
         id: svc.id,
         name: svc.name,
         description: svc.description,
-        priceRange: svc.priceRange,
+        band: svc.band,
         areaServed: svc.areaServed,
         siteUrl: baseUrl,
       })
@@ -254,7 +256,7 @@ export interface ServiceConfig2 {
   id: string;
   name: string;
   description: string;
-  priceRange?: string;
+  band?: PriceBand;
   areaServed: string[];
   siteUrl: string;
 }
@@ -267,13 +269,17 @@ export function buildService(config: ServiceConfig2): Service {
     name: config.name,
     description: config.description,
     areaServed: config.areaServed.map((name) => ({ '@type': 'City' as const, name })),
-    ...(config.priceRange && {
+    ...(config.band && {
       offers: [
         {
           '@context': 'https://schema.org',
           '@type': 'Offer',
           priceCurrency: 'CAD',
-          priceRange: config.priceRange,
+          /* `priceRange` is a LocalBusiness property, not an Offer one: here it
+             was an unparsed string no consumer reads as a price. The band is
+             emitted as the numeric UnitPriceSpecification every other Offer on
+             the site uses, built by the one function that builds them. */
+          priceSpecification: priceSpecification(config.band),
           /**
            * F-147. This read `availability: 'PT10M'` with the comment "10
            * minutes response time estimate". `availability` takes an
@@ -338,11 +344,11 @@ export function buildArticle(config: ArticleConfig): Article {
       name: config.author.name,
       ...(config.author.title && { title: config.author.title }),
     } as Person,
-    publisher: {
-      '@type': 'Organization',
-      '@id': `${baseUrl}/#organization`,
-      name: 'Ecowoods',
-    },
+    /* By reference. This restated the organisation inline with the name
+       'Ecowoods' — a literal — under the root's own @id, whose name is
+       BUSINESS_NAP.name ('Ecowoods Inc.'): two names for one @id on every
+       article page. The root node owns the name. */
+    publisher: { '@id': `${baseUrl}/#organization` },
     ...(config.wordCount && { wordCount: config.wordCount }),
     ...(config.readingTimeMinutes && {
       timeRequired: `PT${config.readingTimeMinutes}M`,
@@ -590,11 +596,7 @@ export function buildProduct(config: ProductConfig): Product {
     description: config.description,
     url: `${baseUrl}/products/${config.id}`,
     ...(config.imageUrl && { image: config.imageUrl }),
-    manufacturer: {
-      '@type': 'Organization',
-      '@id': `${baseUrl}/#organization`,
-      name: 'Ecowoods',
-    },
+    manufacturer: { '@id': `${baseUrl}/#organization` },
     offers: config.offers.map((offer) => ({
       '@context': 'https://schema.org',
       '@type': 'Offer',
