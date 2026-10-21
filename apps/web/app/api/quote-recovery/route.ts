@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
+import { enforceRateLimit } from '@/lib/rate-limit-durable';
+import { sendQuoteRecoveryConfirmEmail } from '@/lib/email';
+import { newConfirmToken, normaliseEmail } from '@/lib/quote-recovery';
 
 /**
  * POST /api/quote-recovery — record a CONSENTED reminder for an unfinished form.
@@ -17,6 +20,13 @@ import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } 
  * schema, the timestamp is stored on the row, and the sender re-checks it. A
  * recovery programme that cannot prove consent per-message is not a growth
  * channel, it is a liability with a nice conversion rate.
+ *
+ * DOUBLE OPT-IN. The checkbox is ticked by whoever is typing, which is not
+ * necessarily the owner of the address. A row is therefore created UNCONFIRMED
+ * and the cron never sends to it; the owner receives one confirmation email
+ * with a random single-use link (only its SHA-256 is stored) and the row
+ * becomes sendable only when that link is confirmed (see ./confirm). The
+ * confirmation email itself is limited per address and per IP, durably.
  *
  * DEDUPED BY EMAIL. A person who tabs between two pages, or reloads, must not
  * accumulate reminders. One pending row per address; a repeat call refreshes
@@ -57,36 +67,49 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
   const d = parsed.data;
+  const email = normaliseEmail(d.email);
 
   try {
     const pending = await db.quoteRecovery.findFirst({
-      where: { email: d.email, sentAt: null, convertedAt: null },
+      where: { email: { equals: email, mode: 'insensitive' }, sentAt: null, convertedAt: null },
       orderBy: { createdAt: 'desc' },
     });
 
+    const fields = {
+      name: d.name ?? pending?.name ?? null,
+      phone: d.phone ?? pending?.phone ?? null,
+      source: d.source ?? pending?.source ?? null,
+      service: d.service ?? pending?.service ?? null,
+      city: d.city ?? pending?.city ?? null,
+    };
+
+    let rowId: string;
     if (pending) {
-      await db.quoteRecovery.update({
-        where: { id: pending.id },
-        data: {
-          name: d.name ?? pending.name,
-          phone: d.phone ?? pending.phone,
-          source: d.source ?? pending.source,
-          service: d.service ?? pending.service,
-          city: d.city ?? pending.city,
-          consentedAt: new Date(),
-        },
-      });
+      await db.quoteRecovery.update({ where: { id: pending.id }, data: { ...fields, email } });
+      rowId = pending.id;
     } else {
-      await db.quoteRecovery.create({
-        data: {
-          email: d.email,
-          name: d.name ?? null,
-          phone: d.phone ?? null,
-          source: d.source ?? null,
-          service: d.service ?? null,
-          city: d.city ?? null,
-          consentedAt: new Date(),
-        },
+      const created = await db.quoteRecovery.create({
+        data: { email, ...fields, consentedAt: new Date() },
+      });
+      rowId = created.id;
+    }
+
+    // Already confirmed by the mailbox owner: nothing more to send.
+    if (pending?.confirmedAt) return NextResponse.json({ ok: true }, { status: 201 });
+
+    // Durable limits on the confirmation email: it goes to a third party.
+    const ip = getClientIp(request);
+    const [byEmail, byIp] = await Promise.all([
+      enforceRateLimit({ routeKey: 'quote-recovery-confirm-email', identity: email, config: { windowMs: 24 * 60 * 60 * 1000, maxRequests: 2 } }),
+      enforceRateLimit({ routeKey: 'quote-recovery-confirm-ip', identity: ip, config: { windowMs: 60 * 60 * 1000, maxRequests: 10 } }),
+    ]);
+    if (byEmail.allowed && byIp.allowed) {
+      const { token, hash } = newConfirmToken();
+      await db.quoteRecovery.update({ where: { id: rowId }, data: { confirmTokenHash: hash, confirmSentAt: new Date() } });
+      const site = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca').replace(/\/$/, '');
+      await sendQuoteRecoveryConfirmEmail({
+        to: email,
+        confirmUrl: `${site}/api/quote-recovery/confirm?token=${encodeURIComponent(token)}`,
       });
     }
   } catch (err) {

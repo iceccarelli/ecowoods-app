@@ -18,6 +18,10 @@ import { escapeHtml } from '@/lib/email/html';
  *     that emails addresses out of your database is a spam cannon with your
  *     domain's reputation attached to it.
  *   · consentedAt is set        — no consent, no send. Ever.
+ *   · confirmedAt is set        — the mailbox owner clicked the double opt-in link.
+ *   · no QuoteRequest for the address (case-insensitive) was created after the
+ *     recovery row — covers leads, bookings and photo triage even if the row
+ *     was never marked converted.
  *   · sentAt is null            — exactly one email per person, forever.
  *   · convertedAt is null       — somebody who finished is never asked to.
  *   · The row is at least 2h old and at most 7 days old. A reminder about a
@@ -41,15 +45,16 @@ export async function GET(request: Request) {
   }
 
   const now = Date.now();
-  let due: Array<{ id: string; email: string; name: string | null }> = [];
+  let due: Array<{ id: string; email: string; name: string | null; createdAt: Date }> = [];
   try {
     due = await db.quoteRecovery.findMany({
       where: {
         sentAt: null,
         convertedAt: null,
+        confirmedAt: { not: null },
         createdAt: { lte: new Date(now - MIN_AGE_MS), gte: new Date(now - MAX_AGE_MS) },
       },
-      select: { id: true, email: true, name: true },
+      select: { id: true, email: true, name: true, createdAt: true },
       take: BATCH,
     });
   } catch (err) {
@@ -64,6 +69,20 @@ export async function GET(request: Request) {
 
   let sent = 0;
   for (const row of due) {
+    // Somebody who submitted anything after starting the form has finished.
+    try {
+      const later = await db.quoteRequest.findFirst({
+        where: { email: { equals: row.email, mode: 'insensitive' }, createdAt: { gte: row.createdAt } },
+        select: { id: true },
+      });
+      if (later) {
+        await db.quoteRecovery.update({ where: { id: row.id }, data: { convertedAt: new Date() } });
+        continue;
+      }
+    } catch {
+      continue; // cannot prove they have not finished: do not send
+    }
+
     // Stamp FIRST. A crash mid-send loses one email; a crash after an unstamped
     // send emails the same person on every run until somebody notices.
     try {

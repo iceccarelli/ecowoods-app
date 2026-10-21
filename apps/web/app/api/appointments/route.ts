@@ -12,6 +12,7 @@ import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { recordFunnelEvent, sanitiseSource } from '@/lib/funnel-ledger';
 import { sendLeadAlert } from '@/lib/lead-alert';
 import { designIdOf } from '@/lib/floor-studio/design-id';
+import { markRecoveryConverted } from '@/lib/quote-recovery';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -118,7 +119,9 @@ export async function POST(request: Request) {
                 name: data.name,
                 email: data.email,
                 phone: data.phone ?? null,
-                city: data.postal ?? null,
+                // Same contract as /api/leads: postal code -> address; city is not collected here.
+                address: data.postal ?? null,
+                city: null,
                 service: data.service,
                 squareFeet: typeof data.sqft === 'number' ? data.sqft : null,
                 notes: data.notes ?? null,
@@ -179,6 +182,9 @@ export async function POST(request: Request) {
       source: sanitiseSource(data.source) ?? 'booking',
       quoteId: quote.id,
     }));
+
+    // They finished: cancel any pending "you did not finish" reminder.
+    runAfterResponse(markRecoveryConverted(data.email));
 
     // Notifications — non-blocking; a booking is never lost to a flaky email.
     const label = whenLabel(startsAt);

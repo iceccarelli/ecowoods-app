@@ -51,6 +51,7 @@ describe('POST /api/leads — repeated submission', () => {
     expect(res.status).toBe(201);
     expect(create).toHaveBeenCalledTimes(1);
     expect(admin).toHaveBeenCalledTimes(1);
+    await new Promise((r) => setTimeout(r, 30)); // ack is gated by the async durable limiter
     expect(customer).toHaveBeenCalledTimes(1);
     expect(alert).toHaveBeenCalledTimes(1);
   });

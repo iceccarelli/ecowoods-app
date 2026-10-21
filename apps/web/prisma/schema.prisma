@@ -285,6 +285,13 @@ model QuoteRecovery {
   sentAt      DateTime? @db.Timestamptz
   /// Set when this address submitted a real lead — cancels the reminder.
   convertedAt DateTime? @db.Timestamptz
+  /// Double opt-in (CASL): set only when the owner of the mailbox clicks the
+  /// confirmation link. The cron never sends while this is null.
+  confirmedAt DateTime? @db.Timestamptz
+  /// SHA-256 of the one-time confirmation token (the raw token is only ever in the email).
+  confirmTokenHash String?
+  /// When the confirmation email was last sent (limits resends).
+  confirmSentAt DateTime? @db.Timestamptz
 
   createdAt DateTime @default(now()) @db.Timestamptz
   updatedAt DateTime @updatedAt @db.Timestamptz
@@ -292,6 +299,7 @@ model QuoteRecovery {
   @@index([email])
   @@index([sentAt])
   @@index([createdAt])
+  @@index([confirmTokenHash])
   @@schema("ecowoods")
 }
 

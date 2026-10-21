@@ -264,7 +264,7 @@ export function EstimateForm({
         }}
       />
       <span>
-        Email me if I leave this unfinished. One reminder, two hours later, and never again.
+        Email me if I leave this unfinished. We will first send one message to confirm this address; after you confirm, one reminder about two hours later, and never again.
       </span>
     </label>
   );

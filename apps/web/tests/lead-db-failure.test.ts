@@ -52,6 +52,7 @@ describe('POST /api/leads — database failure', () => {
     expect(alert).toHaveBeenCalledTimes(1);
     expect(alert.mock.calls[0]?.[0]).toMatchObject({ kind: 'lead (NOT SAVED)', phone: '(416) 555-0143' });
     expect(String((admin.mock.calls[0]?.[0] as { notes?: string }).notes)).toContain('NOT CONFIRMED SAVED');
+    await new Promise((r) => setTimeout(r, 30)); // ack is gated by the async durable limiter
     expect(customer).toHaveBeenCalledTimes(1);
   });
 
