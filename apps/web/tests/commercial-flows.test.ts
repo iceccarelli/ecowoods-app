@@ -145,8 +145,14 @@ describe('shop checkout', () => {
   };
 
   it('returns to the orders page with the order id, so a pending payment has somewhere to say so', async () => {
-    await call();
-    expect(String(s.stripeCreates[0]!.success_url)).toBe('http://localhost:3000/mypage/orders?checkout=success&order=order-1');
+    // The route reads NEXTAUTH_URL; pin it so the result does not depend on the machine (CI sets it).
+    vi.stubEnv('NEXTAUTH_URL', 'https://shop.example.test');
+    try {
+      await call();
+      expect(String(s.stripeCreates[0]!.success_url)).toBe('https://shop.example.test/mypage/orders?checkout=success&order=order-1');
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   it('a Stripe failure closes the unpaid order instead of stranding it as PENDING', async () => {
