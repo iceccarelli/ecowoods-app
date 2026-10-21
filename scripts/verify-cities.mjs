@@ -31,7 +31,10 @@
  * 2. Each entry has a non-empty intro, at least three neighbourhoods, and a
  *    housing note — the three fields that make the page specific to the place.
  * 3. No entry carries `signatureProject`. That is the one field that asserts a
- *    real job, and no job has been confirmed for publication..
+ *    real job, and no job has been confirmed for publication. (The one
+ *    grandfathered entry, downtown-toronto's "102-year-old house in the east
+ *    end", matched no case study and contradicted its own page; it is gone and
+ *    the baseline is empty.)
  * 4. No two entries share an intro or a housing note. Duplicated copy across
  *    city pages is the failure this guard exists to prevent, and pasting one
  *    entry sixteen times would otherwise satisfy every check above.
@@ -57,7 +60,7 @@ const strip = (s) =>
  * Cities whose signatureProject is confirmed and published. Adding a slug here
  * is a statement that the job described is real and cleared for publication.
  */
-const SIGNATURE_BASELINE = new Set(['downtown-toronto']);
+const SIGNATURE_BASELINE = new Set([]);
 
 const src = strip(fs.readFileSync(SEO, 'utf8'));
 const problems = [];
@@ -301,6 +304,9 @@ const svcPage = path.join(ROOT, 'apps/web/app/services/[slug]/page.tsx');
 for (const [file, needle, what] of [
   [cityPage, /href=\{`\/services\/\$\{[^}]+\}`\}/, 'a link to /services/{slug} for each service'],
   [svcPage, /href=\{`\/service-areas\/\$\{[^}]+\}`\}/, 'a link to /service-areas/{slug} for each area'],
+  [cityPage, /href=\{`\/guides\/\$\{[^}]+\}`\}/, 'a link to /guides/{slug} (Read next)'],
+  [cityPage, /href=\{`\/corridors\/\$\{[^}]+\}`\}/, 'a link to /corridors/{id} (Read next)'],
+  [path.join(ROOT, 'apps/web/app/projects/[slug]/page.tsx'), /href=\{`\/service-areas\/\$\{[^}]+\}`\}/, 'a link to /service-areas/{slug} for the job location'],
 ]) {
   if (!fs.existsSync(file)) {
     problems.push({ where: path.relative(ROOT, file), detail: 'missing' });
@@ -312,6 +318,42 @@ for (const [file, needle, what] of [
       detail: `does not render ${what} — the relationship is stated in prose and given no edge to follow`,
     });
   }
+}
+
+/* ── 7. every published job card resolves to a published area ─────────────── */
+/**
+ * content/job-cards.ts prints the neighbourhood a case study records, which is
+ * not always a service area: 'Distillery District' matched no SERVICE_AREAS
+ * name, so jobCardsForArea never rendered the card anywhere. Lookups key on
+ * `areaSlug` now, and that slug must be a published area.
+ */
+const jobSrc = strip(fs.readFileSync(path.join(ROOT, 'apps/web/content/job-cards.ts'), 'utf8'));
+const jobBlocks = jobSrc.split(/\n  \{\n/).slice(1);
+if (jobBlocks.length === 0) {
+  problems.push({ where: 'content/job-cards.ts', detail: 'no job cards read — the reader is blind' });
+}
+for (const b of jobBlocks) {
+  const slug = b.match(/slug:\s*'([^']+)'/)?.[1] ?? '(unknown)';
+  const areaSlug = b.match(/areaSlug:\s*'([^']+)'/)?.[1];
+  if (!areaSlug) problems.push({ where: `JOB_CARDS ${slug}`, detail: 'has no areaSlug' });
+  else if (!areaSlugs.has(areaSlug)) {
+    problems.push({ where: `JOB_CARDS ${slug}`, detail: `areaSlug '${areaSlug}' is not a published service area, so jobCardsForArea can never render this card` });
+  }
+}
+
+/* ── 8. a floor under the local text of every page ─────────────────────────── */
+/**
+ * The neighbourhood pages were the thinnest indexable pages on the site
+ * (55-68 words of own copy). This is a ratchet: it fails if any page's own
+ * copy (intro, housing note, neighbourhoods, local consideration) falls below
+ * the lowest present today, so a page cannot be thinned further. Raising it
+ * means writing real local content, not loosening the number.
+ */
+const LOCAL_WORD_FLOOR = 55;
+for (const [slug, block] of entries) {
+  const n = [field(block, 'intro'), field(block, 'housingNote'), field(block, 'localConsideration')]
+    .join(' ').split(/\s+/).filter(Boolean).length;
+  if (n < LOCAL_WORD_FLOOR) problems.push({ where: slug, detail: `${n} words of local copy — floor is ${LOCAL_WORD_FLOOR}` });
 }
 
 /* ── report ───────────────────────────────────────────────────────────────── */

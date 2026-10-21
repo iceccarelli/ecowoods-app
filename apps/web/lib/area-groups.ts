@@ -35,8 +35,10 @@
  * it. It renders as nothing here rather than as a group with a zero beside it:
  * an empty accordion is a promise of content that is not there.
  */
-import { CORRIDORS, corridorsFor } from '@/lib/geo';
-import { SERVICE_AREAS, type City } from '@/lib/seo-data';
+import { CORRIDORS, corridorsFor, marketBySlug } from '@/lib/geo';
+import { SERVICE_AREAS, cityBySlug, cityContent, US_AREA_SLUGS, type City } from '@/lib/seo-data';
+import { GUIDES, type Guide } from '@/lib/guides';
+import { PROJECTS, type Project } from '@/lib/projects';
 
 export type AreaGroup = {
   id: string;
@@ -99,3 +101,95 @@ export function areaGroups(): AreaGroup[] {
 /** Every city appears exactly once across the groups. Used by the test. */
 export const groupedCityCount = (groups: AreaGroup[]): number =>
   groups.reduce((n, g) => n + g.cities.length, 0);
+
+/* ── LOCAL DISCOVERY LINKS ───────────────────────────────────────────────────
+ *
+ * City pages linked out to services and neighbours but never to the guides that
+ * answer the area's own question, to the corridor it sits on, or to a published
+ * job in it; project pages printed their neighbourhood as plain text. These
+ * helpers read registries that already exist (guides, corridors, projects,
+ * CITY_CONTENT) and return links. They hold no copy of their own.
+ */
+const GUIDE_SLAB = 'reference-condominium-concrete-slab';
+const GUIDE_RADIANT = 'reference-radiant-heat-main-floor';
+const GUIDE_REFINISH = 'reference-refinishing-existing-hardwood';
+const GUIDE_METHOD = 'nail-down-glue-down-or-floating';
+const GUIDE_QUOTE = 'how-to-evaluate-a-hardwood-quote';
+
+/**
+ * Up to three guides for an area. The substrate is read from the area's own
+ * `housingNote` (the registry that already describes its stock); the fallbacks
+ * are the two guides that apply to every job whatever the floor sits on. A slug
+ * that stops resolving in GUIDES is dropped rather than rendered as a 404.
+ */
+export function guidesForArea(slug: string): Guide[] {
+  const text = (cityContent(slug)?.housingNote ?? '').toLowerCase();
+  const picks: string[] = [];
+  if (/\b(condo|condominium|concrete|slab|loft)/.test(text)) picks.push(GUIDE_SLAB);
+  if (/\bradiant/.test(text)) picks.push(GUIDE_RADIANT);
+  if (/\b(original|pre-war|prewar|century|victorian|edwardian|1[89]\d0s|heritage)/.test(text)) {
+    picks.push(GUIDE_REFINISH);
+  }
+  picks.push(GUIDE_METHOD, GUIDE_QUOTE);
+  const out: Guide[] = [];
+  for (const s of picks) {
+    const g = GUIDES.find((x) => x.slug === s);
+    if (g && !out.includes(g)) out.push(g);
+    if (out.length === 3) break;
+  }
+  return out;
+}
+
+/** The first corridor an area sits on, as a link target, or null. */
+export function corridorLinkForArea(slug: string): { id: string; name: string } | null {
+  const id = firstCorridorId(slug);
+  const c = id ? CORRIDORS.find((x) => x.id === id) : undefined;
+  return c ? { id: c.id, name: c.name } : null;
+}
+
+const slugOf = (s: string) =>
+  s.toLowerCase().trim().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+/**
+ * The published area a project location belongs to: its neighbourhood when
+ * that is itself a published area, else its city when that is. `GTA`, or a
+ * neighbourhood with no page, resolves to the city or to null, never to a guess.
+ */
+export function areaForProjectLocation(loc: { neighbourhood: string; city: string }): City | null {
+  const hood = cityBySlug(slugOf(loc.neighbourhood));
+  if (hood && !US_AREA_SLUGS.has(hood.slug)) return hood;
+  return cityBySlug(slugOf(loc.city)) ?? null;
+}
+
+export interface AreaPlacement {
+  /** The containing municipality. `page` is set only when it has its own /service-areas page (Toronto does not). */
+  parent: { slug: string; name: string; page: City | null };
+  neighbours: City[];
+  corridors: { id: string; name: string }[];
+}
+
+/**
+ * WHERE A DISTRICT SITS, from the market registry alone: the municipality it is
+ * part of, the published areas it borders (`nearest`), and the corridors that
+ * municipality is on. Null for a municipality, and for a district whose parent
+ * is not in the registry. These are the facts the neighbourhood pages were missing as
+ * prose; none is written here, all are read.
+ */
+export function areaPlacement(slug: string): AreaPlacement | null {
+  const mk = marketBySlug(slug);
+  if (!mk || mk.kind !== 'district' || !mk.partOf) return null;
+  const parentMarket = marketBySlug(mk.partOf);
+  if (!parentMarket) return null;
+  const parent = { slug: parentMarket.slug, name: parentMarket.name, page: cityBySlug(parentMarket.slug) ?? null };
+  const neighbours = mk.nearest
+    .filter((s) => s !== mk.partOf && s !== slug)
+    .map((s) => cityBySlug(s))
+    .filter((c): c is City => Boolean(c));
+  const corridors = corridorsFor(slug).map((c) => ({ id: c.id, name: c.name }));
+  return { parent, neighbours, corridors };
+}
+
+/** Published projects whose location resolves to this area. */
+export function projectsForArea(slug: string): Project[] {
+  return PROJECTS.filter((p) => areaForProjectLocation(p.location)?.slug === slug);
+}
