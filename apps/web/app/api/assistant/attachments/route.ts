@@ -29,6 +29,8 @@ import { NextResponse } from 'next/server';
 import { getClientIp, isTrustedBrowserOrigin } from '@/lib/rate-limit';
 import { enforceRateLimit } from '@/lib/rate-limit-durable';
 import { auth } from '@/lib/auth';
+import { readAccessToken, serializeAccessCookie } from '@/lib/assistant-workspace/conversation-access';
+import { establishConversation } from '@/lib/assistant-workspace/conversation-store';
 import { sniffFile, safeFilename } from '@/lib/image-sniff';
 import { isDesignId } from '@/lib/floor-studio/design-id';
 import { grantConsent } from '@/lib/floor-graph/consent';
@@ -87,6 +89,17 @@ export async function POST(request: Request) {
   }
 
   const session = await auth().catch(() => null);
+
+  /* designId alone must not let a stranger attach photos to someone's
+     conversation: the caller must hold its private capability (or be its
+     owner). First contact mints the conversation and its cookie. */
+  const access = await establishConversation(designId, session?.user?.id ?? null, readAccessToken(request, designId));
+  if (!access.ok) {
+    return access.reason === 'forbidden'
+      ? NextResponse.json({ error: 'forbidden' }, { status: 403 })
+      : NextResponse.json({ error: "Couldn't save that photo — try again in a moment." }, { status: 502 });
+  }
+
   const id = attachmentId();
   const contentType = sniffed.contentType;
   const buffer = Buffer.from(await file.arrayBuffer());
@@ -116,7 +129,7 @@ export async function POST(request: Request) {
 
   const previewUrl = await signAttachmentUrl(stored.path, 600);
 
-  return NextResponse.json(
+  const response = NextResponse.json(
     {
       id,
       kind: 'room_photo' as const,
@@ -133,6 +146,8 @@ export async function POST(request: Request) {
     },
     { status: 201 },
   );
+  if (access.newToken) response.headers.append('Set-Cookie', serializeAccessCookie(designId, access.newToken));
+  return response;
 }
 
 export async function GET() {

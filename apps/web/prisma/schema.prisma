@@ -1399,6 +1399,12 @@ model AssistantConversation {
   userId   String? @db.Uuid
   user     User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
+  /// SHA-256 (hex) of the private capability minted when an ANONYMOUS
+  /// conversation is created. designId is shareable (Floor Studio links carry
+  /// it) so it is never the credential for the transcript or photos; this is.
+  /// Null on pre-existing rows, which no anonymous caller can then open.
+  accessTokenHash String? @db.VarChar(64)
+
   messages AssistantMessage[]
 
   createdAt DateTime @default(now()) @db.Timestamptz

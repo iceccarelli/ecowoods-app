@@ -30,6 +30,7 @@ import { db } from '@/lib/db';
 import { isDesignId } from '@/lib/floor-studio/design-id';
 import { signAttachmentUrl } from './attachment-storage';
 import type { AssistantChatCard } from './chat-schema';
+import { hashAccessToken, isConversationAuthorized, newAccessToken } from './conversation-access';
 
 export interface StoredAttachment {
   id: string;
@@ -77,29 +78,30 @@ export interface StoredTurn {
 const MAX_LOADED_TURNS = 60;
 
 /**
- * `designId` is deliberately NOT an access-control token elsewhere in this
- * codebase (see design-id.ts: "it is not a secret... a label that two
- * records can be joined on" — Floor Studio's own share links depend on it
- * being freely shareable). Reading a transcript by bare designId inherits
- * that same anonymous-first posture, which is correct for an anonymous
- * conversation. It stops being correct the moment a conversation is linked
- * to a real account: once `userId` is set, only a session authenticated as
- * that same user may read it — a designId that leaked into a shared link,
- * a referrer header, or a support screenshot must not become a way to read
- * a signed-in homeowner's private transcript. `viewerUserId` is the
- * caller's own session (`auth()`), never a second identity system.
+ * `designId` is a shareable design label (Floor Studio share links carry it
+ * — design-id.ts), so it is NOT the credential for a conversation. Reading a
+ * transcript requires either the session of the account the conversation is
+ * linked to, or — for an anonymous conversation — the private capability
+ * minted when it was created (conversation-access.ts), presented by the
+ * browser that created it. `accessToken` is that capability; `viewerUserId`
+ * is the caller's own session (`auth()`).
  *
  * An unauthorized read returns the same empty result as "no conversation
  * exists" — never a distinct denial — so probing a design id can't even
- * learn whether it names someone else's linked conversation.
+ * learn whether it names someone else's conversation.
  */
-export async function loadTranscript(designId: string | undefined, viewerUserId: string | null): Promise<StoredTurn[]> {
+export async function loadTranscript(
+  designId: string | undefined,
+  viewerUserId: string | null,
+  accessToken: string | null,
+): Promise<StoredTurn[]> {
   if (!designId || !isDesignId(designId)) return [];
   try {
     const conversation = await db.assistantConversation.findUnique({
       where: { designId },
       select: {
         userId: true,
+        accessTokenHash: true,
         messages: {
           // Newest first so `take` keeps the MOST RECENT MAX_LOADED_TURNS —
           // taking from an ascending order instead would keep the OLDEST
@@ -113,7 +115,7 @@ export async function loadTranscript(designId: string | undefined, viewerUserId:
       },
     });
     if (!conversation) return [];
-    if (conversation.userId && conversation.userId !== viewerUserId) return [];
+    if (!isConversationAuthorized(conversation, viewerUserId, accessToken)) return [];
     return await Promise.all(
       conversation.messages.reverse().map(async (m) => ({
         role: m.role === 'assistant' ? 'assistant' : 'user',
@@ -157,28 +159,66 @@ export async function loadTranscript(designId: string | undefined, viewerUserId:
   }
 }
 
+export type EstablishResult =
+  | { ok: true; conversationId: string; /** Present only when this call minted the conversation: the caller MUST deliver it as the access cookie. */ newToken?: string }
+  | { ok: false; reason: 'forbidden' | 'db_error' };
+
 /**
- * Idempotent conversation lookup/creation. Called once per turn from the
- * chat route (never from the client directly) so a design's first message
- * mints the row and every later message reuses it — one conversation per
- * design, matching the one-workspace-per-design model this whole surface
- * already follows.
+ * Find the caller's conversation for `designId`, or create it. Called by the
+ * chat and upload routes (never the client directly).
+ *
+ * - No row: create one and mint its capability (returned once, as `newToken`).
+ * - Row the caller is authorised for: reuse it. A signed-in caller holding
+ *   the anonymous capability links their account onto it (never the reverse).
+ * - Row the caller is NOT authorised for: `forbidden` — a bare designId never
+ *   lets a stranger write into, or attach photos to, someone's conversation.
+ * - Pre-existing anonymous row with no stored hash: nobody holds a
+ *   credential for it, so it is detached (re-keyed away from the shareable
+ *   designId, data retained, unreachable by id) and a fresh conversation is
+ *   started — the "degrade to a new conversation" path for old localStorage
+ *   designIds. This reveals nothing: the caller gets an EMPTY conversation.
  */
-async function ensureConversation(designId: string, userId: string | null): Promise<string | null> {
+export async function establishConversation(designId: string, userId: string | null, accessToken: string | null): Promise<EstablishResult> {
   try {
-    const conversation = await db.assistantConversation.upsert({
+    const existing = await db.assistantConversation.findUnique({
       where: { designId },
-      // A returning visitor who has since signed in backfills userId onto
-      // the conversation their browser already holds a designId for —
-      // never overwrites it back to null on an anonymous request.
-      update: userId ? { userId } : {},
-      create: { designId, userId },
-      select: { id: true },
+      select: { id: true, userId: true, accessTokenHash: true },
     });
-    return conversation.id;
+    if (existing) {
+      if (isConversationAuthorized(existing, userId, accessToken)) {
+        if (userId && !existing.userId) {
+          await db.assistantConversation.update({ where: { id: existing.id }, data: { userId } });
+        }
+        return { ok: true, conversationId: existing.id };
+      }
+      if (existing.userId || existing.accessTokenHash) return { ok: false, reason: 'forbidden' };
+      // Legacy credential-less anonymous row: detach, then start fresh below.
+      await db.assistantConversation.updateMany({
+        where: { id: existing.id, userId: null, accessTokenHash: null },
+        data: { designId: `lg${existing.id.replace(/-/g, '').slice(0, 14)}` },
+      });
+    }
+    const token = newAccessToken();
+    try {
+      const created = await db.assistantConversation.create({
+        data: { designId, userId, accessTokenHash: hashAccessToken(token) },
+        select: { id: true },
+      });
+      return { ok: true, conversationId: created.id, newToken: token };
+    } catch (err) {
+      // Lost a creation race on the unique designId: whoever won holds the
+      // capability; we only get in if we hold it too.
+      const winner = await db.assistantConversation.findUnique({
+        where: { designId },
+        select: { id: true, userId: true, accessTokenHash: true },
+      });
+      if (winner && isConversationAuthorized(winner, userId, accessToken)) return { ok: true, conversationId: winner.id };
+      if (winner) return { ok: false, reason: 'forbidden' };
+      throw err;
+    }
   } catch (err) {
     console.error(JSON.stringify({ event: 'assistant.conversation.ensure_failed', error: err instanceof Error ? err.message : 'unknown' }));
-    return null;
+    return { ok: false, reason: 'db_error' };
   }
 }
 
@@ -213,15 +253,16 @@ async function findOwnedAttachment(
   designId: string | undefined,
   attachmentId: string,
   viewerUserId: string | null,
+  accessToken: string | null,
 ): Promise<AuthorizedLookup> {
   if (!designId || !isDesignId(designId)) return { ok: false, reason: 'not_found' };
   try {
     const conversation = await db.assistantConversation.findUnique({
       where: { designId },
-      select: { userId: true, messages: { select: { id: true, attachments: true } } },
+      select: { userId: true, accessTokenHash: true, messages: { select: { id: true, attachments: true } } },
     });
     if (!conversation) return { ok: false, reason: 'not_found' };
-    if (conversation.userId && conversation.userId !== viewerUserId) return { ok: false, reason: 'forbidden' };
+    if (!isConversationAuthorized(conversation, viewerUserId, accessToken)) return { ok: false, reason: 'forbidden' };
     const locations: AttachmentLocation[] = [];
     for (const message of conversation.messages) {
       const attachments = Array.isArray(message.attachments) ? (message.attachments as unknown as StoredAttachment[]) : [];
@@ -296,9 +337,10 @@ export async function claimAttachmentForDeletion(
   designId: string | undefined,
   attachmentId: string,
   viewerUserId: string | null,
+  accessToken: string | null,
 ): Promise<ClaimAttachmentResult> {
   for (let attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
-    const found = await findOwnedAttachment(designId, attachmentId, viewerUserId);
+    const found = await findOwnedAttachment(designId, attachmentId, viewerUserId, accessToken);
     if (!found.ok) return found;
 
     if (found.locations.every((l) => l.attachments[l.index]!.status === 'unavailable')) {
@@ -360,10 +402,11 @@ export async function finalizeAttachmentDeletion(
   designId: string | undefined,
   attachmentId: string,
   viewerUserId: string | null,
+  accessToken: string | null,
   outcome: { storageDeleted: boolean; consentWithdrawn: boolean },
 ): Promise<FinalizeAttachmentResult> {
   for (let attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
-    const found = await findOwnedAttachment(designId, attachmentId, viewerUserId);
+    const found = await findOwnedAttachment(designId, attachmentId, viewerUserId, accessToken);
     if (!found.ok) return found;
 
     if (found.locations.every((l) => l.attachments[l.index]!.status === 'unavailable')) {
@@ -407,8 +450,8 @@ export async function finalizeAttachmentDeletion(
 }
 
 export interface AppendTurnInput {
-  designId: string | undefined;
-  userId: string | null;
+  /** From establishConversation — already authorised for this caller. Null → no-op. */
+  conversationId: string | null;
   role: 'user' | 'assistant';
   content: string;
   blocks?: AssistantChatCard[];
@@ -418,10 +461,9 @@ export interface AppendTurnInput {
 
 /** Best-effort append. Never throws — a failed write here must never surface as a failed chat turn. */
 export async function appendTurn(input: AppendTurnInput): Promise<void> {
-  if (!input.designId || !isDesignId(input.designId)) return;
-  if (!input.content.trim() && !input.blocks?.length) return;
-  const conversationId = await ensureConversation(input.designId, input.userId);
+  const conversationId = input.conversationId;
   if (!conversationId) return;
+  if (!input.content.trim() && !input.blocks?.length) return;
   try {
     await db.assistantMessage.create({
       data: {
