@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ensureDesignId, newDesignId } from '@/lib/floor-studio/design-id';
-import { applyPatch, defaultWorkspaceState } from '@/lib/assistant-workspace/state';
+import { applyPatch, defaultWorkspaceState, restartConversation } from '@/lib/assistant-workspace/state';
 import { loadWorkspaceState, saveWorkspaceState } from '@/lib/assistant-workspace/persistence';
 import type { WorkspacePatch, WorkspaceState } from '@/lib/assistant-workspace/types';
 
@@ -54,7 +54,7 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const startNewConversation = useCallback(() => {
-    setState((prev) => ({ ...prev, designId: newDesignId() }));
+    setState((prev) => restartConversation(prev, newDesignId()));
   }, []);
 
   const value = useMemo<WorkspaceContextValue>(() => ({ state, patch, ready, startNewConversation }), [state, patch, ready, startNewConversation]);

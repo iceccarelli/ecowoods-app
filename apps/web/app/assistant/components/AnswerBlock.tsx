@@ -1,6 +1,25 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import type { AssistantChatCard } from '@/lib/assistant-workspace/chat-schema';
+import { resolveSiteHref } from '@/lib/assistant-workspace/links';
+
+/**
+ * A card link. Cards carry absolute https://ecowoods.ca/... hrefs (so they
+ * mean the same thing in a transcript or an email); on the page they resolve to
+ * same-site paths so previews stay on their own host, and a href that is not a
+ * real route renders nothing rather than a dead link. Opens in a new tab so the
+ * workspace and its conversation stay where they are.
+ */
+function CardLink({ href, className, children }: { href: string; className: string; children: ReactNode }) {
+  const resolved = resolveSiteHref(href);
+  if (!resolved) return null;
+  return (
+    <a className={className} href={resolved.href} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  );
+}
 
 /**
  * One renderer per block type — the typed contract's whole point is that
@@ -105,9 +124,7 @@ export function AnswerBlock({ card }: { card: AssistantChatCard }) {
           <p className="aha-block-lede">{card.title}</p>
           <p className="aha-block-body">{card.whyItMatters}</p>
           {card.href ? (
-            <a className="aha-block-link" href={card.href} target="_blank" rel="noopener noreferrer">
-              Read the source
-            </a>
+            <CardLink className="aha-block-link" href={card.href}>Read the source</CardLink>
           ) : null}
         </div>
       );
@@ -165,9 +182,7 @@ export function AnswerBlock({ card }: { card: AssistantChatCard }) {
           <p className="aha-block-kicker">Next step</p>
           <p className="aha-block-body">{card.body}</p>
           {card.href ? (
-            <a className="aha-block-link aha-block-link--primary" href={card.href} target="_blank" rel="noopener noreferrer">
-              {nextActionLabel(card.action)}
-            </a>
+            <CardLink className="aha-block-link aha-block-link--primary" href={card.href}>{nextActionLabel(card.action)}</CardLink>
           ) : null}
         </div>
       );
@@ -177,9 +192,7 @@ export function AnswerBlock({ card }: { card: AssistantChatCard }) {
         <div className="aha-block aha-block--analysis">
           <p className="aha-block-kicker">{card.title}</p>
           <p className="aha-block-body">{card.body}</p>
-          <a className="aha-block-link aha-block-link--primary" href={card.href} target="_blank" rel="noopener noreferrer">
-            Open the full analysis
-          </a>
+          <CardLink className="aha-block-link aha-block-link--primary" href={card.href}>Open the full analysis</CardLink>
         </div>
       );
 
@@ -197,9 +210,7 @@ export function AnswerBlock({ card }: { card: AssistantChatCard }) {
           <p className="aha-block-kicker">{card.title}</p>
           <p className="aha-block-body">{card.body}</p>
           {card.href ? (
-            <a className="aha-block-link" href={card.href} target="_blank" rel="noopener noreferrer">
-              See this page
-            </a>
+            <CardLink className="aha-block-link" href={card.href}>See this page</CardLink>
           ) : null}
         </div>
       );

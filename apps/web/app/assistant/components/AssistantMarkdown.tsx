@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from 'react';
-import { parseMarkdown, type Block, type InlineNode } from '@/lib/assistant-workspace/markdown';
+import { parseMarkdown, plainText, type Block, type InlineNode } from '@/lib/assistant-workspace/markdown';
 
 /**
  * Renders an Ask Francisco reply as structured, accessible HTML. Pure React
@@ -37,12 +37,18 @@ function renderBlock(b: Block, key: number): ReactNode {
     case 'p':
       return <p key={key}>{renderInline(b.children)}</p>;
     case 'h': {
-      const H = `h${b.level}` as 'h2' | 'h3' | 'h4';
+      const H = `h${b.level}` as 'h3' | 'h4';
       return <H key={key}>{renderInline(b.children)}</H>;
     }
     case 'code':
       return (
-        <pre key={key} className="aha-md-pre" tabIndex={0}>
+        <pre
+          key={key}
+          className="aha-md-pre"
+          tabIndex={0}
+          role="region"
+          aria-label={b.lang ? `Code, ${b.lang}` : 'Code'}
+        >
           <code data-lang={b.lang || undefined}>{b.text}</code>
         </pre>
       );
@@ -51,7 +57,11 @@ function renderBlock(b: Block, key: number): ReactNode {
     case 'list': {
       const items = b.items.map((blocks, i) => <li key={i}>{blocks.map((x, j) => renderBlock(x, j))}</li>);
       return b.ordered ? (
-        <ol key={key} start={b.start !== 1 ? b.start : undefined}>
+        <ol
+          key={key}
+          start={b.start !== 1 ? b.start : undefined}
+          data-digits={String(b.start + b.items.length - 1).length}
+        >
           {items}
         </ol>
       ) : (
@@ -60,7 +70,13 @@ function renderBlock(b: Block, key: number): ReactNode {
     }
     case 'table':
       return (
-        <div key={key} className="aha-md-table-wrap" tabIndex={0} role="region" aria-label="Table">
+        <div
+          key={key}
+          className="aha-md-table-wrap"
+          tabIndex={0}
+          role="region"
+          aria-label={tableLabel(b.head)}
+        >
           <table>
             <thead>
               <tr>
@@ -86,4 +102,10 @@ function renderBlock(b: Block, key: number): ReactNode {
     case 'hr':
       return <hr key={key} />;
   }
+}
+
+/** "Table: Species, Finish" — names the region for a screen-reader user tabbing past it. */
+function tableLabel(head: InlineNode[][]): string {
+  const cols = head.map((c) => plainText(c).trim()).filter(Boolean).slice(0, 4);
+  return cols.length ? `Table: ${cols.join(', ')}` : 'Table';
 }
