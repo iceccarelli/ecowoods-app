@@ -20,6 +20,7 @@ import { getServicePages } from '@/lib/service-pages';
 import { ILLUSTRATION_IMAGES } from '@/app/data/illustration-images';
 import { EW_LOGO, EW_MARK, EW_LOGO_PORTRAIT } from '@/lib/brand';
 import { LEGAL_LAST_REVIEWED } from '@/lib/legal';
+import { TRILOGIES } from '@/lib/trilogies';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
 
@@ -202,6 +203,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry('/equipment', 'monthly', 0.85),
     ...MACHINES.map((m) => entry(`/equipment/${m.id}`, 'yearly', 0.7)),
     ...projectSlugs().map((slug) => entry(`/projects/${slug}`, 'yearly', 0.8)),
+    ...TRILOGIES.map((t) => entry(`/projects/${t.slug}`, 'yearly', 0.7)),
     entry('/resources', 'weekly', 0.95, newestChange),             // it lists the publications
     entry('/market', 'daily', 0.85),                               // LIVE — set above
     entry('/whats-new', 'weekly', 0.9, newestChange),              // it IS the changelog

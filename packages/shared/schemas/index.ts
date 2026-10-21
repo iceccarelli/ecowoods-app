@@ -72,7 +72,7 @@ export const leadSchema = z.object({
   // sqft comes in as a number (valueAsNumber) or NaN when left blank
   sqft: z.preprocess(
     (v) => (v === '' || v == null || (typeof v === 'number' && Number.isNaN(v)) ? undefined : v),
-    z.number().positive().max(1_000_000).optional(),
+    z.number().positive().max(1_000_000).transform((n) => Math.max(1, Math.round(n))).optional(),
   ),
 });
 
@@ -99,7 +99,7 @@ export const photoTriageSchema = z.object({
   designSummary: z.string().max(300).optional(),
   sqft: z.preprocess(
     (v) => (v === '' || v == null || (typeof v === 'number' && Number.isNaN(v)) ? undefined : Number(v)),
-    z.number().positive().optional(),
+    z.number().positive().max(1_000_000).transform((n) => Math.max(1, Math.round(n))).optional(),
   ),
 });
 
@@ -170,7 +170,7 @@ export const appointmentSchema = z
     }),
     sqft: z.preprocess(
       (v) => (v === '' || v == null || (typeof v === 'number' && Number.isNaN(v)) ? undefined : v),
-      z.number().positive().optional(),
+      z.number().positive().max(1_000_000).transform((n) => Math.max(1, Math.round(n))).optional(),
     ),
     notes: z.string().max(2000).optional(),
     source: z.string().optional(),

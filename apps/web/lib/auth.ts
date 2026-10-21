@@ -74,7 +74,8 @@ function buildProviders(): any[] {
       list.push(Facebook({
         clientId: process.env.AUTH_FACEBOOK_ID,
         clientSecret: process.env.AUTH_FACEBOOK_SECRET,
-        allowDangerousEmailAccountLinking: true,
+        // No email auto-linking: Facebook does not guarantee a verified email,
+        // so linking by address would let a sign-in take over an existing account.
         // Explicitly request public_profile + email.
         // Requires the 'email' permission to be added in Meta for Developers
         // → App Review → Permissions and Features → email → Add.
