@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { db } from '@/lib/db';
 import { format } from 'date-fns';
 import OrderStatusForm from './OrderStatusForm';
+import { describeOrderProduct } from '@/lib/order-product';
 
 function formatCAD(n: number | { toNumber(): number } | null | undefined) {
   if (n == null) return '—';
@@ -19,6 +20,7 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
   });
 
   if (!order) notFound();
+  const product = describeOrderProduct(order.id, order.notes);
 
   return (
     <div className="portal-page">
@@ -75,6 +77,15 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="portal-card">
+            <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem' }}>Product</h2>
+            <p style={{ marginBottom: product.deskHref ? '0.75rem' : 0 }}>{product.label}</p>
+            {product.deskHref && (
+              <Link href={product.deskHref} className="btn btn-copper btn-sm" style={{ width: '100%' }}>
+                {product.deskLabel} →
+              </Link>
+            )}
+          </div>
           <OrderStatusForm order={order} />
         </div>
       </div>

@@ -156,7 +156,8 @@ export async function POST(req: Request) {
         orderId: order.id,
         userId: session.user.id,
       },
-      success_url: `${origin}/mypage?order=success`,
+      // Orders page: it shows a clear 'confirming payment' state while the webhook is still on its way.
+      success_url: `${origin}/mypage/orders?checkout=success&order=${order.id}`,
       cancel_url: `${origin}/mypage?order=cancelled`,
       payment_method_types: ['card'],
     });
@@ -169,6 +170,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: checkoutSession.url });
   } catch (err) {
     console.error('[shop checkout] Stripe session creation failed:', err);
+    // No session exists, so nothing can ever pay this order: close it instead of
+    // leaving a PENDING row in the customer's order list and the admin queue.
+    try {
+      await db.order.updateMany({
+        where: { id: order.id, status: 'PENDING', stripeCheckoutSessionId: null },
+        data: { status: 'CANCELLED' },
+      });
+    } catch (closeErr) {
+      console.error('[shop checkout] could not close the unpaid order:', closeErr);
+    }
     return NextResponse.json(
       { error: 'Payment initialization failed. Please try again.' },
       { status: 500 }

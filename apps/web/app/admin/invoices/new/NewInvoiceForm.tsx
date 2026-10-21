@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { createInvoice } from '@/lib/actions/invoices';
+import { invoiceAmounts } from '@/lib/money';
 import type { InvoiceStage } from '@prisma/client';
 
 export default function NewInvoiceForm() {
@@ -35,9 +36,13 @@ export default function NewInvoiceForm() {
 
   const selectedProject = projects.find((p) => p.id === form.projectId);
   const subtotal = parseFloat(form.subtotal) || 0;
-  const afterDiscount = subtotal * (1 - parseFloat(form.discountPct) / 100);
-  const afterSurcharge = afterDiscount * (1 + parseFloat(form.surchargePct) / 100);
-  const total = afterSurcharge * (1 + parseFloat(form.taxRate) / 100);
+  const amounts = invoiceAmounts(
+    subtotal,
+    parseFloat(form.discountPct) || 0,
+    parseFloat(form.surchargePct) || 0,
+    parseFloat(form.taxRate) || 0,
+  );
+  const total = amounts.total;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,16 +148,16 @@ export default function NewInvoiceForm() {
               </div>
               {parseFloat(form.discountPct) > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--success)' }}>
-                  <span>Discount ({form.discountPct}%)</span><span>−${(subtotal * parseFloat(form.discountPct) / 100).toFixed(2)}</span>
+                  <span>Discount ({form.discountPct}%)</span><span>−${amounts.discount.toFixed(2)}</span>
                 </div>
               )}
               {parseFloat(form.surchargePct) > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--warning)' }}>
-                  <span>Surcharge ({form.surchargePct}%)</span><span>+${(afterDiscount * parseFloat(form.surchargePct) / 100).toFixed(2)}</span>
+                  <span>Surcharge ({form.surchargePct}%)</span><span>+${amounts.surcharge.toFixed(2)}</span>
                 </div>
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span>HST ({form.taxRate}%)</span><span>${(afterSurcharge * parseFloat(form.taxRate) / 100).toFixed(2)}</span>
+                <span>HST ({form.taxRate}%)</span><span>${amounts.tax.toFixed(2)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, borderTop: '1px solid var(--line)', marginTop: '0.5rem', paddingTop: '0.5rem', fontSize: '1rem' }}>
                 <span>Total (CAD)</span><span>${total.toFixed(2)}</span>

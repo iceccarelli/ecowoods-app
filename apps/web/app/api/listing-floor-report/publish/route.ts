@@ -15,6 +15,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { publishReport } from '@/lib/report-delivery';
+import { siteOrigin } from '@/lib/site-origin';
 import { compose } from '@/lib/listing-floor-report/compose';
 import { storeListingFloorReport } from '@/lib/listing-floor-report/store';
 import {
@@ -73,7 +74,7 @@ export async function POST(req: Request) {
     composed = result;
   }
 
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+  const origin = siteOrigin();
   const reportLink = `${origin}/listing-floor-report/report?order=${order.id}&email=${encodeURIComponent(order.user.email)}`;
   const skuConfig = listingReportSkuConfig(sku);
 

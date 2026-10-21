@@ -21,6 +21,7 @@ export async function GET(
     select: {
       pdfUrl: true,
       number: true,
+      status: true,
       project: { select: { userId: true } },
     },
   });
@@ -36,6 +37,9 @@ export async function GET(
   if (!isAdmin && !isOwner) {
     return new NextResponse('Forbidden', { status: 403 });
   }
+
+  // A DRAFT has not been issued to the customer yet: admin only.
+  if (!isAdmin && invoice.status === 'DRAFT') return new NextResponse('Not found', { status: 404 });
 
   const blobRes = await fetch(invoice.pdfUrl);
   if (!blobRes.ok) return new NextResponse('PDF unavailable', { status: 404 });

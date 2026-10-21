@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { db } from '@/lib/db';
 import { format } from 'date-fns';
 import type { OrderStatus } from '@prisma/client';
+import { describeOrderProduct } from '@/lib/order-product';
 
 function formatCAD(amount: number | { toNumber(): number }) {
   return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(
@@ -23,7 +24,8 @@ export default async function AdminOrdersPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { status } = await searchParams;
-  const statusFilter = status as OrderStatus | undefined;
+  // An unknown ?status= is ignored rather than handed to Prisma (which would 500).
+  const statusFilter = STATUS_ORDER.find((s) => s === status);
 
   const orders = await db.order.findMany({
     where: statusFilter ? { status: statusFilter } : {},
@@ -86,6 +88,7 @@ export default async function AdminOrdersPage({
                   <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{order.user.email}</div>
                 </td>
                 <td style={{ fontSize: '0.88rem' }}>
+                  <div style={{ fontWeight: 600 }}>{describeOrderProduct(order.id, order.notes).label}</div>
                   {order.items.length} item{order.items.length !== 1 ? 's' : ''}
                 </td>
                 <td style={{ fontWeight: 700 }}>{formatCAD(order.total)}</td>
@@ -101,6 +104,11 @@ export default async function AdminOrdersPage({
                   <Link href={`/admin/orders/${order.id}`} className="btn btn-ghost btn-sm">
                     View →
                   </Link>
+                  {describeOrderProduct(order.id, order.notes).deskHref && (
+                    <Link href={describeOrderProduct(order.id, order.notes).deskHref!} className="btn btn-copper btn-sm" style={{ marginLeft: '0.35rem' }}>
+                      Desk →
+                    </Link>
+                  )}
                 </td>
               </tr>
             ))}

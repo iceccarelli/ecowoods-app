@@ -40,6 +40,13 @@ export async function POST(
   if (invoice.status === 'PAID') {
     return NextResponse.json({ error: 'Invoice already paid' }, { status: 400 });
   }
+  // Only an issued invoice can be paid: not a DRAFT the customer should not see yet, and not a VOID one.
+  if (invoice.status !== 'SENT' && invoice.status !== 'OVERDUE') {
+    return NextResponse.json({ error: 'This invoice is not open for payment.' }, { status: 409 });
+  }
+  if (!(Number(invoice.total) > 0)) {
+    return NextResponse.json({ error: 'This invoice has no amount due.' }, { status: 409 });
+  }
 
   const origin = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
 

@@ -11,6 +11,8 @@ import { revalidatePath } from 'next/cache';
 import type { ProjectStatus } from '@prisma/client';
 import { requestReviewForProject } from '@/lib/review-request';
 import { recordFunnelEvent } from '@/lib/funnel-ledger';
+import { isValidAmount } from '@/lib/money';
+import { siteOrigin } from '@/lib/site-origin';
 
 // ─── Create project ──────────────────────────────────────────────────────────
 export async function createProject(input: {
@@ -32,6 +34,11 @@ export async function createProject(input: {
 }) {
   const session = await auth();
   if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
+
+  if (input.contractValue !== undefined && !isValidAmount(input.contractValue)) throw new Error('Contract value must be a non-negative number.');
+  for (const pct of [input.depositPct, input.midpointPct, input.finalPct, input.taxRate]) {
+    if (pct !== undefined && !isValidAmount(pct, 100)) throw new Error('Percentages must be between 0 and 100.');
+  }
 
   const settings = await db.settings.findFirst();
 
@@ -149,7 +156,7 @@ export async function sendContractToCustomer(projectId: string) {
   if (project.contractPdfUrl.startsWith('data:'))
     throw new Error('Please click "Generate PDF" again to create a shareable link before sending.');
 
-  const baseUrl = (process.env.NEXTAUTH_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  const baseUrl = siteOrigin();
   const pdfUrl = project.contractPdfUrl.startsWith('http')
     ? project.contractPdfUrl
     : `${baseUrl}${project.contractPdfUrl}`;
@@ -185,10 +192,23 @@ export async function updateProject(
   const session = await auth();
   if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
 
+  if (data.contractValue !== undefined && !isValidAmount(data.contractValue)) throw new Error('Contract value must be a non-negative number.');
+  for (const pct of [data.depositPct, data.midpointPct, data.finalPct, data.taxRate]) {
+    if (pct !== undefined && !isValidAmount(pct, 100)) throw new Error('Percentages must be between 0 and 100.');
+  }
+
+  /* Explicit whitelist: a server action receives whatever the caller sends, so
+     `...data` would let a crafted call overwrite userId, status or the contract URLs. */
   await db.project.update({
     where: { id: projectId },
     data: {
-      ...data,
+      title: data.title,
+      description: data.description,
+      contractValue: data.contractValue,
+      depositPct: data.depositPct,
+      midpointPct: data.midpointPct,
+      finalPct: data.finalPct,
+      taxRate: data.taxRate,
       startDate: data.startDate ? new Date(data.startDate) : undefined,
       endDate: data.endDate ? new Date(data.endDate) : undefined,
     },

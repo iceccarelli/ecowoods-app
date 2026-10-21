@@ -24,15 +24,19 @@ function maskEmail(email: string): string {
 export default async function ListingFloorReportSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ order?: string }>;
+  searchParams: Promise<{ order?: string; email?: string }>;
 }) {
-  const { order: orderId } = await searchParams;
+  const { order: orderId, email } = await searchParams;
 
   const order = orderId
     ? await db.order.findUnique({ where: { id: orderId }, include: { user: true } })
     : null;
 
   const alreadySubmitted = order ? hasIntakeMarker(order.notes) : false;
+  /* The order id alone must not hand out the buyer's email address (or, with it,
+     the report link): the link below is built only from an email the visitor
+     supplied that matches the order. */
+  const emailMatches = !!order && !!email && order.user.email.trim().toLowerCase() === email.trim().toLowerCase();
 
   return (
     <div className="tlx-page">
@@ -65,10 +69,15 @@ export default async function ListingFloorReportSuccessPage({
 
           {order && order.status === 'FULFILLED' && (
             <p className="tlx-note">
-              Your report is ready. Check your email for the link, or{' '}
-              <Link href={`/listing-floor-report/report?order=${order.id}&email=${encodeURIComponent(order.user.email)}`}>
-                view it here
-              </Link>
+              Your report is ready. Check your email for the link
+              {emailMatches ? (
+                <>
+                  , or{' '}
+                  <Link href={`/listing-floor-report/report?order=${order.id}&email=${encodeURIComponent(email!)}`}>
+                    view it here
+                  </Link>
+                </>
+              ) : null}
               .
             </p>
           )}

@@ -6,15 +6,14 @@ import { toast } from 'sonner';
 import { issueInvoice, markInvoicePaid, resendInvoice, reissueInvoice } from '@/lib/actions/invoices';
 import type { Invoice } from '@prisma/client';
 import { format } from 'date-fns';
+import { invoiceAmounts } from '@/lib/money';
 
 function formatCAD(n: number) {
   return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(n);
 }
 
 function computeTotal(subtotal: number, discountPct: number, surchargePct: number, taxRate: number) {
-  const afterDiscount = subtotal * (1 - discountPct / 100);
-  const afterSurcharge = afterDiscount * (1 + surchargePct / 100);
-  return afterSurcharge * (1 + taxRate / 100);
+  return invoiceAmounts(subtotal, discountPct, surchargePct, taxRate).total;
 }
 
 export default function InvoiceIssueForm({
@@ -52,8 +51,10 @@ export default function InvoiceIssueForm({
   const handleIssue = async () => {
     setLoading(true);
     try {
-      await issueInvoice(invoice.id);
-      toast.success(`Invoice #${invoice.number} issued and emailed to customer.`);
+      const r = await issueInvoice(invoice.id);
+      if (!r.emailed) toast.error(`Invoice #${invoice.number} was issued but the email did not send. Use Resend.`);
+      else if (!r.pdfGenerated) toast.warning(`Invoice #${invoice.number} issued and emailed, but the PDF could not be generated.`);
+      else toast.success(`Invoice #${invoice.number} issued and emailed to customer.`);
       router.refresh();
     } catch {
       toast.error('Failed to issue invoice.');
@@ -81,7 +82,7 @@ export default function InvoiceIssueForm({
     }
     setLoading(true);
     try {
-      await reissueInvoice(invoice.id, {
+      const r = await reissueInvoice(invoice.id, {
         subtotal: parseFloat(reissueForm.subtotal),
         discountPct: parseFloat(reissueForm.discountPct) || 0,
         surchargePct: parseFloat(reissueForm.surchargePct) || 0,
@@ -89,7 +90,9 @@ export default function InvoiceIssueForm({
         description: reissueForm.description || undefined,
         dueDate: reissueForm.dueDate || null,
       });
-      toast.success(`Invoice #${invoice.number} updated, PDF regenerated, and re-sent.`);
+      if (!r.emailed) toast.error(`Invoice #${invoice.number} was updated but the email did not send. Use Resend.`);
+      else if (!r.pdfGenerated) toast.warning(`Invoice #${invoice.number} updated and re-sent, but the PDF could not be regenerated.`);
+      else toast.success(`Invoice #${invoice.number} updated, PDF regenerated, and re-sent.`);
       setShowReissueForm(false);
       router.refresh();
     } catch {

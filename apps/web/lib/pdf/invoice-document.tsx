@@ -19,6 +19,7 @@ import {
 import type { Invoice, Project, User, Settings } from '@prisma/client';
 import { format } from 'date-fns';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
+import { invoiceAmounts } from '@/lib/money';
 
 // Brand colors
 const WALNUT = '#1a0f08';
@@ -337,6 +338,8 @@ export function InvoiceDocument({
           const disc = Number(invoice.discountPct);
           const sur = Number(invoice.surchargePct);
           const tax = Number(invoice.taxRate);
+          // Printed figures use the same cent rounding as the stored total (lib/money.ts).
+          const amounts = invoiceAmounts(sub, disc, sur, tax);
           return (
             <View style={styles.totals}>
               <View style={styles.totalRow}>
@@ -346,20 +349,18 @@ export function InvoiceDocument({
               {disc > 0 && (
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>Discount ({disc}%)</Text>
-                  <Text style={[styles.totalValue, { color: '#4a7c59' }]}>−{cad(sub * disc / 100)}</Text>
+                  <Text style={[styles.totalValue, { color: '#4a7c59' }]}>−{cad(amounts.discount)}</Text>
                 </View>
               )}
               {sur > 0 && (
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>Surcharge ({sur}%)</Text>
-                  <Text style={styles.totalValue}>+{cad(sub * sur / 100)}</Text>
+                  <Text style={styles.totalValue}>+{cad(amounts.surcharge)}</Text>
                 </View>
               )}
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>HST ({tax}%)</Text>
-                <Text style={styles.totalValue}>
-                  {cad((sub * (1 - disc / 100) * (1 + sur / 100)) * tax / 100)}
-                </Text>
+                <Text style={styles.totalValue}>{cad(amounts.tax)}</Text>
               </View>
               <View style={styles.grandTotalRow}>
                 <Text style={styles.grandTotalLabel}>TOTAL (CAD)</Text>
