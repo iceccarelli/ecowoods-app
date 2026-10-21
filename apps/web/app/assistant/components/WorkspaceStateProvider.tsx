@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { ensureDesignId } from '@/lib/floor-studio/design-id';
+import { ensureDesignId, newDesignId } from '@/lib/floor-studio/design-id';
 import { applyPatch, defaultWorkspaceState } from '@/lib/assistant-workspace/state';
 import { loadWorkspaceState, saveWorkspaceState } from '@/lib/assistant-workspace/persistence';
 import type { WorkspacePatch, WorkspaceState } from '@/lib/assistant-workspace/types';
@@ -11,6 +11,8 @@ interface WorkspaceContextValue {
   patch: (p: WorkspacePatch) => void;
   /** True once the client has hydrated from localStorage or minted a fresh id. */
   ready: boolean;
+  /** Re-key to a fresh design id (project fields kept) — for a browser that holds the saved design id but not its private conversation cookie. */
+  startNewConversation: () => void;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -51,7 +53,11 @@ export function WorkspaceStateProvider({ children }: { children: ReactNode }) {
     setState((prev) => applyPatch(prev, p));
   }, []);
 
-  const value = useMemo<WorkspaceContextValue>(() => ({ state, patch, ready }), [state, patch, ready]);
+  const startNewConversation = useCallback(() => {
+    setState((prev) => ({ ...prev, designId: newDesignId() }));
+  }, []);
+
+  const value = useMemo<WorkspaceContextValue>(() => ({ state, patch, ready, startNewConversation }), [state, patch, ready, startNewConversation]);
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }

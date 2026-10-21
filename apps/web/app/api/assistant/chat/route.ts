@@ -29,6 +29,7 @@ import { auth } from '@/lib/auth';
 import { appendTurn, establishConversation, type StoredAttachment } from '@/lib/assistant-workspace/conversation-store';
 import { readAccessToken, serializeAccessCookie } from '@/lib/assistant-workspace/conversation-access';
 import { isDesignId } from '@/lib/floor-studio/design-id';
+import { readReplyStream } from '@/lib/assistant-workspace/chat-stream';
 import { siteCapabilitiesBlock } from '@/lib/assistant-site';
 import { ASK_FRANCISCO_SYSTEM_PROMPT } from '@/lib/assistant-workspace/system-prompt';
 import { downloadAttachment, isOwnAttachmentPath, attachmentConsentSurface } from '@/lib/assistant-workspace/attachment-storage';
@@ -286,6 +287,8 @@ export async function POST(req: Request) {
       system,
       messages,
       stopWhen: stepCountIs(8),
+      // Visitor pressed Stop / closed the tab: stop paying for the model.
+      abortSignal: req.signal,
       tools: {
         get_ecowoods_band: tool({
           description:
@@ -494,13 +497,26 @@ export async function POST(req: Request) {
     });
 
     let accumulated = '';
+    let clientGone = false;
     const stream = new ReadableStream<Uint8Array>({
       async start(controller) {
-        try {
-          for await (const delta of result.textStream) {
-            accumulated += delta;
-            controller.enqueue(ndjson({ type: 'text', value: delta }));
+        /* After the client disconnects, enqueue/close throw; that must not
+           turn into an unhandled rejection or a second error line. */
+        const send = (obj: unknown) => {
+          if (clientGone) return;
+          try {
+            controller.enqueue(ndjson(obj));
+          } catch {
+            clientGone = true;
           }
+        };
+        try {
+          const { aborted } = await readReplyStream(result.fullStream, (delta) => {
+            accumulated += delta;
+            send({ type: 'text', value: delta });
+          });
+          // An aborted turn has no reader left and no complete answer: persist nothing.
+          if (aborted || clientGone) return;
           // Draining textStream above guarantees every tool call this turn has
           // already run its `execute` — patches/cards/providers are complete.
           const mergedPatch = mergePatches(patches);
@@ -541,7 +557,7 @@ export async function POST(req: Request) {
             blocks: cards,
             model: accumulated.trim() ? CHAT_MODEL_ID : undefined,
           });
-          controller.enqueue(ndjson({ type: 'done', ...response }));
+          send({ type: 'done', ...response });
         } catch (err) {
           console.error(
             JSON.stringify({
@@ -549,15 +565,20 @@ export async function POST(req: Request) {
               error: err instanceof Error ? err.message : 'unknown',
             }),
           );
-          controller.enqueue(
-            ndjson({
-              type: 'error',
-              message: `Something interrupted that. Try again or call ${BUSINESS_NAP.phoneDisplay}.`,
-            }),
-          );
+          send({
+            type: 'error',
+            message: `Something interrupted that. Try again or call ${BUSINESS_NAP.phoneDisplay}.`,
+          });
         } finally {
-          controller.close();
+          try {
+            controller.close();
+          } catch {
+            /* already closed/cancelled by the client */
+          }
         }
+      },
+      cancel() {
+        clientGone = true;
       },
     });
 
