@@ -2,9 +2,16 @@
  * /verify-email?token=xxx
  * Verifies the email token, creates the user account, then auto-signs in.
  */
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { verifyEmailToken } from '@/lib/actions/auth';
 import VerifyEmailClient from './VerifyEmailClient';
+
+/** Same as /login and /register: own title, explicit noindex. */
+export const metadata: Metadata = {
+  title: 'Verify your email',
+  robots: { index: false, follow: false },
+};
 
 export default async function VerifyEmailPage({
   searchParams,
