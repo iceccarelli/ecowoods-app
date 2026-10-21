@@ -74,6 +74,7 @@ export function json(data: unknown, opts: JsonOptions = {}): Response {
 
 export type ApiErrorCode =
   | 'not_found'
+  | 'gone'
   | 'invalid_request'
   | 'payload_too_large'
   | 'rate_limited'
