@@ -6,13 +6,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({
   allowed: true,
+  unavailable: false,
   orderCreates: [] as Array<{ data: { items: { create: Array<{ quantity: number; unitPrice: number }> } } }>,
   stripeCalls: 0,
 }));
 
 vi.mock('@/lib/auth', () => ({ auth: async () => ({ user: { id: 'u1', email: 'a@example.com' } }) }));
-vi.mock('@/lib/rate-limit-durable', () => ({
-  enforceRateLimit: async () => ({ allowed: state.allowed, remaining: 0, retryAfterSeconds: 30, degraded: false }),
+vi.mock('@/lib/rate-limit-durable', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/rate-limit-durable')>()),
+  enforceRateLimit: async () => ({
+    allowed: state.allowed,
+    remaining: 0,
+    retryAfterSeconds: 30,
+    degraded: state.unavailable,
+    unavailable: state.unavailable,
+  }),
 }));
 vi.mock('@/lib/stripe', () => ({
   stripe: {
@@ -52,6 +60,7 @@ function post(body: string): Request {
 
 beforeEach(() => {
   state.allowed = true;
+  state.unavailable = false;
   state.orderCreates.length = 0;
   state.stripeCalls = 0;
 });
@@ -85,6 +94,16 @@ describe('POST /api/shop/checkout', () => {
     expect(res.status).toBe(429);
     expect(res.headers.get('Retry-After')).toBe('30');
     expect(state.orderCreates).toHaveLength(0);
+  });
+
+  it('503s (retryable, not 429) when the limiter is unavailable, before any order or Stripe call', async () => {
+    state.allowed = false;
+    state.unavailable = true;
+    const res = await route.POST(post(JSON.stringify({ items: [{ productId: 'p1', quantity: 20 }] })));
+    expect(res.status).toBe(503);
+    expect(res.headers.get('Retry-After')).toBe('30');
+    expect(state.orderCreates).toHaveLength(0);
+    expect(state.stripeCalls).toBe(0);
   });
 
   it('prices server-side and applies the product minimum quantity', async () => {

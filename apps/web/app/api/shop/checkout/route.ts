@@ -11,7 +11,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { isTrustedBrowserOrigin } from '@/lib/rate-limit';
-import { enforceRateLimit } from '@/lib/rate-limit-durable';
+import { enforceRateLimit, rateLimitDeniedResponse } from '@/lib/rate-limit-durable';
 import { db } from '@/lib/db';
 import { stripe } from '@/lib/stripe';
 import { parseProductOptions, resolveSelectedOptions, round2 } from '@/lib/shop';
@@ -51,10 +51,7 @@ export async function POST(req: Request) {
     failClosed: true,
   });
   if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Please wait a moment before trying again.' },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
-    );
+    return rateLimitDeniedResponse(rl);
   }
 
   const parsed = checkoutSchema.safeParse(await req.json().catch(() => null));

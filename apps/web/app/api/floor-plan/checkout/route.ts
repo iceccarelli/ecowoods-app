@@ -23,7 +23,7 @@ import { buildFloorPlanOrderItem } from '@/lib/floor-plan';
 import { buildCheckoutNotes } from '@/lib/floor-plan/notes';
 import { parseShareCode } from '@/lib/floor-plan/share-code';
 import { decodeStudioDesign } from '@/lib/floor-studio/studio-config';
-import { enforceRateLimit } from '@/lib/rate-limit-durable';
+import { enforceRateLimit, rateLimitDeniedResponse } from '@/lib/rate-limit-durable';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
@@ -83,10 +83,7 @@ export async function POST(req: Request) {
       failClosed: true,
     });
     if (!durable.allowed) {
-      return NextResponse.json(
-        { error: 'Please wait a moment before trying again.' },
-        { status: 429, headers: { 'Retry-After': String(durable.retryAfterSeconds) } },
-      );
+      return rateLimitDeniedResponse(durable);
     }
   }
   const code = parseShareCode(rawCode);
