@@ -52,6 +52,7 @@ import { catalogueHref, getPublishedCatalogues } from '@/lib/catalogues';
 import { getGuides, getGuide, type Guide } from '@/lib/guides';
 import { getTerms, getTerm, type GlossaryTerm } from '@/lib/glossary';
 import { PROJECTS, type Project } from '@/lib/projects';
+import { TRILOGIES, type Trilogy } from '@/lib/trilogies';
 import { FILMS, type Film } from '@/lib/films';
 import {
   SITE_URL,
@@ -298,6 +299,28 @@ export const projectToMarkdown = (project: Project): string => {
     for (const l of project.limits) out.push(`- ${l}`);
     out.push('');
   }
+  out.push(...provenance(canonical));
+  return out.join('\n');
+};
+
+export const trilogyToMarkdown = (t: Trilogy): string => {
+  const canonical = `${SITE_URL}/projects/${t.slug}`;
+  const out: string[] = [
+    `# ${t.headline}`,
+    '',
+    t.lede,
+    '',
+    t.body,
+    '',
+    ...table(
+      ['Frame', 'Beat', 'Caption'],
+      t.frames.map((f) => [f.id, f.beat, f.caption]),
+    ),
+    '## Provenance of the photographs',
+    '',
+    t.provenance,
+    '',
+  ];
   out.push(...provenance(canonical));
   return out.join('\n');
 };
@@ -1657,7 +1680,7 @@ export const corpusToMarkdown = (): string => {
     `- ${terms.length} glossary term(s)`,
     `- ${services.length} service(s), each with its published price band`,
     `- ${areas.length} service area(s) across ${TERRITORY}`,
-    `- ${projects.length} photographed project(s)`,
+    `- ${projects.length + TRILOGIES.length} photographed project(s)`,
     `- ${films.length} film series (${films.reduce((n, f) => n + f.chapters.length, 0)} chapters total)`,
     '',
     '---',
@@ -1699,9 +1722,10 @@ export const corpusToMarkdown = (): string => {
   for (const t of terms) out.push(termToMarkdown(t), '', '---', '');
   for (const sp of services) out.push(serviceToMarkdown(sp), '', '---', '');
   for (const { c, cc } of areas) out.push(areaToMarkdown(c.slug, c.name, cc), '', '---', '');
-  if (projects.length) {
+  if (projects.length || TRILOGIES.length) {
     out.push('# Photographed projects', '');
     for (const p of projects) out.push(projectToMarkdown(p), '', '---', '');
+    for (const t of TRILOGIES) out.push(trilogyToMarkdown(t), '', '---', '');
   }
   if (films.length) {
     out.push('# Films', '');
