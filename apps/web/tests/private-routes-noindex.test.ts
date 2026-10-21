@@ -9,7 +9,8 @@ describe('private surfaces', () => {
   it('admin and customer-portal layouts export noindex metadata', async () => {
     const admin = await import('@/app/admin/layout');
     const portal = await import('@/app/(portal)/mypage/layout');
-    for (const m of [admin.metadata, portal.metadata]) {
+    const verify = await import('@/app/verify-email/page');
+    for (const m of [admin.metadata, portal.metadata, verify.metadata]) {
       expect(m?.robots).toMatchObject({ index: false, follow: false });
     }
   });
