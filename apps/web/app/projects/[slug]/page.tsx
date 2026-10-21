@@ -16,6 +16,7 @@ import { getTrilogy, TRILOGIES } from '@/lib/trilogies';
 import { trilogySlides } from '@/lib/trilogy-slides';
 import { FigureRotator } from '@/app/components/FigureRotator';
 import { SITE_URL, BUSINESS } from '@/lib/seo-data';
+import { areaForProjectLocation } from '@/lib/area-groups';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
@@ -103,6 +104,12 @@ export default async function ProjectPage({
   const film1 = filmFor(project, 1);
   const film2 = filmFor(project, 2);
   const hero = ch1[0]!;
+  /* The published service area this job's location resolves to, if any. The
+     neighbourhood is linked when it is itself a published area; otherwise the
+     city is, so "GTA" is never made to point at a page about something else. */
+  const projectArea = areaForProjectLocation(project.location);
+  const hoodLinked =
+    projectArea !== null && projectArea.name.toLowerCase() === project.location.neighbourhood.toLowerCase();
 
   const gallery = {
     '@context': 'https://schema.org',
@@ -175,7 +182,18 @@ export default async function ProjectPage({
           <h1 className="tlx-title">{project.title}</h1>
           <p className="tlx-lede">{project.summary}</p>
           <p className="pj-meta">
-            {project.location.neighbourhood}, {project.location.city}, {project.location.province}
+            {hoodLinked ? (
+              <Link href={`/service-areas/${projectArea.slug}`}>{project.location.neighbourhood}</Link>
+            ) : (
+              project.location.neighbourhood
+            )}
+            ,{' '}
+            {projectArea && !hoodLinked ? (
+              <Link href={`/service-areas/${projectArea.slug}`}>{project.location.city}</Link>
+            ) : (
+              project.location.city
+            )}
+            , {project.location.province}
             {' · '}
             {project.stills.filter((s) => s.role === 'interior').length} photographs
             {' · '}
@@ -291,7 +309,13 @@ export default async function ProjectPage({
           <p className="tlx-note">
             More stair work at <Link href="/hardwood-stairs-toronto">hardwood stairs in Toronto</Link>,
             and the engineering write-ups at <Link href="/case-studies">case studies</Link>.
-            {BUSINESS.name} works across {project.location.city} and the GTA.
+            {BUSINESS.name} works across{' '}
+            {projectArea ? (
+              <Link href={`/service-areas/${projectArea.slug}`}>{project.location.city}</Link>
+            ) : (
+              project.location.city
+            )}{' '}
+            and the GTA.
           </p>
           <p className="tlx-note">
             Related services: <Link href="/hardwood-floor-refinishing-toronto">hardwood floor refinishing</Link>,{' '}

@@ -55,6 +55,14 @@ export type JobCard = {
   readonly slug: string;
   /** Neighbourhood, as the case study records it. */
   readonly area: string;
+  /**
+   * The published /service-areas page this job belongs to. `area` is the
+   * neighbourhood as the case study records it and is what the card prints;
+   * it is not always a service area (the Distillery District is inside
+   * Downtown Toronto, as content/work-map.ts already records). Lookups key on
+   * this slug, and scripts/verify-cities.mjs fails when one stops resolving.
+   */
+  readonly areaSlug: string;
   readonly city: string;
   readonly squareFeet: number;
   /** Year of the job, from the case study's `project-date`. */
@@ -82,6 +90,7 @@ export const JOB_CARDS: readonly JobCard[] = [
   {
     slug: 'midtown-townhouse-three-level-transition',
     area: 'Midtown Toronto',
+    areaSlug: 'midtown-toronto',
     city: 'Toronto',
     squareFeet: 5200,
     year: 2025,
@@ -104,6 +113,7 @@ export const JOB_CARDS: readonly JobCard[] = [
   {
     slug: 'forest-hill-walnut-wide-plank-color-stability',
     area: 'Forest Hill',
+    areaSlug: 'forest-hill',
     city: 'Toronto',
     squareFeet: 2100,
     year: 2025,
@@ -126,6 +136,7 @@ export const JOB_CARDS: readonly JobCard[] = [
   {
     slug: 'yorkville-loft-basement-conversion-moisture-mitigation',
     area: 'Yorkville',
+    areaSlug: 'yorkville',
     city: 'Toronto',
     squareFeet: 1800,
     year: 2025,
@@ -148,6 +159,7 @@ export const JOB_CARDS: readonly JobCard[] = [
   {
     slug: 'rosedale-estate-stairs-radiant-heat',
     area: 'Rosedale',
+    areaSlug: 'rosedale',
     city: 'Toronto',
     squareFeet: 3800,
     year: 2024,
@@ -170,6 +182,7 @@ export const JOB_CARDS: readonly JobCard[] = [
   {
     slug: 'distillery-district-victorian-condo',
     area: 'Distillery District',
+    areaSlug: 'downtown-toronto',
     city: 'Toronto',
     squareFeet: 2400,
     year: 2024,
@@ -191,9 +204,9 @@ export const JOB_CARDS: readonly JobCard[] = [
   },
 ];
 
-/** The jobs done in a given area, matched on the neighbourhood name. */
-export const jobCardsForArea = (areaName: string): readonly JobCard[] =>
-  JOB_CARDS.filter((j) => j.area.toLowerCase() === areaName.toLowerCase());
+/** The jobs done in a given published area, matched on its service-area slug. */
+export const jobCardsForArea = (areaSlug: string): readonly JobCard[] =>
+  JOB_CARDS.filter((j) => j.areaSlug === areaSlug);
 
 /** The jobs that are evidence for a given service slug. */
 export const jobCardsForService = (serviceSlug: string): readonly JobCard[] =>

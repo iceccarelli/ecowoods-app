@@ -3,7 +3,8 @@ import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import { EstimateForm } from '../../components/EstimateForm';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { SITE_URL, CITIES, SERVICE_AREAS, SERVICES } from '@/lib/seo-data';
+import { SITE_URL, CITIES, SERVICES, areaDisplayName } from '@/lib/seo-data';
+import { areaGroups } from '@/lib/area-groups';
 import { placeForArea } from '@/lib/schema/root-schema';
 import { buildBreadcrumbList, buildFAQPage } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
@@ -700,14 +701,20 @@ export default async function ServiceDetailPage({
           {/* Links, not a comma-separated string. Sixteen area names rendered as
               prose gave a reader nowhere to go and a crawler no edge to follow —
               the mirror image of the same omission on the city pages. See F-154. */}
-          <p className="tlx-note">
-            {SERVICE_AREAS.map((c, i) => (
-              <span key={c.slug}>
-                {i > 0 && ' · '}
-                <Link href={`/service-areas/${c.slug}`}>{c.name}</Link>
-              </span>
-            ))}
-          </p>
+          {/* Grouped by the corridor each area sits on (lib/area-groups.ts), the
+              same shape /service-areas uses, so a hundred links read as eleven
+              routes rather than one run-on line. Every area appears once. */}
+          {areaGroups().map((g) => (
+            <p key={g.id} className="tlx-note">
+              <strong>{g.name}:</strong>{' '}
+              {g.cities.map((c, i) => (
+                <span key={c.slug}>
+                  {i > 0 && ' · '}
+                  <Link href={`/service-areas/${c.slug}`}>{areaDisplayName(c)}</Link>
+                </span>
+              ))}
+            </p>
+          ))}
           <p className="tlx-note">
             Every area above has its own page: the housing stock, the neighbourhoods
             and the constraint that is specific to it. See{' '}

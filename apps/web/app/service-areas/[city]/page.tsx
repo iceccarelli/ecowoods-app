@@ -12,6 +12,7 @@ import { jobCardsForArea } from '@/content/job-cards';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
 import { MARKETS, marketBySlug, corridorsFor } from '@/lib/geo';
 import { areaOpening } from '@/lib/opening-answers';
+import { guidesForArea, corridorLinkForArea, projectsForArea, areaPlacement } from '@/lib/area-groups';
 import { EstimateForm } from '@/app/components/EstimateForm';
 
 export function generateStaticParams() {
@@ -119,7 +120,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
     breadcrumbSchema([
       { name: 'Home', url: SITE_URL },
       { name: 'Service Areas', url: `${SITE_URL}/service-areas` },
-      { name: city.name, url },
+      { name: areaDisplayName(city), url },
     ]),
     /* The FAQ a New York visitor gets answers the cost question in their own
        currency (GEO-004). Every other answer is identical on both sides of the
@@ -142,7 +143,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
       url,
       hasOfferCatalog: {
         '@type': 'OfferCatalog',
-        name: `Services delivered in ${city.name}`,
+        name: `Services delivered in ${areaDisplayName(city)}`,
         itemListElement: SERVICES.map((svc) => ({
           '@type': 'Offer',
           itemOffered: { '@id': `${SITE_URL}/services/${svc.slug}#service` },
@@ -170,7 +171,11 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
 
   /* Published jobs done in THIS area. A handful of the published areas have one
      today; the rest render nothing rather than a card invented to fill a grid. */
-  const localJobs = jobCardsForArea(city.name);
+  const localJobs = jobCardsForArea(city.slug);
+  const readGuides = guidesForArea(city.slug);
+  const corridorLink = corridorLinkForArea(city.slug);
+  const localProjects = projectsForArea(city.slug);
+  const placement = areaPlacement(city.slug);
 
   return (
     <div>
@@ -212,7 +217,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
               that must not be interrupted. */}
           <p style={{ maxWidth: '48rem', marginTop: '1rem', fontWeight: 600 }}>
             {`Ecowoods serves ${areaDisplayName(city)}. Book the measure.`}
-            {isUS && ` The showroom is Toronto. The job is in ${city.name}. We take this work.`}
+            {isUS && ` The showroom is Toronto. The job is in ${areaDisplayName(city)}. We take this work.`}
           </p>
 
           {/* Who, what, where, what it costs and the next step, from the registries. */}
@@ -280,8 +285,8 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
         return (
           <section className="section">
             <div className="shell">
-              <span className="eyebrow">Hardwood flooring in {city.name}</span>
-              <h2>What we see in {city.name} homes.</h2>
+              <span className="eyebrow">Hardwood flooring in {areaDisplayName(city)}</span>
+              <h2>What we see in {areaDisplayName(city)} homes.</h2>
               {/* `intro` and `housingNote` are rendered in the hero now. Publishing
                   them twice on one page would be the duplication this change exists
                   to remove, so this block carries only what the hero did not. */}
@@ -294,6 +299,33 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
               {cc.localConsideration && (
                 <p style={{ maxWidth: '52rem', marginTop: '1rem', lineHeight: 1.7 }}>{cc.localConsideration}</p>
               )}
+              {/* Where this district sits, read from the market registry: its
+                  municipality, the areas it borders, the routes that
+                  municipality is on. Orientation, not a claim about any job. */}
+              {placement && (
+                <p style={{ maxWidth: '52rem', marginTop: '1rem', lineHeight: 1.7 }}>
+                  {areaDisplayName(city)} is part of{' '}
+                  {placement.parent.page ? (
+                    <Link href={`/service-areas/${placement.parent.slug}`}>{areaDisplayName(placement.parent.page)}</Link>
+                  ) : (
+                    placement.parent.name
+                  )}
+                  {placement.neighbours.length > 0 && (
+                    <>
+                      {' '}and borders{' '}
+                      {placement.neighbours.map((n, i) => (
+                        <span key={n.slug}>
+                          {i > 0 && (i === placement.neighbours.length - 1 ? ' and ' : ', ')}
+                          <Link href={`/service-areas/${n.slug}`}>{areaDisplayName(n)}</Link>
+                        </span>
+                      ))}
+                    </>
+                  )}
+                  .
+                  {placement.corridors.length > 0 &&
+                    ` Crews reach it on the ${placement.corridors.map((c) => c.name).join(' and ')} ${placement.corridors.length > 1 ? 'routes' : 'route'}, from the Etobicoke shop.`}
+                </p>
+              )}
             </div>
           </section>
         );
@@ -304,8 +336,8 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
           empty is honest; a proof rail filled with a job from another
           neighbourhood is not. */}
       <JobCardRail
-        kicker={`Finished in ${city.name}`}
-        heading={`Work we have published in ${city.name}`}
+        kicker={`Finished in ${areaDisplayName(city)}`}
+        heading={`Work we have published in ${areaDisplayName(city)}`}
         intro="A real job, its substrate, its species and the measurement it turned on."
         jobs={localJobs}
         from={`service-area-${city.slug}`}
@@ -313,7 +345,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
 
       <section className="section">
         <div className="shell">
-          <span className="eyebrow">What we do in {city.name}</span>
+          <span className="eyebrow">What we do in {areaDisplayName(city)}</span>
           <h2>Every service, one crew.</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginTop: '1.5rem' }}>
             {/* Links, not divs.
@@ -353,11 +385,11 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
       {/* The only in-content path from a local query to the two commercial
           head terms. Thirty-two pages x two links, with the city in the
           anchor text. See the note on the component. */}
-      <CommercialHeadTermRail city={city.name} country={isUS ? 'US' : 'CA'} />
+      <CommercialHeadTermRail city={areaDisplayName(city)} country={isUS ? 'US' : 'CA'} />
 
       <section className="section">
         <div className="shell">
-          <span className="eyebrow">Why {city.name} homeowners choose Ecowoods</span>
+          <span className="eyebrow">Why {areaDisplayName(city)} homeowners choose Ecowoods</span>
           <h2>Fixed price. Dust-free. In writing.</h2>
           <ul style={{ maxWidth: '52rem', marginTop: '1rem', lineHeight: 1.7 }}>
             <li><strong>Fixed written estimates.</strong> Moisture-tested and inspected up front — the number on paper is the number on your invoice.</li>
@@ -402,11 +434,11 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
 
           It sits before the NAP block and after the local content, so a visitor
           reads the reason to believe we work here first and is then asked. */}
-      <section className="tlx-section" id="quote" aria-label={`Request an estimate in ${city.name}`}>
+      <section className="tlx-section" id="quote" aria-label={`Request an estimate in ${areaDisplayName(city)}`}>
         <div className="shell">
           <EstimateForm
             source={`service-area-${city.slug}`}
-            heading={`Get a fixed written price in ${city.name}`}
+            heading={`Get a fixed written price in ${areaDisplayName(city)}`}
             intro="A senior estimator measures, then writes one price. It does not move afterwards."
           />
         </div>
@@ -429,11 +461,40 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
             </p>
             <p className="area-nap-hours">{HOURS_LINE}</p>
             <p className="area-nap-note">
-              Serving {city.name} from the Etobicoke shop — we come to you.
+              Serving {areaDisplayName(city)} from the Etobicoke shop — we come to you.
             </p>
           </div>
         </div>
       </section>
+
+      {/* READ NEXT. Contextual edges out of a local page: the guides that fit
+          this area's stock, the corridor it sits on, and a published project
+          whose location resolves here. Every target comes from an existing
+          registry (lib/area-groups.ts); nothing is listed that has no page. */}
+      {(readGuides.length > 0 || corridorLink || localProjects.length > 0) && (
+        <section className="section-tight" aria-label="Read next">
+          <div className="shell">
+            <span className="eyebrow">Read next</span>
+            <ul style={{ marginTop: '0.75rem', lineHeight: 1.9, paddingLeft: '1.2rem' }}>
+              {readGuides.map((g) => (
+                <li key={g.slug}>
+                  <Link href={`/guides/${g.slug}`}>{g.seoTitle ?? g.title}</Link>
+                </li>
+              ))}
+              {corridorLink && (
+                <li>
+                  <Link href={`/corridors/${corridorLink.id}`}>The {corridorLink.name} corridor</Link>
+                </li>
+              )}
+              {localProjects.map((p) => (
+                <li key={p.slug}>
+                  <Link href={`/projects/${p.slug}`}>{p.title}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      )}
 
       <section className="section">
         <div className="shell">
@@ -447,7 +508,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
             ))}
           </p>
           <p style={{ marginTop: '1.5rem' }}>
-            <a href="#quote" className="btn btn-copper btn-lg">Get your fixed-price estimate in {city.name}</a>
+            <a href="#quote" className="btn btn-copper btn-lg">Get your fixed-price estimate in {areaDisplayName(city)}</a>
           </p>
         </div>
       </section>
