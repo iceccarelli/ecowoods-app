@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { NextRequest } from 'next/server';
 import { SITE_URL, BUSINESS, SERVICES, SERVICE_AREAS, cityContent } from '@/lib/seo-data';
 import { getServicePages, priceBand } from '@/lib/service-pages';
@@ -95,7 +96,8 @@ export const dynamic = 'force-dynamic';
 const CORS = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, OPTIONS',
-  'access-control-allow-headers': 'content-type',
+  'access-control-allow-headers': 'content-type, if-none-match',
+  'access-control-expose-headers': 'etag',
 };
 
 export function OPTIONS() {
@@ -477,7 +479,17 @@ export async function GET(request: NextRequest) {
   };
 
   let data: Record<string, unknown>;
-  if (collection && collection in all) {
+  if (collection && !Object.hasOwn(all, collection)) {
+    // An unknown name used to return the whole corpus labelled as filtered.
+    return new Response(
+      JSON.stringify({ error: 'unknown_collection', collection, collections: Object.keys(all) }, null, 2),
+      {
+        status: 404,
+        headers: { ...CORS, 'content-type': 'application/json; charset=utf-8', 'cache-control': 'public, max-age=300' },
+      },
+    );
+  }
+  if (collection) {
     data = { [collection]: all[collection as keyof typeof all] };
   } else {
     data = all as unknown as Record<string, unknown>;
@@ -542,11 +554,18 @@ export async function GET(request: NextRequest) {
     ...(filtered ? { query: { collection: collection || null, q: q || null }, returned } : {}),
   };
 
-  return new Response(JSON.stringify({ meta: metaOut, ...data }, null, 2), {
-    headers: {
-      ...CORS,
-      'content-type': 'application/json; charset=utf-8',
-      'cache-control': 'public, max-age=3600, s-maxage=86400',
-    },
-  });
+  const body = JSON.stringify({ meta: metaOut, ...data }, null, 2);
+  const etag = `"${createHash('sha256').update(body).digest('hex').slice(0, 32)}"`;
+  const headers = {
+    ...CORS,
+    'content-type': 'application/json; charset=utf-8',
+    'cache-control': 'public, max-age=3600, s-maxage=86400',
+    etag,
+    vary: 'accept-encoding',
+  };
+  const inm = request.headers.get('if-none-match');
+  if (inm && inm.split(',').map((x) => x.trim().replace(/^W\//, '')).includes(etag)) {
+    return new Response(null, { status: 304, headers });
+  }
+  return new Response(body, { headers });
 }
