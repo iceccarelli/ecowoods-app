@@ -49,6 +49,17 @@ vi.mock('@/lib/db', () => {
       state.wallets.set(where.userId, w);
       return { ...w };
     },
+    createMany: async ({ data }: { data: Array<{ userId: string; balance: number }> }) => {
+      for (const d of data) {
+        if (!state.wallets.has(d.userId)) state.wallets.set(d.userId, { id: `wallet-${state.wallets.size + 1}`, userId: d.userId, balance: d.balance });
+      }
+      return { count: 0 };
+    },
+    findUniqueOrThrow: async ({ where }: { where: { userId: string } }) => {
+      const w = state.wallets.get(where.userId);
+      if (!w) throw new Error('not found');
+      return { ...w };
+    },
     update: async ({ where, data }: { where: { id: string }; data: { balance?: { increment?: number; decrement?: number } } }) => {
       const w = [...state.wallets.values()].find((x) => x.id === where.id)!;
       if (data.balance?.increment) w.balance += data.balance.increment;
