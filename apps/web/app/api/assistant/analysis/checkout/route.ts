@@ -22,7 +22,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { stripe } from '@/lib/stripe';
 import { isTrustedBrowserOrigin } from '@/lib/rate-limit';
-import { enforceRateLimit } from '@/lib/rate-limit-durable';
+import { enforceRateLimit, rateLimitDeniedResponse } from '@/lib/rate-limit-durable';
 import { CREDIT_PACK } from '@/lib/assistant-workspace/credits-config';
 
 export const runtime = 'nodejs';
@@ -54,12 +54,7 @@ export async function POST(req: Request) {
     config: { windowMs: 60_000, maxRequests: 5 },
     failClosed: true,
   });
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Please wait a moment before trying again.' },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
-    );
-  }
+  if (!rl.allowed) return rateLimitDeniedResponse(rl);
 
   const parsed = bodySchema.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) {

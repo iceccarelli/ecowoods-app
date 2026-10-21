@@ -159,7 +159,24 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Generate Prisma client
         run: pnpm --filter @ecowoods/web exec prisma generate
+      # Prove the committed migrations (what production runs) apply cleanly to
+      # an EMPTY database and produce exactly the schema.prisma datamodel. The
+      # tests below need the migrations' hand-written SQL (rate_limit_consume())
+      # that `db push` cannot create, so the test database is built from them.
       - name: Create isolated PostgreSQL schema
-        run: pnpm --filter @ecowoods/web exec prisma db push --schema prisma/schema.prisma --skip-generate
-      - name: Run real PostgreSQL concurrency test
-        run: pnpm --filter @ecowoods/web exec vitest run tests/appointments-capacity.postgres.integration.test.ts
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d ecowoods_test -v ON_ERROR_STOP=1 -c 'CREATE SCHEMA IF NOT EXISTS ecowoods'
+      - name: Apply migrations to an empty database (prisma migrate deploy)
+        run: pnpm --filter @ecowoods/web exec prisma migrate deploy --schema prisma/schema.prisma
+      - name: Migrations match schema.prisma (no drift)
+        run: pnpm --filter @ecowoods/web exec prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
+      - name: Run real PostgreSQL integration tests
+        run: >-
+          pnpm --filter @ecowoods/web exec vitest run
+          tests/appointments-capacity.postgres.integration.test.ts
+          tests/credits-concurrency.postgres.integration.test.ts
+          tests/credit-ledger.postgres.integration.test.ts
+          tests/rate-limit.postgres.integration.test.ts
+          tests/stripe-fulfillment.postgres.integration.test.ts
+          tests/assistant-conversation.postgres.integration.test.ts
+          tests/quote-recovery.postgres.integration.test.ts

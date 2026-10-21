@@ -18,7 +18,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { isTrustedBrowserOrigin } from '@/lib/rate-limit';
-import { enforceRateLimit } from '@/lib/rate-limit-durable';
+import { enforceRateLimit, rateLimitDeniedResponse } from '@/lib/rate-limit-durable';
 import { designIdOf } from '@/lib/floor-studio/design-id';
 import { workspaceSnapshotSchema } from '@/lib/assistant-workspace/chat-schema';
 import { buildRenovationAnalysis, isEligibleForAnalysis } from '@/lib/assistant-workspace/renovation-analysis';
@@ -64,12 +64,7 @@ export async function POST(req: Request) {
     config: ANALYSIS_RUN_RATE_LIMIT,
     failClosed: true,
   });
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Please wait a moment before trying again.' },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } },
-    );
-  }
+  if (!rl.allowed) return rateLimitDeniedResponse(rl);
 
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
