@@ -11,7 +11,7 @@ describe('sqft is a whole number before it reaches the Int column', () => {
     expect(shape.parse('')).toBeUndefined();
   });
   it('rounds fractional input in the appointment schema', () => {
-    const shape = (appointmentSchema as unknown as { _def: { schema: { shape: { sqft: { parse(v: unknown): unknown } } } } })._def.schema.shape.sqft;
+    const shape = appointmentSchema.shape.sqft;
     expect(shape.parse(849.4)).toBe(849);
   });
 });
