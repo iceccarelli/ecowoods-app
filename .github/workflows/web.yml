@@ -182,3 +182,4 @@ jobs:
           tests/assistant-conversation.postgres.integration.test.ts
           tests/quote-recovery.postgres.integration.test.ts
           tests/commercial-lifecycle.postgres.integration.test.ts
+          tests/payment-reconciliation.postgres.integration.test.ts

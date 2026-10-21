@@ -10,12 +10,13 @@ function formatCAD(amount: number | { toNumber(): number }) {
   );
 }
 
-const STATUS_ORDER: OrderStatus[] = ['PENDING', 'PAID', 'FULFILLED', 'CANCELLED'];
+const STATUS_ORDER: OrderStatus[] = ['PENDING', 'PAID', 'FULFILLED', 'CANCELLED', 'REFUNDED'];
 const statusColor: Record<OrderStatus, string> = {
   PENDING: 'pending',
   PAID: 'paid',
   FULFILLED: 'completed',
   CANCELLED: 'cancelled',
+  REFUNDED: 'cancelled',
 };
 
 export default async function AdminOrdersPage({
