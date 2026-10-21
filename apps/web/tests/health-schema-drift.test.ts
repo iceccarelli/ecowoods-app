@@ -1,5 +1,5 @@
 /**
- * /api/health reports "schema behind code": migration NAMES the build expects
+ * /api/internal/schema-status (bearer-protected) reports "schema behind code": migration NAMES the build expects
  * that `_prisma_migrations` has no finished row for. DB and upstream mocked.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -13,7 +13,7 @@ vi.mock('@/lib/market', () => ({
 }));
 
 import { checkSchemaDrift, listExpectedMigrations } from '@/lib/schema-drift';
-import { GET } from '@/app/api/health/route';
+import { GET } from '@/app/api/internal/schema-status/route';
 
 const EXPECTED = ['20260620000002_init', '20260929000000_add_rate_limit_bucket', '20261021000000_x'];
 
@@ -61,17 +61,40 @@ describe('checkSchemaDrift', () => {
   });
 });
 
-describe('GET /api/health schema field', () => {
-  it('is degraded (200, cacheable) and names missing migrations when schema is behind', async () => {
+describe('GET /api/internal/schema-status', () => {
+  const call = (auth?: string) =>
+    GET(new Request('https://ecowoods.ca/api/internal/schema-status', auth ? { headers: { authorization: auth } } : undefined));
+
+  beforeEach(() => {
+    process.env.CRON_SECRET = 'test-secret';
+  });
+
+  it('refuses callers without the bearer secret and never queries', async () => {
+    expect((await call()).status).toBe(401);
+    expect((await call('Bearer wrong')).status).toBe(401);
+    delete process.env.CRON_SECRET;
+    expect((await call('Bearer undefined')).status).toBe(401);
+    expect(q.fn).not.toHaveBeenCalled();
+  });
+
+  it('names the missing migrations for an authorised caller, uncached and noindex', async () => {
     q.fn.mockResolvedValueOnce([{ table_schema: 'public' }]).mockResolvedValueOnce([{ migration_name: '20260620000002_init' }]);
-    const res = await GET();
+    const res = await call('Bearer test-secret');
     const body = await res.json();
     expect(res.status).toBe(200);
-    expect(res.headers.get('cache-control')).toContain('s-maxage=300');
-    expect(body.status).toBe('degraded');
+    expect(res.headers.get('cache-control')).toBe('no-store');
+    expect(res.headers.get('x-robots-tag')).toContain('noindex');
+    expect(body.ok).toBe(false);
     expect(body.schema.status).toBe('behind');
     expect(body.schema.missing).toContain('20260929000000_add_rate_limit_bucket');
-    expect(body.summary.schemaStatus).toBe('behind');
     expect(JSON.stringify(body)).not.toContain('postgresql://');
+  });
+});
+
+describe('GET /api/health stays free of schema detail', () => {
+  it('does not mention migrations or schema state', async () => {
+    const { GET: health } = await import('@/app/api/health/route');
+    const text = JSON.stringify(await (await health()).json());
+    expect(text).not.toMatch(/migration|schemaStatus|"schema"/i);
   });
 });

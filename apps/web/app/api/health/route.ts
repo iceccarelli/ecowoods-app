@@ -1,7 +1,6 @@
 import { getSeries, fetchSeries, VALET_BASE } from '@/lib/market';
 import { getStandards, stalenessDays, REVIEW_INTERVAL_DAYS } from '@/lib/standards';
 import { SITE_URL, BUSINESS } from '@/lib/seo-data';
-import { checkSchemaDrift } from '@/lib/schema-drift';
 
 /**
  * /api/health — is this site actually alive, and does it say so honestly?
@@ -23,14 +22,7 @@ import { checkSchemaDrift } from '@/lib/schema-drift';
  * `status` is `ok`, `degraded` or `down`, so a check can be a single string
  * comparison rather than a JSON walk.
  *
- * SCHEMA DRIFT: `schema` compares the Prisma migrations this build ships with
- * the finished rows in `_prisma_migrations` and lists the NAMES of any that are
- * not applied ("schema behind code" — e.g. a table a route needs does not
- * exist yet). Names only: no secrets, no rows, no customer data. A database
- * that cannot be queried reports `unknown`; `behind` or a failed query makes
- * the overall status `degraded` (never `down`: the upstream probe decides that).
- *
- * No secrets and no internals; everything here is safe to publish.
+ * No secrets, no internals, no database. Everything here is already public.
  */
 
 export const revalidate = 300;
@@ -91,11 +83,7 @@ export async function GET() {
   const stale = series.filter((s) => s.status === 'stale').length;
   const dueForReview = standards.filter((s) => s.status === 'due-for-review').length;
 
-  const schema = await checkSchemaDrift();
-  const schemaDegraded = schema.status === 'behind' || (schema.status === 'unknown' && schema.reason === 'query_failed');
-
-  const status =
-    down === series.length ? 'down' : down > 0 || stale > 0 || schemaDegraded ? 'degraded' : 'ok';
+  const status = down === series.length ? 'down' : down > 0 || stale > 0 ? 'degraded' : 'ok';
 
   return new Response(
     JSON.stringify(
@@ -112,8 +100,7 @@ export async function GET() {
             seriesReturned: series.filter((s) => s.status !== 'down').length,
           },
         ],
-        summary: { seriesDown: down, seriesStale: stale, standardsDueForReview: dueForReview, schemaStatus: schema.status },
-        schema,
+        summary: { seriesDown: down, seriesStale: stale, standardsDueForReview: dueForReview },
         series,
         standards,
         endpoints: {
