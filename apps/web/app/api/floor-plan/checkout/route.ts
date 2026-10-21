@@ -23,6 +23,7 @@ import { buildFloorPlanOrderItem } from '@/lib/floor-plan';
 import { buildCheckoutNotes } from '@/lib/floor-plan/notes';
 import { parseShareCode } from '@/lib/floor-plan/share-code';
 import { decodeStudioDesign } from '@/lib/floor-studio/studio-config';
+import { enforceRateLimit } from '@/lib/rate-limit-durable';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
@@ -67,6 +68,27 @@ export async function POST(req: Request) {
   }
 
   const { name, email, code: rawCode } = parsed.data;
+
+  // Durable, fail-closed limits before any User upsert / Order / Stripe
+  // session: per client IP and per email (the in-memory bucket above is
+  // per-instance only).
+  for (const [routeKey, identity, max] of [
+    ['floor-plan-checkout-ip', getClientIp(req), 10],
+    ['floor-plan-checkout-email', email.toLowerCase(), 3],
+  ] as const) {
+    const durable = await enforceRateLimit({
+      routeKey,
+      identity,
+      config: { windowMs: 60_000, maxRequests: max },
+      failClosed: true,
+    });
+    if (!durable.allowed) {
+      return NextResponse.json(
+        { error: 'Please wait a moment before trying again.' },
+        { status: 429, headers: { 'Retry-After': String(durable.retryAfterSeconds) } },
+      );
+    }
+  }
   const code = parseShareCode(rawCode);
   const design = decodeStudioDesign(code);
   if (!design) {

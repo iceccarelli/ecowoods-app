@@ -98,6 +98,9 @@ export async function POST(req: Request) {
         { status: 402 },
       );
     }
+    if (outcome.error === 'idempotency_key_conflict') {
+      return NextResponse.json({ error: 'Bad request' }, { status: 409 });
+    }
     console.error(
       JSON.stringify({ event: 'renovation_analysis.failed', userId, error: outcome.message }),
     );
