@@ -15,8 +15,10 @@
  * value-scenario.ts / value-scenario-evidence.ts.
  */
 import { leadSchema, type AppointmentService } from '@ecowoods/shared/schemas';
+import { designIdOf } from '@/lib/floor-studio/design-id';
+import { SERVICES } from '@/lib/seo-data';
 import { totalSquareFeet } from './state';
-import type { Money, ProjectRangeResult } from './economics';
+import { formatMoneyRange, type Money, type ProjectRangeResult } from './economics';
 import type { WorkspaceNextAction, WorkspaceObjective, WorkspaceState } from './types';
 
 /** The three real next actions — `null` (nothing chosen yet) is never a valid conversion action. */
@@ -39,7 +41,12 @@ export type ContactFieldErrors = Partial<Record<keyof ConversionContact, string>
  * here as a second set of "what's a valid phone number" rules.
  */
 export function validateContact(contact: ConversionContact): { ok: true } | { ok: false; fieldErrors: ContactFieldErrors } {
-  const parsed = leadSchema.pick({ name: true, email: true, phone: true, postal: true }).safeParse(contact);
+  const parsed = leadSchema.pick({ name: true, email: true, phone: true, postal: true }).safeParse({
+    name: contact.name.trim(),
+    email: contact.email.trim(),
+    phone: contact.phone.trim(),
+    postal: contact.postal.trim(),
+  });
   if (parsed.success) return { ok: true };
   const fieldErrors: ContactFieldErrors = {};
   for (const issue of parsed.error.issues) {
@@ -135,6 +142,49 @@ export function appointmentServiceForPlan(plan: ConversionPlan): AppointmentServ
   return plan.objective ? OBJECTIVE_TO_APPOINTMENT_SERVICE[plan.objective] : 'new-install';
 }
 
+/**
+ * The `service` vocabulary /estimate's own form posts to /api/leads
+ * (EstimateForm's SERVICES: refinishing, installation, sanding, stairs,
+ * inlays, commercial). `leadSchema.service` accepts any short string, so a
+ * raw catalogue slug ("hardwood-installation") or objective ("install") would
+ * validate and then reach the estimating desk as a value no other lead
+ * carries. Translating from the appointment category keeps one mapping from
+ * slug to category (above) and one from category to the form's words (here).
+ */
+const LEAD_SERVICE_FOR_APPOINTMENT: Record<AppointmentService, string> = {
+  'new-install': 'installation',
+  refinishing: 'refinishing',
+  'dust-free-sanding': 'sanding',
+  stairs: 'stairs',
+  'custom-inlays': 'inlays',
+  commercial: 'commercial',
+};
+
+/** Same 400-character ceiling `leadSchema.design` / `appointmentSchema.designCode` enforce. */
+const DESIGN_CODE_MAX = 400;
+const designCodeOf = (code: string | undefined): string | undefined => {
+  const t = code?.trim();
+  return t ? t.slice(0, DESIGN_CODE_MAX) : undefined;
+};
+
+/**
+ * What the estimating desk reads first: which of the three actions the
+ * homeowner chose (estimate and quote are otherwise indistinguishable on the
+ * lead), and the project facts they confirmed. Built only from the confirmed
+ * plan — nothing the model said in prose.
+ */
+function leadMessage(plan: ConversionPlan): string {
+  const names = plan.serviceSlugs.map((slug) => SERVICES.find((s) => s.slug === slug)?.name).filter(Boolean);
+  const parts = [
+    `Asked via Ask Francisco: ${CONVERSION_ACTION_LABEL[plan.action]}.`,
+    plan.objective ? `Objective: ${plan.objective}.` : null,
+    plan.squareFeet !== undefined ? `Area: ${plan.squareFeet} sq ft.` : null,
+    names.length ? `Services: ${names.join(', ')}.` : null,
+    `Published band applied to that area: ${formatMoneyRange(plan.costRange)} (not a quote).`,
+  ].filter((x): x is string => !!x);
+  return parts.join(' ').slice(0, 2000);
+}
+
 /** Body for `POST /api/leads` — the site's real "estimate"/"quote" backend (EstimateForm's own target). */
 export interface LeadPayload {
   name: string;
@@ -145,6 +195,7 @@ export interface LeadPayload {
   sqft?: number;
   designId?: string;
   design?: string;
+  message?: string;
   source: string;
 }
 
@@ -152,14 +203,15 @@ export const CONVERSION_SOURCE = 'assistant-workspace';
 
 export function buildLeadPayload(plan: ConversionPlan, contact: ConversionContact): LeadPayload {
   return {
-    name: contact.name,
-    email: contact.email,
-    phone: contact.phone,
-    postal: contact.postal,
-    service: plan.serviceSlugs[0] ?? plan.objective ?? undefined,
+    name: contact.name.trim(),
+    email: contact.email.trim(),
+    phone: contact.phone.trim(),
+    postal: contact.postal.trim(),
+    service: LEAD_SERVICE_FOR_APPOINTMENT[appointmentServiceForPlan(plan)],
     sqft: plan.squareFeet,
-    designId: plan.designId,
-    design: plan.designCode,
+    designId: designIdOf(plan.designId),
+    design: designCodeOf(plan.designCode),
+    message: leadMessage(plan),
     source: CONVERSION_SOURCE,
   };
 }
@@ -181,14 +233,14 @@ export interface AppointmentPayload {
 export function buildAppointmentPayload(plan: ConversionPlan, contact: ConversionContact, startsAt: string): AppointmentPayload {
   return {
     startsAt,
-    name: contact.name,
-    email: contact.email,
-    phone: contact.phone,
-    postal: contact.postal,
+    name: contact.name.trim(),
+    email: contact.email.trim(),
+    phone: contact.phone.trim(),
+    postal: contact.postal.trim(),
     service: appointmentServiceForPlan(plan),
     sqft: plan.squareFeet,
-    designId: plan.designId,
-    designCode: plan.designCode,
+    designId: designIdOf(plan.designId),
+    designCode: designCodeOf(plan.designCode),
     source: CONVERSION_SOURCE,
   };
 }

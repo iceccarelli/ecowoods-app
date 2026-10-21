@@ -13119,7 +13119,7 @@ body.aha-active .sticky-cta-mobile { display: none; }
 .aha-message--user .aha-message-author { color: var(--muted); }
 /* Body copy — 16px / 1.65, the readable sans used everywhere else on the
    site; the display serif stays reserved for the greeting and headings. */
-.aha-message-text { font-family: var(--font-body); font-size: 1rem; line-height: 1.65; color: var(--ink); margin: 0; }
+.aha-message-text { font-family: var(--font-body); font-size: 1rem; line-height: 1.65; color: var(--ink); margin: 0; overflow-wrap: break-word; }
 .aha-message--user .aha-message-text {
   font-size: 0.96rem;
   display: inline-block;
@@ -13146,6 +13146,11 @@ body.aha-active .sticky-cta-mobile { display: none; }
 .aha-message-text h3 { font-size: 1.12rem; }
 .aha-message-text h4 { font-size: 1rem; letter-spacing: 0.01em; }
 .aha-message-text :is(ul, ol) { margin: 0 0 0.85em; padding-left: 1.5em; }
+/* Hanging indent for long numbers: the marker ("10.", "100.") sits in the
+   padding, so the padding has to grow with the digit count or it spills into
+   the bubble edge. Nested lists inherit the parent's content edge. */
+.aha-message-text ol[data-digits="2"] { padding-left: 2.1em; }
+.aha-message-text ol[data-digits="3"] { padding-left: 2.7em; }
 .aha-message-text li { margin: 0.3em 0; padding-left: 0.25em; }
 .aha-message-text li::marker { color: var(--copper-text); font-variant-numeric: tabular-nums; }
 .aha-message-text li > :is(ul, ol) { margin: 0.3em 0 0.1em; }
@@ -13170,6 +13175,7 @@ body.aha-active .sticky-cta-mobile { display: none; }
   font-size: 0.86rem;
   line-height: 1.55;
 }
+.aha-md-pre:focus-visible, .aha-md-table-wrap:focus-visible { outline: 2px solid var(--copper-text); outline-offset: 2px; }
 .aha-md-pre code { background: none; border: 0; padding: 0; font-size: inherit; white-space: pre; }
 .aha-message-text blockquote {
   margin: 0 0 0.85em;

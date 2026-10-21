@@ -184,6 +184,11 @@ export function ConversationPane({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  /* Bumped by "Start a new conversation". A reply or transcript read that
+     began under an earlier epoch/design id must not write into the new one. */
+  const epochRef = useRef(0);
+  const designIdRef = useRef(state.designId);
+  designIdRef.current = state.designId;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   /*
@@ -197,10 +202,14 @@ export function ConversationPane({
   useEffect(() => {
     if (!ready || !state.designId || historyRequested) return;
     setHistoryRequested(true);
+    const requestedFor = state.designId;
     fetch(`/api/assistant/conversation?designId=${encodeURIComponent(state.designId)}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data: { turns?: StoredTranscriptTurn[] } | null) => {
         if (!data?.turns?.length) return;
+        /* The visitor started a new conversation while this read was in
+           flight: the old transcript must not reappear under the new id. */
+        if (designIdRef.current !== requestedFor) return;
         const restored: DisplayMessage[] = data.turns.map((t) => ({
             role: t.role,
             text: t.content,
@@ -350,12 +359,13 @@ export function ConversationPane({
 
     const controller = new AbortController();
     abortRef.current = controller;
+    const epoch = epochRef.current;
 
     /* Every branch below replaces the SAME placeholder — the message this
        turn's reply grows into, in place, rather than appending new bubbles. */
     const updateAssistant = (next: DisplayMessage) => {
       setMessages((prev) => {
-        if (!prev[assistantIndex]) return prev;
+        if (epochRef.current !== epoch || !prev[assistantIndex]) return prev;
         const copy = [...prev];
         copy[assistantIndex] = next;
         return copy;
@@ -439,6 +449,10 @@ export function ConversationPane({
         return;
       }
 
+      /* Abandoned by "Start a new conversation": its project facts belong to
+         the conversation that was left, not to the fresh one. */
+      if (epochRef.current !== epoch) return;
+
       const nextPatch = coercePatch(final.patch);
       if (Object.keys(nextPatch).length) patch(nextPatch);
 
@@ -474,8 +488,12 @@ export function ConversationPane({
         failed: true,
       });
     } finally {
-      abortRef.current = null;
-      setBusy(false);
+      /* A turn abandoned by "Start a new conversation" must not clear the
+         controller or busy flag of one the visitor has since started. */
+      if (epochRef.current === epoch) {
+        abortRef.current = null;
+        setBusy(false);
+      }
     }
   };
 
@@ -564,6 +582,9 @@ export function ConversationPane({
 
   /** Forbidden upload = this browser lacks the private cookie for the saved design. Start clean under a fresh design id (the old project fields stay). */
   const beginNewConversation = () => {
+    epochRef.current += 1;
+    abortRef.current?.abort();
+    setBusy(false);
     startNewConversation();
     setMessages([]);
     setPendingAttachments([]);

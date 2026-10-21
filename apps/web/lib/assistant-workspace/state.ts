@@ -125,6 +125,22 @@ export function applyPatch(
   return next;
 }
 
+/**
+ * Re-key to a fresh design id and keep every project field. The private
+ * transcript hangs off the design id (and its access cookie), so a new id is
+ * a new, empty conversation; what the homeowner told us about the house, the
+ * floor and the services stays. `designCode` (the Floor Studio share code) is
+ * a description of the floor they picked, not of the conversation, so it
+ * stays too.
+ */
+export function restartConversation(
+  state: WorkspaceState,
+  designId: string,
+  now: () => string = () => new Date().toISOString(),
+): WorkspaceState {
+  return { ...state, designId, updatedAt: now() };
+}
+
 /** Total square footage across every room that has one — undefined if none do. */
 export function totalSquareFeet(state: WorkspaceState): number | undefined {
   const known = state.rooms.map((r) => r.squareFeet).filter((n): n is number => typeof n === 'number');

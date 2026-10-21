@@ -485,7 +485,7 @@ export function executeFlagRisk(input: { issue: string; impact: string; unknown?
   return { ok: true as const, card, provider: { name: 'flag_risk', status: 'ok' as const } satisfies ProviderOutcome };
 }
 
-const NEXT_ACTION_HREF: Record<NextActionKind, string | undefined> = {
+export const NEXT_ACTION_HREF: Record<NextActionKind, string | undefined> = {
   measure: '/estimate',
   estimate: '/estimate',
   quote: '/estimate',
