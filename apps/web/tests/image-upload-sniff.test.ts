@@ -7,6 +7,9 @@ const { store, grant } = vi.hoisted(() => ({
 vi.mock('@/lib/auth', () => ({ auth: vi.fn(async () => null) }));
 vi.mock('@/lib/rate-limit-durable', () => ({ enforceRateLimit: vi.fn(async () => ({ allowed: true, retryAfterSeconds: 0 })) }));
 vi.mock('@/lib/floor-graph/consent', () => ({ grantConsent: grant }));
+vi.mock('@/lib/assistant-workspace/conversation-store', () => ({
+  establishConversation: vi.fn(async () => ({ ok: true as const, conversationId: 'conv-1' })),
+}));
 vi.mock('@/lib/assistant-workspace/attachment-storage', () => ({
   storeAttachment: store,
   signAttachmentUrl: vi.fn(async () => 'https://signed.example/x'),

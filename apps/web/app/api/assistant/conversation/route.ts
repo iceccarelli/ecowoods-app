@@ -4,13 +4,12 @@
  * client can hydrate ConversationPane on mount instead of starting blank
  * every time the visitor reopens the tab.
  *
- * Anonymous-first, like every other MEAS-01 surface: no auth is REQUIRED,
- * since a design id alone never identifies a person and this route returns
- * only what that same browser already has the id for — exactly Floor
- * Studio's own share-link model. But `loadTranscript` (conversation-store.ts)
- * closes the gap a bare designId leaves open once a conversation belongs to
- * a real account: a signed-in session is read here and passed through, so a
- * leaked/shared id can never read someone else's account-linked transcript.
+ * Anonymous-first: no account is REQUIRED, but a design id alone is NOT
+ * enough — it is shareable (Floor Studio links carry it). The transcript is
+ * returned only to the signed-in owner of an account-linked conversation, or
+ * to the browser holding the private httpOnly access cookie minted when the
+ * conversation was created (conversation-access.ts). Anyone else gets the
+ * same empty result as "no conversation".
  * Rate-limited (reusing the existing durable limiter, not a new one) to
  * blunt a script that walks many design ids looking for a hit — the 60-bit
  * id space already makes that infeasible by brute force, but a cheap read
@@ -22,6 +21,7 @@ import { enforceRateLimit } from '@/lib/rate-limit-durable';
 import { auth } from '@/lib/auth';
 import { isDesignId } from '@/lib/floor-studio/design-id';
 import { loadTranscript } from '@/lib/assistant-workspace/conversation-store';
+import { readAccessToken } from '@/lib/assistant-workspace/conversation-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +51,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ turns: [] });
   }
   const session = await auth().catch(() => null);
-  const turns = await loadTranscript(designId, session?.user?.id ?? null);
+  const turns = await loadTranscript(designId, session?.user?.id ?? null, readAccessToken(req, designId));
   return NextResponse.json({ turns });
 }

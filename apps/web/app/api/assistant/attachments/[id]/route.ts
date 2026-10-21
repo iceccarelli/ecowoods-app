@@ -9,8 +9,9 @@
  * `withdrawConsent` sat in lib/floor-graph/consent.ts unreachable from this
  * surface.
  *
- * Ownership: same anonymous-first / account-linked boundary as GET
- * /api/assistant/conversation (conversation-store.ts's findOwnedAttachment).
+ * Ownership: same boundary as GET /api/assistant/conversation — the owning
+ * account, or the private access cookie; designId alone is not enough
+ * (conversation-store.ts's findOwnedAttachment).
  *
  * DURABILITY CONTRACT — read before changing this route.
  *
@@ -37,6 +38,7 @@ import { NextResponse } from 'next/server';
 import { getClientIp, isTrustedBrowserOrigin } from '@/lib/rate-limit';
 import { enforceRateLimit } from '@/lib/rate-limit-durable';
 import { auth } from '@/lib/auth';
+import { readAccessToken } from '@/lib/assistant-workspace/conversation-access';
 import { claimAttachmentForDeletion, finalizeAttachmentDeletion } from '@/lib/assistant-workspace/conversation-store';
 import { deleteAttachment as deleteStoredObject } from '@/lib/assistant-workspace/attachment-storage';
 import { withdrawConsentById } from '@/lib/floor-graph/consent';
@@ -65,8 +67,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const designId = new URL(request.url).searchParams.get('designId') ?? '';
   const session = await auth().catch(() => null);
   const viewerUserId = session?.user?.id ?? null;
+  const accessToken = readAccessToken(request, designId);
 
-  const claim = await claimAttachmentForDeletion(designId, id, viewerUserId);
+  const claim = await claimAttachmentForDeletion(designId, id, viewerUserId, accessToken);
   if (!claim.ok) {
     const status = claim.reason === 'forbidden' ? 403 : claim.reason === 'not_found' ? 404 : 502;
     return NextResponse.json({ error: claim.reason }, { status });
@@ -91,7 +94,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       })
     : true; // already withdrawn, or there was never a consent grant associated (legacy attachment)
 
-  const final = await finalizeAttachmentDeletion(designId, id, viewerUserId, { storageDeleted, consentWithdrawn });
+  const final = await finalizeAttachmentDeletion(designId, id, viewerUserId, accessToken, { storageDeleted, consentWithdrawn });
   if (!final.ok) {
     // The claim succeeded but recording the outcome did not — the row is
     // still 'deleting' with whatever flags the LAST successful finalize

@@ -26,7 +26,9 @@ import { FINISH_OPTIONS, PATTERN_OPTIONS } from '@ecowoods/shared/ai';
 import { getClientIp, isTrustedBrowserOrigin } from '@/lib/rate-limit';
 import { enforceRateLimit } from '@/lib/rate-limit-durable';
 import { auth } from '@/lib/auth';
-import { appendTurn, type StoredAttachment } from '@/lib/assistant-workspace/conversation-store';
+import { appendTurn, establishConversation, type StoredAttachment } from '@/lib/assistant-workspace/conversation-store';
+import { readAccessToken, serializeAccessCookie } from '@/lib/assistant-workspace/conversation-access';
+import { isDesignId } from '@/lib/floor-studio/design-id';
 import { siteCapabilitiesBlock } from '@/lib/assistant-site';
 import { ASK_FRANCISCO_SYSTEM_PROMPT } from '@/lib/assistant-workspace/system-prompt';
 import { downloadAttachment, isOwnAttachmentPath, attachmentConsentSurface } from '@/lib/assistant-workspace/attachment-storage';
@@ -166,6 +168,14 @@ export async function POST(req: Request) {
   const designId = body.data.workspace?.designId;
   const session = await auth().catch(() => null);
   const userId = session?.user?.id ?? null;
+  /* designId is shareable and is NOT the credential: persistence and photo
+     use require the private access cookie (or the owning account). */
+  const access =
+    designId && isDesignId(designId)
+      ? await establishConversation(designId, userId, readAccessToken(req, designId))
+      : ({ ok: false, reason: 'forbidden' } as const);
+  const conversationId = access.ok ? access.conversationId : null;
+  const accessCookie = access.ok && access.newToken && designId ? serializeAccessCookie(designId, access.newToken) : null;
   const lastUserRaw = body.data.messages[body.data.messages.length - 1]!;
   const lastUserText =
     typeof lastUserRaw.content === 'string'
@@ -210,7 +220,7 @@ export async function POST(req: Request) {
     for (const ref of attachmentRefs) {
       if (ref.kind !== 'room_photo') continue;
 
-      const pathValid = !!designId && isOwnAttachmentPath(ref.url, designId, ref.id, ref.contentType);
+      const pathValid = !!designId && access.ok && isOwnAttachmentPath(ref.url, designId, ref.id, ref.contentType);
       const consentValid = pathValid && !!ref.consentId && (await isConsentValidForAttachment(ref.consentId, attachmentConsentSurface(ref.id)));
       if (!pathValid || !consentValid) {
         console.warn(
@@ -249,7 +259,7 @@ export async function POST(req: Request) {
         consentId: verified ? ref.consentId : undefined,
       }))
     : undefined;
-  void appendTurn({ designId, userId, role: 'user', content: lastUserText, attachments: persistedAttachments });
+  void appendTurn({ conversationId, role: 'user', content: lastUserText, attachments: persistedAttachments });
 
   const patches: WorkspacePatch[] = [];
   const cards: AssistantChatCard[] = [];
@@ -525,8 +535,7 @@ export async function POST(req: Request) {
           // canned string would be exactly the invented execution metadata
           // this surface must never write.
           void appendTurn({
-            designId,
-            userId,
+            conversationId,
             role: 'assistant',
             content: reply,
             blocks: cards,
@@ -553,7 +562,11 @@ export async function POST(req: Request) {
     });
 
     return new NextResponse(stream, {
-      headers: { 'Content-Type': 'application/x-ndjson; charset=utf-8', 'Cache-Control': 'no-cache, no-store' },
+      headers: {
+        'Content-Type': 'application/x-ndjson; charset=utf-8',
+        'Cache-Control': 'no-cache, no-store',
+        ...(accessCookie ? { 'Set-Cookie': accessCookie } : {}),
+      },
     });
   } catch (err) {
     console.error(
