@@ -78,15 +78,25 @@ describe('GET /api/internal/schema-status', () => {
   });
 
   it('names the missing migrations for an authorised caller, uncached and noindex', async () => {
-    q.fn.mockResolvedValueOnce([{ table_schema: 'public' }]).mockResolvedValueOnce([{ migration_name: '20260620000002_init' }]);
+    // Ledger queries answered; the structural catalog queries fail, which must read as unknown (not ok).
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    q.fn.mockImplementation(async (...a: unknown[]) => {
+      const first = a[0] as { strings?: string[]; sql?: string } | string[];
+      const sql = Array.isArray(first) ? first.join('?') : (first.sql ?? first.strings?.join('?') ?? '');
+      if (sql.includes("table_name = '_prisma_migrations'")) return [{ table_schema: 'public' }];
+      if (sql.includes('"_prisma_migrations"')) return [{ migration_name: '20260620000002_init' }];
+      throw new Error('catalog unavailable');
+    });
     const res = await call('Bearer test-secret');
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(res.headers.get('cache-control')).toBe('no-store');
     expect(res.headers.get('x-robots-tag')).toContain('noindex');
     expect(body.ok).toBe(false);
-    expect(body.schema.status).toBe('behind');
-    expect(body.schema.missing).toContain('20260929000000_add_rate_limit_bucket');
+    expect(body.status).toBe('behind');
+    expect(body.ledger.status).toBe('behind');
+    expect(body.ledger.missing).toContain('20260929000000_add_rate_limit_bucket');
+    expect(body.structure.status).toBe('unknown');
     expect(JSON.stringify(body)).not.toContain('postgresql://');
   });
 });
