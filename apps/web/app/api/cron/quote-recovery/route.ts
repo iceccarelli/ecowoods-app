@@ -85,8 +85,15 @@ export async function GET(request: Request) {
 
     // Stamp FIRST. A crash mid-send loses one email; a crash after an unstamped
     // send emails the same person on every run until somebody notices.
+    // The stamp is also the CLAIM: a conditional update that only one of two
+    // overlapping runs (a retried invocation, a manual re-run during a cron)
+    // can win. The loser sees count 0 and skips, so nobody is emailed twice.
     try {
-      await db.quoteRecovery.update({ where: { id: row.id }, data: { sentAt: new Date() } });
+      const claimed = await db.quoteRecovery.updateMany({
+        where: { id: row.id, sentAt: null, convertedAt: null },
+        data: { sentAt: new Date() },
+      });
+      if (claimed.count !== 1) continue;
     } catch {
       continue;
     }

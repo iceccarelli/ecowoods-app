@@ -3,10 +3,10 @@ import { beforeAll, describe, expect, it, vi } from 'vitest';
 /* Render every HTML email builder through the real sendEmail → Resend path (client
    mocked) with hostile input in every customer-controlled field, and assert the
    markup that arrives is inert. */
-const sent: { subject: string; html: string }[] = [];
+const sent: { subject: string; html: string; text?: string }[] = [];
 vi.mock('resend', () => ({
   Resend: class {
-    emails = { send: async (m: { subject: string; html: string }) => (sent.push(m), { error: null }) };
+    emails = { send: async (m: { subject: string; html: string; text?: string }) => (sent.push(m), { error: null }) };
   },
 }));
 
@@ -59,5 +59,33 @@ describe('rendered email bodies neutralise hostile input', () => {
   it('keeps newlines as <br> after escaping', async () => {
     const html = await last(() => mail.sendAdminNewInquiryEmail({ inquiryId: 'i', name: 'n', email: 'e', subject: 's', message: 'a\nb<i>' }));
     expect(html).toContain('a<br>b&lt;i&gt;');
+  });
+});
+
+describe('headers, links and the plain-text part', () => {
+  it('a name carrying CR/LF cannot add a header or break the subject line', async () => {
+    sent.length = 0;
+    await mail.sendAdminNewQuoteEmail({ quoteId: 'q', name: 'Eve\r\nBcc: victim@example.com', email: 'e@x.ca', city: 'Toronto' });
+    expect(sent[0].subject).not.toMatch(/[\r\n]/);
+    expect(mail.sanitizeSubject('a\u2028b\n\nc')).toBe('a b c');
+  });
+  it('admin quote email has no dangling comma and carries the facts in the plain part', async () => {
+    sent.length = 0;
+    await mail.sendAdminNewQuoteEmail({ quoteId: 'q1', name: 'Jo', email: 'jo@x.ca', phone: '416', service: 'refinishing', timeline: 'ASAP', source: 'home-hero' });
+    expect(sent[0].subject).toBe('New Quote Request — Jo (—)');
+    expect(sent[0].text).toContain('Timeline: ASAP');
+    expect(sent[0].text).toContain('Source: home-hero');
+    expect(sent[0].text).toContain('Phone: 416');
+    expect(sent[0].html).toContain('ASAP');
+  });
+  it('links use the canonical site origin, not NEXTAUTH_URL', async () => {
+    vi.stubEnv('NEXT_PUBLIC_SITE_URL', 'https://ecowoods.ca/');
+    vi.stubEnv('NEXTAUTH_URL', 'https://preview-abc.vercel.app');
+    sent.length = 0;
+    await mail.sendAdminNewQuoteEmail({ quoteId: 'q9', name: 'Jo', email: 'jo@x.ca' });
+    expect(sent[0].html).toContain('https://ecowoods.ca/admin/quotes/q9');
+    expect(sent[0].html).not.toContain('vercel.app');
+    vi.unstubAllEnvs();
+    vi.stubEnv('RESEND_API_KEY', 're_test');
   });
 });

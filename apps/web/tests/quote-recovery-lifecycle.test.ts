@@ -70,6 +70,12 @@ beforeEach(() => {
   h.sent.length = 0;
   h.recoverySent.length = 0;
   h.rl.mockClear();
+  h.updateMany.mockClear();
+  h.updateMany.mockImplementation(async ({ where, data }: any) => {
+    const hit = h.rows.filter((r) => matches(r, where));
+    hit.forEach((r) => Object.assign(r, data));
+    return { count: hit.length };
+  });
   h.rl.mockResolvedValue({ allowed: true, remaining: 1, retryAfterSeconds: 0, degraded: false });
   process.env.CRON_SECRET = 's3cret';
   vi.spyOn(console, 'log').mockImplementation(() => undefined);
@@ -137,6 +143,12 @@ describe('quote-recovery conversion', () => {
     confirmed('quiet@example.com');
     await runCron();
     expect(h.recoverySent).toEqual(['quiet@example.com']);
+  });
+
+  it('two overlapping cron runs email a due address once (the stamp is an atomic claim)', async () => {
+    confirmed('race@example.com');
+    await Promise.all([runCron(), runCron()]);
+    expect(h.recoverySent).toEqual(['race@example.com']);
   });
 
   it('markRecoveryConverted lowercases and matches insensitively', async () => {
