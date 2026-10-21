@@ -39,10 +39,18 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
      first clause of the snippet is the first thing that differs between them. */
   const cc = cityContent(city.slug);
   const localClause = cc ? cc.intro.split(/(?<=\.)\s/)[0] : '';
-  const description = (
-    `${localClause} Dust-free refinishing and hardwood installation in ${city.name}. ` +
-    `Fixed written estimates. Call ${BUSINESS.phoneDisplay}.`
-  ).slice(0, 158);
+  /* Fixed head and tail are never cut: the area name leads and the phone call
+     to action closes. Only the local clause flexes, at a word boundary. */
+  const head = `Dust-free hardwood refinishing and installation in ${areaDisplayName(city)}.`;
+  const tail = ` Fixed written estimates. Call ${BUSINESS.phoneDisplay}.`;
+  const room = 158 - head.length - tail.length - 1;
+  let local = '';
+  if (localClause.length <= room) local = localClause;
+  else if (room >= 50) {
+    const cut = localClause.slice(0, room - 1);
+    local = `${cut.slice(0, cut.lastIndexOf(' ')).replace(/[\s,;:—–-]+$/, '')}…`;
+  }
+  const description = `${head}${local ? ` ${local}` : ''}${tail}`;
   return {
     title,
     description,

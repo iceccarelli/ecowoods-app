@@ -41,13 +41,13 @@ export function areaOpening(city: City): string {
   const refinish = priceBandIn(REFINISHING, country);
   const install = priceBandIn(INSTALLATION, country);
   const hoods = (cityContent(city.slug)?.neighbourhoods ?? []).slice(0, 3);
-  const local = hoods.length ? ` Streets we work include ${hoods.join(', ')}.` : '';
+  const local = hoods.length ? ` Neighbourhoods in ${where} include ${hoods.join(', ')}.` : '';
   const shop = isUS
     ? `The shop is in Toronto at ${BUSINESS_ADDRESS_LINE}, and the job is in ${city.name}.`
     : `The shop is at ${BUSINESS_ADDRESS_LINE}.`;
   return (
-    `${BUSINESS_NAP.legalName} refinishes, installs and restores hardwood floors and stairs in ${where}, ` +
-    `and has done hardwood work for ${yearsInBusiness()} years. ` +
+    `${BUSINESS_NAP.legalName} refinishes, installs and restores hardwood floors and stairs in ${where}. ` +
+    `The company is based in Toronto and has been in business for ${yearsInBusiness()} years. ` +
     `${where} is one of ${SERVICE_AREAS.length} published service areas.${local} ` +
     `Services here are ${SERVICES.map((s) => s.name).join(', ')}. ` +
     `Published prices in ${isUS ? 'US' : 'Canadian'} dollars: ${refinish} for a full sand and finish and ${install} for new hardwood. ` +
