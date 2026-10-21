@@ -15,7 +15,7 @@
 
 import { FAQ_ITEMS, CITIES, SERVICES, NEIGHBOURHOOD_AREAS, DISTRICT_AREAS, type City } from '@/lib/seo-data';
 import { PRICE_BANDS, ALL_PRICE_BANDS, HOME_CURRENCY, priceSpecification, type PriceBand } from '@/content/constants/pricing';
-import { getServicePages, priceBand } from '@/lib/service-pages';
+import { getServicePages, bandForPage } from '@/lib/service-pages';
 import { LOGO_URL, OG_IMAGE_URL } from '@/lib/brand-assets';
 import { BUSINESS_NAP, GOOGLE_PLACE, HOMESTARS_CANONICAL } from '@ecowoods/shared/constants';
 import {
@@ -257,16 +257,16 @@ const IDENTIFIERS: PropertyValue[] = [
  *
  * The published bands are per square foot and live in lib/pricing.ts. A project
  * total would need an area assumption this site does not publish, so it is not
- * published here either. `servicePriceRange()` reads the same band the service
+ * published here either. `serviceBand()` reads the same band the service
  * page renders, and returns undefined where no band is published rather than
  * inventing one.
  *
  * scripts/verify-schema-figures.mjs fails the build on a currency amount or a
  * percentage typed as a literal anywhere in the schema layer.
  */
-const servicePriceRange = (slug: string): string | undefined => {
+const serviceBand = (slug: string): PriceBand | undefined => {
   const page = getServicePages().find((p) => p.slug === slug);
-  return page ? priceBand(page) : undefined;
+  return page ? bandForPage(page) : undefined;
 };
 
 /**
@@ -384,7 +384,7 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
     id: s.slug,
     name: s.name,
     description: s.blurb,
-    priceRange: servicePriceRange(s.slug),
+    band: serviceBand(s.slug),
     areaServed: GTA,
   })),
   foundingYear: BUSINESS_NAP.foundedYear,

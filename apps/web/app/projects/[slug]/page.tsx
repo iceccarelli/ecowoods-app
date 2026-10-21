@@ -126,22 +126,11 @@ export default async function ProjectPage({
         addressCountry: 'CA',
       },
     },
-    provider: {
-      '@type': 'LocalBusiness',
-      name: BUSINESS_NAP.legalName,
-      telephone: BUSINESS_NAP.phoneDisplay,
-      /* The provider's own NAP, derived from the single source in
-         @ecowoods/shared/constants rather than retyped — this repository has
-         already shipped a phone number that drifted across sixteen files. */
-      address: {
-        '@type': 'PostalAddress',
-        streetAddress: BUSINESS_NAP.address.streetAddress,
-        addressLocality: BUSINESS_NAP.address.addressLocality,
-        addressRegion: BUSINESS_NAP.address.addressRegion,
-        postalCode: BUSINESS_NAP.address.postalCode,
-        addressCountry: BUSINESS_NAP.address.addressCountry,
-      },
-    },
+    /* The organisation by reference. This used to restate the business as an
+       inline LocalBusiness with its own telephone and address — a second copy
+       of the NAP on every project page, beside the root node the layout
+       already injects. One entity, one @id. */
+    provider: { '@id': `${SITE_URL}/#organization` },
     image: project.stills
       .filter((s) => s.role === 'interior')
       .map((s) => ({
@@ -367,19 +356,11 @@ function TrilogyProjectPage({ slug }: { slug: string }) {
     name: trilogy.headline,
     description: trilogy.lede,
     url: `${SITE_URL}/projects/${trilogy.slug}`,
-    provider: {
-      '@type': 'LocalBusiness',
-      name: BUSINESS_NAP.legalName,
-      telephone: BUSINESS_NAP.phoneDisplay,
-      address: {
-        '@type': 'PostalAddress',
-        streetAddress: BUSINESS_NAP.address.streetAddress,
-        addressLocality: BUSINESS_NAP.address.addressLocality,
-        addressRegion: BUSINESS_NAP.address.addressRegion,
-        postalCode: BUSINESS_NAP.address.postalCode,
-        addressCountry: BUSINESS_NAP.address.addressCountry,
-      },
-    },
+    /* The organisation by reference. This used to restate the business as an
+       inline LocalBusiness with its own telephone and address — a second copy
+       of the NAP on every project page, beside the root node the layout
+       already injects. One entity, one @id. */
+    provider: { '@id': `${SITE_URL}/#organization` },
     image: trilogy.frames.map((f) => ({
       '@type': 'ImageObject',
       contentUrl: `${SITE_URL}${f.src.src}`,
