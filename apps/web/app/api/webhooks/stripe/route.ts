@@ -5,6 +5,9 @@
  * Handles:
  *   · checkout.session.completed — see lib/stripe-fulfillment.ts (verify, mark PAID, fulfil)
  *   · payment_intent.payment_failed — (logged for debugging)
+ *   · charge.refunded, refund.updated, charge.dispute.created — see
+ *     lib/payment-reconciliation.ts (recorded durably; credits never touched)
+ *   · anything else — acknowledged (200) and logged as unhandled
  *
  * IMPORTANT: This route must NOT use body parsing — Stripe requires the raw
  * request body to verify the webhook signature.
@@ -17,6 +20,7 @@ import { headers } from 'next/headers';
 import { stripe } from '@/lib/stripe';
 import Stripe from 'stripe';
 import { fulfilCheckoutSession } from '@/lib/stripe-fulfillment';
+import { handleChargeRefunded, handleDisputeCreated, handleRefundUpdated } from '@/lib/payment-reconciliation';
 
 export const runtime = 'nodejs';
 
@@ -62,8 +66,21 @@ export async function POST(req: Request) {
         break;
       }
 
+      case 'charge.refunded':
+        await handleChargeRefunded(event);
+        break;
+
+      case 'refund.updated':
+        await handleRefundUpdated(event);
+        break;
+
+      case 'charge.dispute.created':
+        await handleDisputeCreated(event);
+        break;
+
       default:
-        // Unhandled events are safe to ignore
+        // Unknown types are acknowledged (redelivery cannot help) but never silent.
+        console.warn(JSON.stringify({ event: 'stripe_webhook.unhandled_event', stripeEventId: event.id, type: event.type }));
         break;
     }
   } catch (err) {

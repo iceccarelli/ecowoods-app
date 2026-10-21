@@ -111,6 +111,7 @@ vi.mock('@/lib/db', () => {
   return {
     db: {
       settings: { findFirst: async () => ({ defaultTaxRate: 13 }) },
+      paymentCase: { count: async () => 0 },
       order: {
         create: async ({ data }: { data: Omit<Order, 'id'> & { items?: unknown } }) => {
           const { items: _items, ...rest } = data as Order & { items?: unknown };

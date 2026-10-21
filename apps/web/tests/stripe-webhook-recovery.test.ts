@@ -17,6 +17,7 @@ const s = vi.hoisted(() => ({
   orders: new Map<string, Row>(),
   invoices: new Map<string, Row>(),
   payments: [] as Row[],
+  cases: [] as Row[],
   wallets: new Map<string, Row>(),
   txns: new Map<string, Row>(),
   signature: null as string | null,
@@ -88,11 +89,22 @@ vi.mock('@/lib/db', () => {
     creditTransaction: credit,
     invoice: {
       update: async ({ where, data }: { where: { id: string }; data: Row }) => Object.assign(s.invoices.get(where.id)!, data),
-      updateMany: async ({ where, data }: { where: { id: string; status: { not: string } }; data: Row }) => {
+      updateMany: async ({ where, data }: { where: { id: string; status: { notIn?: string[]; not?: string } }; data: Row }) => {
         const inv = s.invoices.get(where.id);
-        if (!inv || inv.status === where.status.not) return { count: 0 };
+        if (!inv || (where.status.notIn ?? [where.status.not]).includes(inv.status as string)) return { count: 0 };
         Object.assign(inv, data);
         return { count: 1 };
+      },
+    },
+    paymentCase: {
+      createMany: async ({ data }: { data: Row[] }) => {
+        let count = 0;
+        for (const d of data) {
+          if (s.cases.some((c) => c.idempotencyKey === d.idempotencyKey)) continue;
+          s.cases.push({ ...d, id: `c-${s.cases.length + 1}` });
+          count += 1;
+        }
+        return { count };
       },
     },
     payment: {
@@ -100,7 +112,9 @@ vi.mock('@/lib/db', () => {
         s.payments.find((p) => p.invoiceId === where.invoiceId && (!where.stripePaymentIntentId || p.stripePaymentIntentId === where.stripePaymentIntentId)) ?? null,
       create: async ({ data }: { data: Row }) => {
         maybeFail('paymentCreate', 'payment insert failed');
-        s.payments.push({ ...data, id: `p-${s.payments.length + 1}` });
+        const row = { ...data, id: `p-${s.payments.length + 1}` };
+        s.payments.push(row);
+        return row;
       },
     },
   });
@@ -111,6 +125,7 @@ vi.mock('@/lib/db', () => {
       project: { findUnique: async () => ({ designId: 'design-1' }) },
       creditWallet: wallet,
       creditTransaction: credit,
+      paymentCase: { count: async () => 0 },
       // Serialises transactions (the row lock) and rolls back on throw.
       $transaction: async (fn: (tx: unknown) => Promise<unknown>) => {
         const run = s.lock.then(async () => {
@@ -175,6 +190,7 @@ beforeEach(() => {
   s.orders.clear();
   s.invoices = new Map();
   s.payments.length = 0;
+  s.cases.length = 0;
   s.wallets = new Map();
   s.txns = new Map();
   s.funnel.length = 0;
@@ -304,6 +320,19 @@ describe('other paid orders', () => {
 });
 
 describe('invoice', () => {
+  it('a valid late payment on a VOID invoice never reopens it: Payment recorded, case opened once, no funnel event', async () => {
+    addInvoice({ status: 'VOID' });
+    expect((await webhook.POST(invoiceEvent())).status).toBe(200);
+    expect((await webhook.POST(invoiceEvent())).status).toBe(200);
+    expect(s.invoices.get('inv-1')!.status).toBe('VOID');
+    expect(s.invoices.get('inv-1')!.paidAt).toBeUndefined();
+    expect(s.payments).toHaveLength(1);
+    expect(s.payments[0]).toMatchObject({ status: 'COMPLETED', stripePaymentIntentId: 'pi_1', amount: 500 });
+    expect(s.cases).toHaveLength(1);
+    expect(s.cases[0]).toMatchObject({ kind: 'LATE_PAYMENT_VOID_INVOICE', idempotencyKey: 'late-void:pi_1', invoiceId: 'inv-1' });
+    expect(s.funnel).toHaveLength(0);
+  });
+
   it('valid event: invoice PAID, one Payment, one deposit funnel event', async () => {
     addInvoice();
     expect((await webhook.POST(invoiceEvent())).status).toBe(200);

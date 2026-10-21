@@ -40,12 +40,18 @@ import { recordFunnelEvent } from '@/lib/funnel-ledger';
 import { CREDIT_PACK } from '@/lib/assistant-workspace/credits-config';
 import { deliverFloorPlanOrder } from '@/lib/floor-plan/deliver';
 import { isFloorPlanOrder } from '@/lib/floor-plan/notes';
+import { openPaymentCase, orderHasRefundCase } from '@/lib/payment-reconciliation';
 
 /** Order.notes prefix written by /api/assistant/analysis/checkout. */
 const CREDITS_NOTES_PREFIX = 'Renovation Credits (';
 
 export type FulfillmentOutcome =
   | { status: 'fulfilled'; kind: 'order' | 'invoice' | 'renovation-credits' }
+  /**
+   * A real charge was recorded but deliberately NOT applied: it needs a person
+   * (a PaymentCase is open). Currently: a late payment against a VOID invoice.
+   */
+  | { status: 'flagged'; reason: 'late_payment_void_invoice'; caseOpened: boolean }
   | { status: 'rejected'; reason: string }
   | { status: 'ignored'; reason: string };
 
@@ -87,6 +93,9 @@ async function fulfilCreditsOrder(order: { id: string; userId: string; notes: st
   if (order.notes !== `${CREDITS_NOTES_PREFIX}${CREDIT_PACK.id})`) {
     return reject('unknown_credit_pack', { orderId: order.id });
   }
+  // A pack that Stripe has since refunded (a case is open) must not be granted
+  // by the reconcile sweep or a late redelivery. A person decides.
+  if (await orderHasRefundCase(order.id)) return reject('refunded_pending_review', { orderId: order.id });
   const grant = await grantCreditsForOrder({
     userId: order.userId,
     orderId: order.id,
@@ -144,22 +153,32 @@ async function handleInvoiceSession(session: Stripe.Checkout.Session, invoiceId:
   const amountCad = (session.amount_total ?? 0) / 100;
 
   /* One transaction: the invoice state and its Payment row commit together or
-     not at all. The unconditional update takes the row lock first, so two
-     concurrent deliveries serialize here and the second one's lookup sees the
-     first one's Payment. Re-running it against an invoice that an older
-     version of this handler left PAID-without-a-Payment creates the missing
-     row — that is the repair path. */
-  const claimedNow = await db.$transaction(async (tx) => {
-    await tx.invoice.update({ where: { id: invoiceId }, data: { stripePaymentIntentId: pi } });
-    const claim = await tx.invoice.updateMany({
-      where: { id: invoiceId, status: { not: 'PAID' } },
-      data: { status: 'PAID', paidAt: new Date() },
-    });
+     not at all. The unconditional update takes the row lock first (and returns
+     the CURRENT status), so two concurrent deliveries serialize here and the
+     second one's lookup sees the first one's Payment. Re-running it against an
+     invoice that an older version of this handler left PAID-without-a-Payment
+     creates the missing row — that is the repair path.
+
+     VOID IS TERMINAL. A valid charge that arrives for a VOID invoice (the
+     customer paid from a stale Checkout Session) is real money: it is recorded
+     as a COMPLETED Payment tied to the payment intent and flagged with a
+     PaymentCase for an administrator, but the invoice is never reopened and
+     nothing is refunded automatically. */
+  const result = await db.$transaction(async (tx) => {
+    const locked = await tx.invoice.update({ where: { id: invoiceId }, data: { stripePaymentIntentId: pi } });
+    const isVoid = locked.status === 'VOID';
+    const claim = isVoid
+      ? { count: 0 }
+      : await tx.invoice.updateMany({
+          where: { id: invoiceId, status: { notIn: ['PAID', 'VOID'] } },
+          data: { status: 'PAID', paidAt: new Date() },
+        });
     const existing = pi
       ? await tx.payment.findFirst({ where: { invoiceId, stripePaymentIntentId: pi } })
       : await tx.payment.findFirst({ where: { invoiceId, method: 'STRIPE', status: 'COMPLETED' } });
-    if (!existing) {
-      await tx.payment.create({
+    const payment =
+      existing ??
+      (await tx.payment.create({
         data: {
           invoiceId,
           userId: session.metadata?.userId ?? null,
@@ -169,10 +188,28 @@ async function handleInvoiceSession(session: Stripe.Checkout.Session, invoiceId:
           stripeCharged: true,
           stripePaymentIntentId: pi,
         },
+      }));
+    let caseOpened = false;
+    if (isVoid) {
+      caseOpened = await openPaymentCase(tx, {
+        kind: 'LATE_PAYMENT_VOID_INVOICE',
+        idempotencyKey: `late-void:${pi ?? session.id}`,
+        amountCents: session.amount_total ?? 0,
+        currency: session.currency,
+        summary: 'A successful Stripe payment arrived for a VOID invoice. The invoice stays VOID; the charge is recorded and needs an administrative decision.',
+        stripePaymentIntentId: pi,
+        invoiceId,
+        paymentId: payment.id,
+        userId: session.metadata?.userId ?? null,
+        details: { checkoutSessionId: session.id, invoiceNumber: invoice.number ?? null },
       });
     }
-    return claim.count === 1;
+    return { claimedNow: claim.count === 1, isVoid, caseOpened };
   });
+  const claimedNow = result.claimedNow;
+  if (result.isVoid) {
+    return { status: 'flagged', reason: 'late_payment_void_invoice', caseOpened: result.caseOpened };
+  }
 
   /* MEAS-02 — the brief's `deposit` event. Only the DEPOSIT stage counts: a
      progress or final invoice is real revenue but not the moment a customer
@@ -253,7 +290,7 @@ async function reconcileLostWebhooks(
       try {
         log('stripe_fulfillment.lost_webhook_recovered', { sessionId: session.id, orderId: session.metadata?.orderId ?? null, invoiceId: session.metadata?.invoiceId ?? null });
         const outcome = await fulfilCheckoutSession(session);
-        if (outcome.status === 'fulfilled') summary.fulfilled += 1;
+        if (outcome.status === 'fulfilled' || outcome.status === 'flagged') summary.fulfilled += 1;
         else summary.failed += 1;
       } catch (err) {
         summary.failed += 1;

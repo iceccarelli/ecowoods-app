@@ -44,6 +44,7 @@ const ADMIN_ONLY: Record<string, string[]> = {
     'createProject', 'updateProjectStatus', 'updateContractPdf', 'addProjectNote', 'sendContractToCustomer', 'updateProject',
   ],
   '@/lib/actions/orders': ['updateOrderStatus'],
+  '@/lib/actions/payment-cases': ['resolvePaymentCase'],
   '@/lib/actions/inquiries': ['draftInquiryReply', 'replyToInquiry', 'closeInquiry', 'updateInquiryStatus', 'updateSettings'],
 };
 
@@ -53,6 +54,7 @@ const PUBLIC_OR_OWNER: Record<string, string[]> = {
   '@/lib/actions/quotes': ['submitQuoteRequest'], // public quote form
   '@/lib/actions/projects': [],
   '@/lib/actions/orders': [],
+  '@/lib/actions/payment-cases': [],
   '@/lib/actions/inquiries': ['submitInquiry'], // public contact form
 };
 

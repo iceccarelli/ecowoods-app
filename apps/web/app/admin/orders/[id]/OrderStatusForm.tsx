@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { updateOrderStatus } from '@/lib/actions/orders';
 import type { Order, OrderStatus } from '@prisma/client';
 
-const STATUSES: OrderStatus[] = ['PENDING', 'PAID', 'FULFILLED', 'CANCELLED'];
+const STATUSES: OrderStatus[] = ['PENDING', 'PAID', 'FULFILLED', 'CANCELLED', 'REFUNDED'];
 
 export default function OrderStatusForm({ order }: { order: Order }) {
   const router = useRouter();

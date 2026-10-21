@@ -121,6 +121,9 @@ enum OrderStatus {
   PAID
   FULFILLED
   CANCELLED
+  /// Set only by the Stripe refund webhook, and only for a fully refunded plain
+  /// (non-credit-pack) order whose charge matches the order total.
+  REFUNDED
 
   @@schema("ecowoods")
 }
@@ -520,6 +523,99 @@ model Payment {
 }
 
 // ─────────────────────────────────────────────
+// PAYMENT RECONCILIATION
+// ─────────────────────────────────────────────
+
+enum PaymentCaseKind {
+  /// A real successful Stripe charge arrived for an invoice that is VOID. The
+  /// invoice stays VOID; the charge is recorded as a Payment and flagged here.
+  LATE_PAYMENT_VOID_INVOICE
+  /// A refund (or failed refund) that the system will not interpret on its own.
+  REFUND_NEEDS_REVIEW
+  /// A fully refunded credit pack whose credits are provably unspent. Advice
+  /// only: nothing is reversed automatically.
+  CREDIT_REVERSAL_RECOMMENDED
+  DISPUTE_OPENED
+
+  @@schema("ecowoods")
+}
+
+enum PaymentCaseStatus {
+  OPEN
+  RESOLVED
+
+  @@schema("ecowoods")
+}
+
+/// What the administrator decided. Recording a resolution never moves money.
+enum PaymentCaseResolution {
+  REFUNDED_MANUALLY
+  INVOICE_REISSUED
+  APPLIED_AS_CREDIT
+  CREDITS_ADJUSTED_SEPARATELY
+  DISPUTE_RESPONDED
+  NO_ACTION_REQUIRED
+  OTHER
+
+  @@schema("ecowoods")
+}
+
+/// A payment discrepancy that needs a person. Bare UUID links (no @relation)
+/// so the record outlives any invoice/order/user lifecycle, like CreditTransaction.
+model PaymentCase {
+  id     String            @id @default(uuid()) @db.Uuid
+  kind   PaymentCaseKind
+  status PaymentCaseStatus @default(OPEN)
+
+  /// Natural key, e.g. `late-void:<pi>`, `refund:<charge>:<cents>`, `dispute:<id>`.
+  idempotencyKey String @unique @db.VarChar(200)
+
+  stripePaymentIntentId String?
+  stripeChargeId        String?
+  stripeEventId         String?
+
+  amount   Decimal @db.Decimal(12, 2)
+  currency String  @default("cad") @db.VarChar(3)
+
+  invoiceId String? @db.Uuid
+  orderId   String? @db.Uuid
+  paymentId String? @db.Uuid
+  userId    String? @db.Uuid
+
+  summary String  @db.Text
+  details Json?   @db.JsonB
+
+  resolution     PaymentCaseResolution?
+  resolutionNote String?                @db.Text
+  resolvedById   String?                @db.Uuid
+  resolvedAt     DateTime?              @db.Timestamptz
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@index([status, createdAt])
+  @@index([invoiceId])
+  @@index([orderId])
+  @@index([stripePaymentIntentId])
+  @@schema("ecowoods")
+}
+
+/// Durable record of refund/dispute webhook events already applied. Written in
+/// the same transaction as their effects, so a rollback leaves no record and a
+/// redelivery re-runs; a committed record makes any replay a no-op.
+model StripeWebhookEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  stripeEventId String   @unique
+  type          String
+  objectId      String?
+  outcome       String   @db.VarChar(80)
+  createdAt     DateTime @default(now()) @db.Timestamptz
+
+  @@index([type, createdAt])
+  @@schema("ecowoods")
+}
+
+// ─────────────────────────────────────────────
 // INQUIRY
 // ─────────────────────────────────────────────
 
@@ -664,6 +760,8 @@ model Order {
   stripeCheckoutSessionId String?
   stripePaymentIntentId   String?
   paidAt                  DateTime? @db.Timestamptz
+  /// Cumulative amount Stripe reports as refunded for a plain order's charge.
+  refundedAmount          Decimal   @default(0) @db.Decimal(12, 2)
 
   items OrderItem[]
 

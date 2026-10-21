@@ -23,6 +23,7 @@ const navItems = [
   { href: '/admin/projects', label: 'Projects', icon: <ProjectsIcon /> },
   { href: '/admin/orders', label: 'Orders', icon: <ShopIcon /> },
   { href: '/admin/invoices', label: 'Invoices', icon: <InvoicesIcon /> },
+  { href: '/admin/payment-cases', label: 'Payment cases', icon: <InvoicesIcon /> },
   { href: '/admin/users', label: 'Customers', icon: <CustomersIcon /> },
   { href: '/admin/inquiries', label: 'Inquiries', icon: <InquiriesIcon /> },
   { href: '/admin/floor-graph', label: 'Floor Graph', icon: <FloorGraphIcon /> },
