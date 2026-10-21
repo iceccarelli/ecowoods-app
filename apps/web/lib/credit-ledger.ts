@@ -37,12 +37,16 @@ function isUniqueViolation(err: unknown): boolean {
 
 type Db = PrismaClient | Prisma.TransactionClient;
 
+/**
+ * Get-or-create the wallet. NOT `upsert`: Prisma's upsert is a read-then-insert
+ * here, and two first-time callers racing on the unique `userId` made the loser
+ * throw P2002 (verified against real Postgres: 125 of 150 concurrent first
+ * charges threw). `INSERT .. ON CONFLICT DO NOTHING` waits for a concurrent
+ * insert to commit instead of failing, so the read that follows always finds the row.
+ */
 async function ensureWallet(tx: Db, userId: string) {
-  return tx.creditWallet.upsert({
-    where: { userId },
-    create: { userId, balance: 0 },
-    update: {},
-  });
+  await tx.creditWallet.createMany({ data: [{ userId, balance: 0 }], skipDuplicates: true });
+  return tx.creditWallet.findUniqueOrThrow({ where: { userId } });
 }
 
 export interface GrantResult {
@@ -167,8 +171,7 @@ export async function chargeForAnalysis<T>(input: {
     const message = err instanceof Error ? err.message : 'Analysis engine failed.';
     // Best-effort audit row. Never charged (creditsCharged: 0) — nothing
     // above this line touched the wallet.
-    await db.creditWallet
-      .upsert({ where: { userId: input.userId }, create: { userId: input.userId, balance: 0 }, update: {} })
+    await ensureWallet(db, input.userId)
       .then((wallet) =>
         db.renovationAnalysis.create({
           data: {
