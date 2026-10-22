@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
 import { countOpenPaymentCases } from '@/lib/payment-reconciliation';
+import { countMissingCritical } from '@/lib/config-status';
 import {
   DashboardIcon,
   QuotesIcon,
@@ -32,6 +33,8 @@ const navItems = [
      but is not linked is a page nobody opens, and a funnel nobody opens is the
      write-only failure PG0 found three times over. */
   { href: '/admin/funnel', label: 'Funnel', icon: <FloorGraphIcon /> },
+  /* Which settings are configured (names only, never values). */
+  { href: '/admin/system', label: 'System status', icon: <SettingsIcon /> },
   { href: '/admin/settings', label: 'Settings', icon: <SettingsIcon /> },
 ];
 
@@ -47,6 +50,14 @@ export default async function AdminLayout({
 
   // Unresolved money cases stay visible from every admin page (admin-only: the guard above has run).
   const openCases = await countOpenPaymentCases();
+
+  // Missing critical settings. Pure env read, wrapped so it can never fail the layout.
+  let missingCritical = 0;
+  try {
+    missingCritical = countMissingCritical(process.env);
+  } catch {
+    missingCritical = 0;
+  }
 
   return (
     <div className="portal-layout">
@@ -64,6 +75,15 @@ export default async function AdminLayout({
                   style={{ marginLeft: 'auto', minWidth: '1.4rem', padding: '0 0.4rem', borderRadius: '999px', background: 'var(--warning, #b45309)', color: '#fff', fontSize: '0.75rem', fontWeight: 700, textAlign: 'center' }}
                 >
                   {openCases}
+                </span>
+              ) : null}
+              {item.href === '/admin/system' && missingCritical ? (
+                <span
+                  role="status"
+                  aria-label={`${missingCritical} critical setting${missingCritical === 1 ? '' : 's'} missing`}
+                  style={{ marginLeft: 'auto', minWidth: '1.4rem', padding: '0 0.4rem', borderRadius: '999px', background: 'var(--danger, #b91c1c)', color: '#fff', fontSize: '0.75rem', fontWeight: 700, textAlign: 'center' }}
+                >
+                  {missingCritical}
                 </span>
               ) : null}
             </Link>
