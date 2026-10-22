@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isAuthorizedBearer } from '@/lib/cron-auth';
 import { cleanupIdleRateLimitBuckets } from '@/lib/rate-limit-durable';
 
 /**
@@ -17,9 +18,7 @@ export const dynamic = 'force-dynamic';
 const RETENTION_MS = 24 * 60 * 60 * 1000;
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  const auth = request.headers.get('authorization');
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (!isAuthorizedBearer(request, process.env.CRON_SECRET)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 

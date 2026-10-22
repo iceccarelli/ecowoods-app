@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { checkSchemaHealth } from '@/lib/schema-drift';
+import { isAuthorizedBearer } from '@/lib/cron-auth';
 
 /**
  * /api/internal/schema-status — does the database match the code?
@@ -25,9 +26,7 @@ export const dynamic = 'force-dynamic';
 const headers = { 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow' };
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  const auth = request.headers.get('authorization');
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (!isAuthorizedBearer(request, process.env.CRON_SECRET)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401, headers });
   }
   const report = await checkSchemaHealth();

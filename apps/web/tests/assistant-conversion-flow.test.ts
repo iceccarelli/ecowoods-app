@@ -153,8 +153,9 @@ describe('POST /api/appointments — ASSISTANT-07 designId/designCode + source',
   it('forwards source: assistant-workspace to the funnel ledger and lead alert instead of the hardcoded default', async () => {
     const startsAt = realBookableSlot();
     await POST(jsonPost({ ...CONTACT, startsAt, service: 'new-install', source: 'assistant-workspace' }));
-    expect(state.funnelEvents).toHaveLength(1);
-    expect(state.funnelEvents[0]).toMatchObject({ stage: 'APPOINTMENT_BOOKED', source: 'assistant-workspace' });
+    expect(state.funnelEvents.map((e) => e.stage)).toEqual(['LEAD_CAPTURED', 'APPOINTMENT_BOOKED']);
+    expect(state.funnelEvents[1]).toMatchObject({ stage: 'APPOINTMENT_BOOKED', source: 'assistant-workspace' });
+    expect(state.funnelEvents[0]).toMatchObject({ stage: 'LEAD_CAPTURED', source: 'assistant-workspace' });
     expect(state.leadAlerts).toHaveLength(1);
     expect(state.leadAlerts[0]).toMatchObject({ source: 'assistant-workspace' });
   });
@@ -162,7 +163,7 @@ describe('POST /api/appointments — ASSISTANT-07 designId/designCode + source',
   it('still defaults source to "booking" for a request that sends none — the site’s other callers are unaffected', async () => {
     const startsAt = realBookableSlot();
     await POST(jsonPost({ ...CONTACT, startsAt, service: 'new-install' }));
-    expect(state.funnelEvents[0]).toMatchObject({ source: 'booking' });
+    expect(state.funnelEvents[1]).toMatchObject({ source: 'booking' });
   });
 
   it('leaves designId/designCode null — never invented — when the request has none', async () => {
@@ -171,7 +172,7 @@ describe('POST /api/appointments — ASSISTANT-07 designId/designCode + source',
     const row = [...state.quoteRequests.values()][0]!;
     expect(row.designId).toBeNull();
     expect(row.designCode).toBeNull();
-    expect(state.funnelEvents[0]!.designId).toBeUndefined();
+    expect(state.funnelEvents[1]!.designId).toBeUndefined();
   });
 
   it('rejects a malformed designId (not something this site minted) rather than storing it', async () => {

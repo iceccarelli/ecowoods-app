@@ -195,6 +195,14 @@ export async function POST(request: Request) {
       service: data.service,
       source: sanitiseSource(data.source) ?? 'booking',
     }));
+    /* This route creates its own QuoteRequest, so a booking is also a captured
+       lead; without this row bookings could outnumber leads in the report. */
+    runAfterResponse(recordFunnelEvent({
+      stage: 'LEAD_CAPTURED',
+      designId,
+      source: sanitiseSource(data.source) ?? 'booking',
+      quoteId: quote.id,
+    }));
     runAfterResponse(recordFunnelEvent({
       stage: 'APPOINTMENT_BOOKED',
       designId,

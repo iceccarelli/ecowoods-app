@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { timingSafeEqual } from 'node:crypto';
+import { isAuthorizedBearer } from '@/lib/cron-auth';
 import { buildMarketIntelligence } from '@/lib/registry/market-intelligence';
 
 /**
@@ -17,17 +17,8 @@ export const dynamic = 'force-dynamic';
 
 const headers = { 'cache-control': 'no-store', 'x-robots-tag': 'noindex, nofollow' };
 
-function authorised(request: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  const auth = request.headers.get('authorization');
-  if (!secret || !auth) return false;
-  const a = Buffer.from(auth);
-  const b = Buffer.from(`Bearer ${secret}`);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
 export async function GET(request: Request) {
-  if (!authorised(request)) {
+  if (!isAuthorizedBearer(request, process.env.CRON_SECRET)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401, headers });
   }
   const country = new URL(request.url).searchParams.get('country');
