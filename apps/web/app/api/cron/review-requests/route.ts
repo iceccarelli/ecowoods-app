@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isAuthorizedBearer } from '@/lib/cron-auth';
 import { db } from '@/lib/db';
 import { requestReviewForProject } from '@/lib/review-request';
 
@@ -25,9 +26,7 @@ const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 const BATCH = 25;
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  const auth = request.headers.get('authorization');
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (!isAuthorizedBearer(request, process.env.CRON_SECRET)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 

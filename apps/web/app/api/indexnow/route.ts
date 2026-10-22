@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { submitToIndexNow, filterIndexNowUrls } from '../../../lib/indexnow';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
+import { isAuthorizedBearer } from '@/lib/cron-auth';
 
 /**
  * POST /api/indexnow — submit URLs to Bing, Yandex, Seznam and Naver on demand.
@@ -71,9 +72,7 @@ export async function POST(req: Request) {
   const expected = process.env.INDEXNOW_KEY || repoKey();
   const provided =
     req.headers.get('x-indexnow-key') ?? new URL(req.url).searchParams.get('key');
-  const bearer = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? null;
-  const cronSecret = process.env.CRON_SECRET;
-  const bearerOk = Boolean(cronSecret && bearer && bearer === cronSecret);
+  const bearerOk = isAuthorizedBearer(req, process.env.CRON_SECRET);
 
   if (!expected && !bearerOk) {
     return Response.json(

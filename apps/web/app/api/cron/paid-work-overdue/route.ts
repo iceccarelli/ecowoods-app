@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isAuthorizedBearer } from '@/lib/cron-auth';
 import { db } from '@/lib/db';
 import { sendEmail } from '@/lib/email';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
@@ -22,8 +23,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
+  if (!isAuthorizedBearer(request, process.env.CRON_SECRET)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
