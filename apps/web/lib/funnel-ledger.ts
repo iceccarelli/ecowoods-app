@@ -121,6 +121,38 @@ export function recordFunnelEvent(input: FunnelEventInput): Promise<void> {
     });
 }
 
+/**
+ * Write one stage, at most once per quote (or per project, where the event is a
+ * project's).
+ *
+ * For the admin actions whose trigger can be repeated by a person — re-sending
+ * an estimate, saving a project as COMPLETED again — where `recordFunnelEvent`
+ * alone made the period totals in /admin/funnel count one quote twice. The
+ * existence check is best-effort like everything else here: two truly
+ * simultaneous calls could both write, which is a cosmetic over-count, never a
+ * lost commercial action. With neither id there is nothing to de-duplicate on
+ * and it records unconditionally.
+ */
+export function recordFunnelEventOnce(input: FunnelEventInput): Promise<void> {
+  const scope = input.projectId ? { projectId: input.projectId } : input.quoteId ? { quoteId: input.quoteId } : null;
+  if (!scope) return recordFunnelEvent(input);
+  return db.funnelEvent
+    .findFirst({ where: { stage: input.stage, ...scope }, select: { id: true } })
+    .then((hit) => (hit ? undefined : recordFunnelEvent(input)))
+    .catch((err: unknown) => {
+      console.error(
+        JSON.stringify({
+          event: 'funnel.record_failed',
+          stage: input.stage,
+          quoteId: input.quoteId ?? null,
+          projectId: input.projectId ?? null,
+          error: err instanceof Error ? err.message : 'unknown',
+          hint: 'The existence check failed; the commercial action itself succeeded.',
+        }),
+      );
+    });
+}
+
 /* ── reading it back ──────────────────────────────────────────────────────── */
 
 export type StageCount = {

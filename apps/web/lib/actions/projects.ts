@@ -10,7 +10,7 @@ import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import type { ProjectStatus } from '@prisma/client';
 import { requestReviewForProject } from '@/lib/review-request';
-import { recordFunnelEvent } from '@/lib/funnel-ledger';
+import { recordFunnelEventOnce } from '@/lib/funnel-ledger';
 import { isValidAmount } from '@/lib/money';
 import { siteOrigin } from '@/lib/site-origin';
 
@@ -84,7 +84,7 @@ export async function updateProjectStatus(projectId: string, status: ProjectStat
      acts on. Not awaited: a ledger row must not be able to block a status
      change the crew is waiting on. */
   if (status === 'COMPLETED') {
-    void recordFunnelEvent({
+    void recordFunnelEventOnce({
       stage: 'JOB_COMPLETED',
       designId: project.designId,
       projectId: project.id,

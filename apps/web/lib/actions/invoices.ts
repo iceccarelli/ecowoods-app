@@ -12,6 +12,7 @@ import type { InvoiceStage, InvoiceStatus, Settings } from '@prisma/client';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE } from '@ecowoods/shared/constants';
 import { invoiceAmounts, isValidAmount, splitContract } from '@/lib/money';
 import { siteOrigin } from '@/lib/site-origin';
+import { recordFunnelEventOnce } from '@/lib/funnel-ledger';
 
 const DEFAULT_SETTINGS = {
   id: '00000000-0000-0000-0000-000000000001',
@@ -224,7 +225,7 @@ export async function markInvoicePaid(
      and nothing is written (no duplicate Payment). A customer's earlier
      "I have paid" report for the same method is CONFIRMED rather than left
      PENDING next to a second COMPLETED row. */
-  await db.$transaction(async (tx) => {
+  const paid = await db.$transaction(async (tx) => {
     const claim = await tx.invoice.updateMany({
       where: { id: invoiceId, status: { in: OPEN_STATUSES } },
       data: { status: 'PAID', paidAt: new Date() },
@@ -232,7 +233,7 @@ export async function markInvoicePaid(
     if (claim.count !== 1) throw new Error('This invoice is already paid, void or missing.');
     const invoice = await tx.invoice.findUniqueOrThrow({
       where: { id: invoiceId },
-      select: { total: true, project: { select: { userId: true } } },
+      select: { total: true, stage: true, projectId: true, project: { select: { userId: true, designId: true } } },
     });
     const pending = await tx.payment.findFirst({
       where: { invoiceId, method, status: 'PENDING' },
@@ -252,7 +253,24 @@ export async function markInvoicePaid(
         data: { invoiceId, userId: invoice.project.userId, method, ...confirmation },
       });
     }
+    return invoice;
   });
+
+  /* MEAS-02 — the brief's `deposit` event for a deposit that did NOT arrive
+     through Stripe. lib/stripe-fulfillment.ts records DEPOSIT_PAID when a card
+     payment clears; a deposit confirmed here (bank transfer, cash) took the
+     same commercial step and left no ledger row, so /admin/funnel undercounted
+     deposits by every e-transfer. Only the DEPOSIT stage counts, for the reason
+     given there. The claim above lets exactly one caller reach this line per
+     invoice. Best-effort and never awaited. */
+  if (paid.stage === 'DEPOSIT') {
+    void recordFunnelEventOnce({
+      stage: 'DEPOSIT_PAID',
+      designId: paid.project.designId,
+      projectId: paid.projectId ?? null,
+      amountCad: Number(paid.total),
+    });
+  }
 
   revalidatePath('/admin/invoices');
   revalidatePath('/mypage/invoices');

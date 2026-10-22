@@ -48,6 +48,7 @@ describe('channelOf', () => {
     expect(channelOf('assistant', false)).toBe('ASSISTANT');
     expect(channelOf('PHOTO_TRIAGE', false)).toBe('PHOTO_TRIAGE');
     expect(channelOf('photo-triage', false)).toBe('PHOTO_TRIAGE');
+    expect(channelOf('photo-triage:hardwood-stairs-toronto', false)).toBe('PHOTO_TRIAGE');
     expect(channelOf('estimate-form', true)).toBe('FLOOR_STUDIO');
     expect(channelOf('configurator:book', false)).toBe('FLOOR_STUDIO');
     expect(channelOf('realtors', false)).toBe('REFERRAL');

@@ -38,7 +38,7 @@ vi.mock('@/lib/email', () => ({
   },
   sendEmail: async () => undefined,
 }));
-vi.mock('@/lib/funnel-ledger', () => ({ recordFunnelEvent: async () => undefined }));
+vi.mock('@/lib/funnel-ledger', () => ({ recordFunnelEvent: async () => undefined, recordFunnelEventOnce: async () => undefined }));
 
 describe.skipIf(!enabled)('quote / invoice / payment lifecycle against real PostgreSQL', () => {
   const tag = randomUUID().slice(0, 8);

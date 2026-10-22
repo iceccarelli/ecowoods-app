@@ -11,7 +11,7 @@ import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { recordPrediction } from '@/lib/floor-graph/prediction';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
-import { recordFunnelEvent } from '@/lib/funnel-ledger';
+import { recordFunnelEvent, recordFunnelEventOnce } from '@/lib/funnel-ledger';
 import { escapeHtml } from '@/lib/email/html';
 import { estimateAmounts, isValidAmount } from '@/lib/money';
 import { siteOrigin } from '@/lib/site-origin';
@@ -247,7 +247,8 @@ To proceed, reply to this email or call ${settings?.companyPhone ?? BUSINESS_NAP
      customer's hands. The amount is the quoted total BEFORE tax, because that
      is the figure every other margin calculation on this site is written
      against and a funnel that mixes the two silently reports a 13% lift. */
-  void recordFunnelEvent({
+  /* Once per quote: re-sending an estimate is not a second price issued. */
+  void recordFunnelEventOnce({
     stage: 'QUOTE_ISSUED',
     designId: quote.designId,
     quoteId,
