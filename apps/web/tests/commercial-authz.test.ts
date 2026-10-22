@@ -17,7 +17,7 @@ vi.mock('next/cache', () => ({ revalidatePath: () => undefined }));
 vi.mock('@/lib/email', () => ({ sendEmail: async () => undefined, sendInvoiceEmail: async () => undefined }));
 vi.mock('@/lib/ai', () => ({ generateInquiryReply: async () => 'draft' }));
 vi.mock('@/lib/review-request', () => ({ requestReviewForProject: async () => undefined }));
-vi.mock('@/lib/funnel-ledger', () => ({ recordFunnelEvent: async () => undefined, recordFunnelEventOnce: async () => undefined }));
+vi.mock('@/lib/funnel-ledger', () => ({ recordFunnelEvent: async () => undefined, recordFunnelEventOnce: async () => undefined, recordQuoteAccepted: async () => undefined }));
 vi.mock('@/lib/floor-graph/prediction', () => ({
   recordPrediction: async () => undefined,
   closePrediction: async () => undefined,
