@@ -19,6 +19,7 @@ const s = vi.hoisted(() => ({
 
 vi.mock('@/lib/funnel-ledger', () => ({ recordFunnelEvent: () => undefined }));
 vi.mock('@/lib/credit-ledger', () => ({ grantCreditsForOrder: async () => ({ reason: 'x' }) }));
+vi.mock('@/lib/email/order-confirmation', () => ({ sendOrderConfirmationOnce: async () => 'sent' }));
 vi.mock('@/lib/floor-plan/deliver', () => ({ deliverFloorPlanOrder: async () => ({ status: 'delivered' }) }));
 vi.mock('@/lib/stripe', () => ({
   stripe: {
@@ -37,7 +38,7 @@ vi.mock('@/lib/db', () => ({
   db: {
     order: {
       findMany: async ({ where }: { where: { id?: { in: string[] }; status?: { in: string[] } | string; notes?: unknown } }) =>
-        where.id ? [...s.orders.values()].filter((o) => where.id!.in.includes(o.id) && (where.status as { in: string[] }).in.includes(o.status)).map((o) => ({ id: o.id })) : [],
+        where.id ? [...s.orders.values()].filter((o) => where.id!.in.includes(o.id)).map((o) => ({ ...o, stripePaymentIntentId: null })) : [],
       findUnique: async ({ where }: { where: { id: string } }) => (s.orders.get(where.id) ? { ...s.orders.get(where.id)! } : null),
       updateMany: async ({ where, data }: { where: { id: string; status: { in: string[] } | string }; data: Partial<Order> }) => {
         const o = s.orders.get(where.id);
@@ -48,6 +49,8 @@ vi.mock('@/lib/db', () => ({
       },
     },
     invoice: { findMany: async () => [] },
+    paymentCase: { createMany: async ({ data }: { data: unknown[] }) => ({ count: data.length }) },
+    $transaction: async (fn: (tx: unknown) => Promise<unknown>) => fn({ paymentCase: { createMany: async ({ data }: { data: unknown[] }) => ({ count: data.length }) } }),
   },
 }));
 

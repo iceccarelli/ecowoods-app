@@ -536,6 +536,12 @@ enum PaymentCaseKind {
   /// only: nothing is reversed automatically.
   CREDIT_REVERSAL_RECOMMENDED
   DISPUTE_OPENED
+  /// A second successful payment (different payment intent) for an invoice or
+  /// order that is already paid. Recorded as a real charge; nothing is refunded.
+  DUPLICATE_PAYMENT
+  /// A successful Stripe payment that could not be applied to an order or
+  /// invoice (unknown reference, amount/currency/session/user mismatch).
+  UNAPPLIED_PAYMENT
 
   @@schema("ecowoods")
 }
@@ -762,6 +768,10 @@ model Order {
   paidAt                  DateTime? @db.Timestamptz
   /// Cumulative amount Stripe reports as refunded for a plain order's charge.
   refundedAmount          Decimal   @default(0) @db.Decimal(12, 2)
+  /// Set (conditional update) when the plain payment-confirmation email is
+  /// claimed for this order; cleared again if the send fails. See
+  /// lib/email/order-confirmation.ts.
+  confirmationEmailSentAt DateTime? @db.Timestamptz
 
   items OrderItem[]
 

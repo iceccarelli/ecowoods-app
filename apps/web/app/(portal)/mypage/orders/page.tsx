@@ -15,6 +15,7 @@ const statusBadge: Record<string, string> = {
   PAID: 'portal-badge-paid',
   FULFILLED: 'portal-badge-completed',
   CANCELLED: 'portal-badge-cancelled',
+  REFUNDED: 'portal-badge-cancelled',
 };
 
 export default async function MyOrdersPage({
@@ -74,6 +75,7 @@ export default async function MyOrdersPage({
                   <div style={{ fontWeight: 700 }}>Order #{order.id.slice(0, 8).toUpperCase()}</div>
                   <div style={{ fontSize: 'var(--fs-xs)', color: 'var(--muted)' }}>
                     {format(order.createdAt, 'MMM d, yyyy')} · {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                    {order.paidAt ? ` · paid ${format(order.paidAt, 'MMM d, yyyy')}` : ''}
                   </div>
                 </div>
                 <div style={{ textAlign: 'right' }}>

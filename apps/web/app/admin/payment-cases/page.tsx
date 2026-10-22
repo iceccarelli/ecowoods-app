@@ -9,6 +9,8 @@ const KIND_LABEL = {
   REFUND_NEEDS_REVIEW: 'Refund needs review',
   CREDIT_REVERSAL_RECOMMENDED: 'Credit reversal recommended',
   DISPUTE_OPENED: 'Dispute opened',
+  DUPLICATE_PAYMENT: 'Duplicate payment (paid twice)',
+  UNAPPLIED_PAYMENT: 'Payment could not be applied',
 } as const;
 
 const money = (n: { toNumber(): number }, currency: string) =>
