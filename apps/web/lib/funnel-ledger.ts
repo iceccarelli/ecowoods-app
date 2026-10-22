@@ -80,6 +80,21 @@ export const sanitiseAmount = (value: unknown): number | null => {
   return Number.isFinite(n) ? Math.round(n * 100) / 100 : null;
 };
 
+function funnelRowOf(input: FunnelEventInput) {
+  return {
+    stage: input.stage,
+    /* Validated rather than trusted, for the same reason MEAS-01 validates
+       on the way in: a designId we did not mint joins to nothing, and a
+       ledger row that joins to nothing is worse than an absent one —
+       it looks like data. */
+    designId: designIdOf(input.designId) ?? null,
+    source: sanitiseSource(input.source),
+    quoteId: input.quoteId ?? null,
+    projectId: input.projectId ?? null,
+    amountCad: sanitiseAmount(input.amountCad),
+  };
+}
+
 /**
  * Write one stage. Fire and forget.
  *
@@ -90,20 +105,7 @@ export const sanitiseAmount = (value: unknown): number | null => {
  */
 export function recordFunnelEvent(input: FunnelEventInput): Promise<void> {
   return db.funnelEvent
-    .create({
-      data: {
-        stage: input.stage,
-        /* Validated rather than trusted, for the same reason MEAS-01 validates
-           on the way in: a designId we did not mint joins to nothing, and a
-           ledger row that joins to nothing is worse than an absent one —
-           it looks like data. */
-        designId: designIdOf(input.designId) ?? null,
-        source: sanitiseSource(input.source),
-        quoteId: input.quoteId ?? null,
-        projectId: input.projectId ?? null,
-        amountCad: sanitiseAmount(input.amountCad),
-      },
-    })
+    .create({ data: funnelRowOf(input) })
     .then(() => undefined)
     .catch((err: unknown) => {
       console.error(
@@ -128,17 +130,29 @@ export function recordFunnelEvent(input: FunnelEventInput): Promise<void> {
  * For the admin actions whose trigger can be repeated by a person — re-sending
  * an estimate, saving a project as COMPLETED again — where `recordFunnelEvent`
  * alone made the period totals in /admin/funnel count one quote twice. The
- * existence check is best-effort like everything else here: two truly
- * simultaneous calls could both write, which is a cosmetic over-count, never a
- * lost commercial action. With neither id there is nothing to de-duplicate on
+ * check and the insert run under an advisory lock, so simultaneous calls write
+ * one row; failure is best-effort like everything else here and never a lost
+ * commercial action. With neither id there is nothing to de-duplicate on
  * and it records unconditionally.
  */
 export function recordFunnelEventOnce(input: FunnelEventInput): Promise<void> {
   const scope = input.projectId ? { projectId: input.projectId } : input.quoteId ? { quoteId: input.quoteId } : null;
   if (!scope) return recordFunnelEvent(input);
-  return db.funnelEvent
-    .findFirst({ where: { stage: input.stage, ...scope }, select: { id: true } })
-    .then((hit) => (hit ? undefined : recordFunnelEvent(input)))
+  /* Check and insert under a transaction-scoped advisory lock keyed on
+     (stage, scope), so two simultaneous callers (a double-click, two admins)
+     cannot both pass the existence check. The lock only SERIALISES: a 64-bit
+     hash collision between two unrelated keys makes them wait for each other,
+     it can never make either of them skip its row, because the decision to
+     skip is the findFirst below, on the real columns. */
+  const lockKey = `ecowoods:funnel-once:${input.stage}:${input.projectId ? `project:${input.projectId}` : `quote:${input.quoteId}`}`;
+  return db
+    .$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`;
+      const hit = await tx.funnelEvent.findFirst({ where: { stage: input.stage, ...scope }, select: { id: true } });
+      if (hit) return;
+      await tx.funnelEvent.create({ data: funnelRowOf(input) });
+    })
+    .then(() => undefined)
     .catch((err: unknown) => {
       console.error(
         JSON.stringify({

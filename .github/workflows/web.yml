@@ -181,6 +181,8 @@ jobs:
           tests/funnel-instrumentation.postgres.integration.test.ts
           tests/rate-limit.postgres.integration.test.ts
           tests/payment-followups.postgres.integration.test.ts
+          tests/book-measure.postgres.integration.test.ts
+          tests/journey-ledger-dedupe.postgres.integration.test.ts
           tests/stripe-fulfillment.postgres.integration.test.ts
           tests/funnel-report.postgres.integration.test.ts
           tests/order-confirmation-outbox.postgres.integration.test.ts
