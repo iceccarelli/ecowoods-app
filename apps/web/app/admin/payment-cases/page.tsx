@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { db } from '@/lib/db';
 import type { PaymentCaseKind } from '@prisma/client';
+import { UNAPPLIED_REASON_ACTION } from '@/lib/payment-reconciliation';
 import ResolveCaseForm from './ResolveCaseForm';
 
 const KIND_LABEL: Record<PaymentCaseKind, string> = {
@@ -48,6 +49,17 @@ export default async function AdminPaymentCasesPage({ searchParams }: { searchPa
   const invoices = invoiceIds.length ? await db.invoice.findMany({ where: { id: { in: invoiceIds } }, select: { id: true, number: true, status: true } }) : [];
   const invoiceById = new Map(invoices.map((i) => [i.id, i]));
 
+  const orderIds = [...new Set(cases.flatMap((c) => (c.orderId ? [c.orderId] : [])))];
+  const orders = orderIds.length ? await db.order.findMany({ where: { id: { in: orderIds } }, select: { id: true, status: true } }) : [];
+  const orderById = new Map(orders.map((o) => [o.id, o]));
+
+  /** What is needed, in plain words, for an UNAPPLIED_PAYMENT whose reason has a specific instruction. */
+  const neededFor = (c: (typeof cases)[number]): string | null => {
+    if (c.kind !== 'UNAPPLIED_PAYMENT') return null;
+    const reason = (c.details as { reason?: unknown } | null)?.reason;
+    return typeof reason === 'string' ? (UNAPPLIED_REASON_ACTION[reason] ?? null) : null;
+  };
+
   return (
     <div className="portal-page">
       <div className="portal-header">
@@ -87,6 +99,7 @@ export default async function AdminPaymentCasesPage({ searchParams }: { searchPa
                 <strong>{KIND_LABEL[c.kind]}</strong>
                 <span style={{ fontWeight: 700 }}>{money(c.amount, c.currency)}</span>
               </div>
+              {neededFor(c) && <p style={{ margin: '0.5rem 0 0', fontSize: 'var(--fs-sm)', fontWeight: 700 }}>{neededFor(c)}</p>}
               <p style={{ margin: '0.5rem 0', fontSize: 'var(--fs-sm)' }}>{c.summary}</p>
               {(refunded !== null || c.refundFailedAt || c.disputeId) && (
                 <ul style={{ margin: '0 0 0.5rem', paddingLeft: '1.1rem', fontSize: 'var(--fs-sm)' }}>
@@ -114,7 +127,10 @@ export default async function AdminPaymentCasesPage({ searchParams }: { searchPa
                   </div>
                 )}
                 {c.orderId && (
-                  <div>Order: <Link href={`/admin/orders/${c.orderId}`}><code>{c.orderId}</code></Link></div>
+                  <div>
+                    Order: <Link href={`/admin/orders/${c.orderId}`}><code>{c.orderId}</code></Link>
+                    {orderById.get(c.orderId) ? ` (now ${orderById.get(c.orderId)!.status})` : ''}
+                  </div>
                 )}
                 {c.userId && <div>Customer: <Link href="/admin/users"><code>{c.userId}</code></Link></div>}
               </dl>

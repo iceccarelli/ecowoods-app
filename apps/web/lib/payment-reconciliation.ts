@@ -54,6 +54,16 @@ export const PAYMENT_CASE_RESOLUTIONS: PaymentCaseResolution[] = [
   'OTHER',
 ];
 
+/**
+ * Plain-language "what is needed" for an UNAPPLIED_PAYMENT, keyed by the reason
+ * stored in the case details. Shown in /admin/payment-cases and in the summary.
+ */
+export const UNAPPLIED_REASON_ACTION: Record<string, string> = {
+  unknown_credit_pack: 'Paid, but the credit pack no longer exists: decide to grant credits or refund.',
+  bad_design: 'Paid floor plan, but its saved design cannot be read: repair the design so delivery can proceed, or refund.',
+  no_reference: 'Paid, but the payment names no order or invoice: find what the customer bought, or refund.',
+};
+
 const toCents = (amount: unknown): number => Math.round(Number(amount) * 100);
 const idOf = (x: string | { id: string } | null | undefined): string | null => (typeof x === 'string' ? x : (x?.id ?? null));
 
