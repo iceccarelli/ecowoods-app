@@ -1,142 +1,167 @@
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { attributionSummary, conversionRate, type FunnelStage } from '@/lib/funnel-ledger';
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
+import {
+  WINDOW_OPTIONS,
+  loadFunnelReport,
+  parseWindowDays,
+  type CohortRow,
+} from '@/lib/funnel-report';
+import { FUNNEL_ORDER } from '@/lib/funnel-ledger';
 
 /**
- * /admin/funnel — the answer to the question PG0 said cost more than money.
+ * /admin/funnel — conversion from first touch to deposit, read from the data
+ * the business already holds.
  *
- * WHY THIS PAGE SHIPS IN THE SAME PATCH AS THE LEDGER
- *
- * The forensic audit classified FloorAssessment, AssessmentPhoto and
- * FrameworkScoring as WRITE-ONLY: captured correctly, consented correctly, and
- * never read back by any code. That is not a small flaw. A table nobody reads
- * is indistinguishable from a table nobody writes, except that it costs more
- * and looks like progress.
- *
- * So MEAS-02 does not get to ship a ledger and call the funnel measured. The
- * write path and the read path are one patch, and this page is the read path.
- *
- * WHAT IT REFUSES TO DO
- *
- * It does not show a margin. Margin needs actual labour and material cost from
- * JobOutcome, which ECON-01 has not built the predicted side of yet, and a
- * margin computed from quoted figures would be a number that looks like
- * evidence and is not. The page says so on its face rather than leaving a gap
- * somebody fills in with an assumption.
- *
- * It does not show a conversion rate for an empty stage. Zero leads is not a
- * 0% conversion rate; it is the absence of one, and "0%" is the kind of figure
- * that gets acted on.
+ * Every figure is computed in lib/funnel-report.ts from rows in the database.
+ * Nothing here is sample data: an empty window shows zeros as counts, an
+ * un-instrumented stage shows "not recorded", and a rate with nothing to
+ * divide by shows a dash. Counts and rates only — no customer name, email or
+ * phone is ever read for this page.
  */
 export const dynamic = 'force-dynamic';
 
-const LABEL: Record<FunnelStage, string> = {
-  LEAD_CAPTURED: 'Lead captured',
-  APPOINTMENT_BOOKED: 'Measure booked',
-  QUOTE_ISSUED: 'Price issued in writing',
-  QUOTE_ACCEPTED: 'Accepted',
-  DEPOSIT_PAID: 'Deposit paid',
-  JOB_COMPLETED: 'Job complete',
-};
+const pct = (v: number | null) => (v === null ? '—' : `${v}%`);
 
-const money = (n: number) =>
-  new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD', maximumFractionDigits: 0 }).format(n);
+function CohortTable({ rows }: { rows: CohortRow[] }) {
+  return (
+    <table className="admin-table">
+      <thead>
+        <tr>
+          <th>Channel</th>
+          {FUNNEL_ORDER.map((s, i) => (
+            <th key={s}>{i === 0 ? 'Leads' : `→ ${s.toLowerCase().replace(/_/g, ' ')}`}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr key={r.channel}>
+            <td>
+              {r.label}
+              {r.unlinkedLeads > 0 && <span className="admin-muted"> ({r.unlinkedLeads} not followable)</span>}
+            </td>
+            {FUNNEL_ORDER.map((s, i) => (
+              <td key={s}>
+                {r.counts[s]}
+                {i > 0 && <span className="admin-muted"> ({pct(r.stepRates[s])})</span>}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
-export default async function FunnelPage() {
-  const summary = await attributionSummary(90);
-  const empty = summary.stages.every((s) => s.total === 0);
+export default async function FunnelPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ days?: string | string[] }>;
+}) {
+  const session = await auth();
+  if (!session?.user || session.user.role !== 'ADMIN') redirect('/login');
+
+  const days = parseWindowDays((await searchParams).days);
+  const { report, from, timezone } = await loadFunnelReport(days);
+  const rec = report.quoteRecovery;
+  const rc = report.reconciliation;
+  const nothing = report.period.stages.every((s) => s.count === 0) && rc.quoteRequests.databaseRows === 0;
 
   return (
     <main className="admin-page">
-      <h1>Funnel</h1>
+      <h1>Conversion funnel</h1>
       <p className="admin-sub">
-        Commercial stages recorded server-side since {format(summary.since, 'd MMM yyyy')}.
-        The top of the funnel — studio opens, designs, shares — is in GA4, joined
-        to this by the same design id.
+        Last {days} days, from the start of {new Date(from).toLocaleDateString('en-CA', { timeZone: timezone })} ({timezone} days, today included).{' '}
+        {WINDOW_OPTIONS.map((d) => (
+          <span key={d}>
+            {d === days ? <strong>{d} days</strong> : <Link href={`/admin/funnel?days=${d}`}>{d} days</Link>}{' '}
+          </span>
+        ))}
       </p>
 
-      {empty ? (
+      {nothing && (
         <section className="admin-card">
-          <h2>No stages recorded yet</h2>
+          <h2>Nothing recorded in this window</h2>
           <p>
-            This ledger starts empty and fills as real commercial events happen. It is
-            not backfilled, because a funnel assembled after the fact from rows that
-            were never timestamped for it would be a guess wearing a chart&rsquo;s
-            clothes. The first lead captured after this deployment is the first row.
-          </p>
-          <p>
-            If leads are arriving and nothing appears here, check that migration{' '}
-            <code>20260912010000_add_funnel_ledger</code> ran, then look for{' '}
-            <code>funnel.record_failed</code> in the logs.
+            The ledger fills as real leads, bookings, quotes and deposits happen; it is not backfilled.
+            If leads are arriving and nothing appears, look for <code>funnel.record_failed</code> in the logs.
           </p>
         </section>
-      ) : (
-        <>
-          <section className="admin-card">
-            <h2>Of the last 90 days&rsquo; deposits, how many began in Floor Studio?</h2>
-            <p className="admin-figure">
-              {summary.depositsFromDesign} of {summary.depositsTotal}
-            </p>
-            <p>
-              This question had no answer at any price before MEAS-01 and MEAS-02.
-              A deposit with no design id is not a failure — it is a lead that arrived
-              by phone, from a service page or through the assistant, and counting
-              those honestly is what makes the attributed share mean anything.
-            </p>
-            <p className="admin-note">
-              Gross margin by origin is <strong>not</strong> shown. It needs actual
-              labour and material cost against a prediction, which is ECON-01. A margin
-              built from quoted figures would look like evidence and would not be.
-            </p>
-          </section>
-
-          <section className="admin-card">
-            <h2>Stages</h2>
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Stage</th>
-                  <th>Count</th>
-                  <th>From a design</th>
-                  <th>Value</th>
-                  <th>From previous</th>
-                </tr>
-              </thead>
-              <tbody>
-                {summary.stages.map((s, i) => {
-                  const prev = i > 0 ? summary.stages[i - 1]! : null;
-                  const rate = prev ? conversionRate(prev, s) : null;
-                  return (
-                    <tr key={s.stage}>
-                      <td>{LABEL[s.stage]}</td>
-                      <td>{s.total}</td>
-                      <td>
-                        {s.attributed}
-                        {s.total > 0 && (
-                          <span className="admin-muted">
-                            {' '}
-                            ({Math.round((s.attributed / s.total) * 100)}%)
-                          </span>
-                        )}
-                      </td>
-                      <td>{s.valueCad > 0 ? money(s.valueCad) : '—'}</td>
-                      {/* An empty previous stage has no conversion rate. Printing
-                          0% would read as failure rather than as "not started". */}
-                      <td>{rate === null ? '—' : `${rate}%`}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </section>
-        </>
       )}
 
+      <section className="admin-card">
+        <h2>Events in the window</h2>
+        <table className="admin-table">
+          <thead>
+            <tr><th>Stage</th><th>Count</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>First touch (site visit)</td>
+              <td>not recorded <span className="admin-muted">(lives in GA4, not in this database)</span></td>
+            </tr>
+            {report.period.stages.map((s) => (
+              <tr key={s.stage}><td>{s.label}</td><td>{s.count}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="admin-card">
+        <h2>Leads captured in the window, followed forward</h2>
+        <p className="admin-note">
+          Each cell is the number of those leads that reached the stage or a later one, with the step
+          conversion from the stage before in brackets. A dash means nothing to divide by. Channels come
+          from the lead&rsquo;s recorded source; a Floor Studio design id takes precedence.
+        </p>
+        <CohortTable rows={report.cohort.rows} />
+      </section>
+
+      <section className="admin-card">
+        <h2>Ledger coverage</h2>
+        <p className="admin-note">
+          Rows in the database against rows in the funnel ledger for the same window. A difference means
+          some records were created without a ledger row (older code paths, or a failed best-effort write).
+        </p>
+        <table className="admin-table">
+          <thead><tr><th>Record</th><th>Database rows</th><th>Ledger rows</th></tr></thead>
+          <tbody>
+            <tr><td>Quote requests / leads</td><td>{rc.quoteRequests.databaseRows}</td><td>{rc.quoteRequests.ledgerLeads}</td></tr>
+            <tr><td>Appointments</td><td>{rc.appointments.databaseRows}</td><td>{rc.appointments.ledgerAppointments}</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section className="admin-card">
+        <h2>Quote recovery</h2>
+        <table className="admin-table">
+          <thead><tr><th>Step</th><th>Count</th><th>From previous</th></tr></thead>
+          <tbody>
+            <tr><td>Reminder requested</td><td>{rec.requested}</td><td>—</td></tr>
+            <tr><td>Confirmed (double opt-in)</td><td>{rec.confirmed}</td><td>{pct(rec.rates.confirmed)}</td></tr>
+            <tr><td>Reminder sent</td><td>{rec.sent}</td><td>{pct(rec.rates.sent)}</td></tr>
+            <tr><td>Converted</td><td>{rec.converted}</td><td>{pct(rec.rates.converted)}</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section className="admin-card">
+        <h2>Assistant usage</h2>
+        <table className="admin-table">
+          <tbody>
+            <tr><td>Conversations created</td><td>{report.assistant.conversationsCreated}</td></tr>
+            <tr>
+              <td>With a lead handoff (a lead captured on the same design)</td>
+              <td>{report.assistant.withLeadHandoff} <span className="admin-muted">({pct(report.assistant.handoffRate)})</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
       <p className="admin-sub">
-        Ordering and stage names come from <code>lib/funnel-ledger.ts</code>, which is
-        the single definition — a funnel drawn in the wrong order reports negative
-        conversion. See <Link href="/admin/floor-graph">Floor Graph</Link> for
-        estimating accuracy, which is a different question from this one.
+        Margin by origin is not shown: it needs actual job costs (ECON-01). JSON for this page:{' '}
+        <Link href={`/api/admin/funnel?days=${days}`}>/api/admin/funnel?days={days}</Link>.
       </p>
     </main>
   );

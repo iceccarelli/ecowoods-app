@@ -60,8 +60,9 @@ describe('vercel.json crons', () => {
     const gate = code.indexOf("'unauthorized'");
     expect(auth).toBeGreaterThan(-1);
     expect(gate).toBeGreaterThan(auth);
-    // fail-closed when the secret is unset: `!secret ||` must precede the comparison
-    expect(code).toMatch(/!secret\s*\|\|/);
+    // the one shared timing-safe, fail-closed check (lib/cron-auth.ts) — no inline `!==` comparison
+    expect(code).toMatch(/if \(!isAuthorizedBearer\(request, process\.env\.CRON_SECRET\)\)/);
+    expect(code).not.toMatch(/Bearer \$\{/);
     // nothing but the gate sits between the handler's opening and its 401 (no queries/side effects first)
     const body = code.slice(code.indexOf('export async function GET('), gate);
     expect(body).not.toMatch(/\bawait\b|\bdb\./);
@@ -80,6 +81,12 @@ describe('vercel.json crons', () => {
       expect((await call('s3cret-value')).status).toBe(401);
       delete process.env.CRON_SECRET;
       expect((await call('Bearer undefined')).status).toBe(401);
+      expect((await call('Bearer ')).status).toBe(401);
+      process.env.CRON_SECRET = 'a-much-longer-secret-value-than-before';
+      expect((await call('Bearer s3cret-value')).status).toBe(401);
+      expect((await call('Bearer a-much-longer-secret-value-than-before-x')).status).toBe(401);
+      expect(await (await call('Bearer wrong')).json()).toEqual({ ok: false, error: 'unauthorized' });
+      process.env.CRON_SECRET = '';
       expect((await call('Bearer ')).status).toBe(401);
     } finally {
       if (prev === undefined) delete process.env.CRON_SECRET;

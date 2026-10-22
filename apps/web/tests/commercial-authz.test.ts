@@ -94,6 +94,7 @@ describe('admin API routes reject anonymous and customer callers', () => {
 
   const cases: Array<[string, () => Promise<Response>]> = [
     ['GET /api/admin/projects-list', async () => (await import('@/app/api/admin/projects-list/route')).GET()],
+    ['GET /api/admin/funnel', async () => (await import('@/app/api/admin/funnel/route')).GET(new Request('http://localhost/api/admin/funnel?days=7'))],
     ['GET /api/admin/floor-graph/accuracy', async () =>
       (await import('@/app/api/admin/floor-graph/accuracy/route')).GET(new Request('http://localhost/api/admin/floor-graph/accuracy'))],
     ['POST /api/admin/floor-graph/outcome', async () =>

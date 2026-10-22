@@ -180,6 +180,7 @@ jobs:
           tests/rate-limit.postgres.integration.test.ts
           tests/payment-followups.postgres.integration.test.ts
           tests/stripe-fulfillment.postgres.integration.test.ts
+          tests/funnel-report.postgres.integration.test.ts
           tests/assistant-conversation.postgres.integration.test.ts
           tests/quote-recovery.postgres.integration.test.ts
           tests/commercial-lifecycle.postgres.integration.test.ts
