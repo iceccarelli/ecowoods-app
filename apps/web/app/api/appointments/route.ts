@@ -112,6 +112,12 @@ export async function POST(request: Request) {
         { status: 409 },
       );
     }
+    if (booked.kind === 'busy') {
+      return NextResponse.json(
+        { error: 'Our calendar is busy for a moment. Please try that time again.' },
+        { status: 409, headers: { 'Retry-After': '2' } },
+      );
+    }
     if (booked.kind === 'already') {
       console.log(JSON.stringify({ event: 'appointment.duplicate', appointmentId: booked.appointmentId }));
       return NextResponse.json(

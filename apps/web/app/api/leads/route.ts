@@ -215,6 +215,7 @@ export async function POST(request: Request) {
       email: String(lead.email ?? ''),
       phone: lead.phone ? String(lead.phone) : null,
       service: lead.service ? String(lead.service) : null,
+      place: lead.postal ? String(lead.postal) : lead.city ? String(lead.city) : null,
     }), Math.min(3000, left()), 'dedupe').catch(() => null);
     if (existing) {
       quoteId = existing;

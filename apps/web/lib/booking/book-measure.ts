@@ -16,8 +16,9 @@
  *     in a single Serializable transaction;
  *   - a P2034 serialization conflict is retried, and on the retry the loser
  *     sees the winner and is told "taken";
- *   - the same address asking for the same instant gets the appointment it
- *     already holds (no second seat, no second lead).
+ *   - the same person (email) at the same address asking for the same instant
+ *     gets the appointment it already holds (no second seat, no second lead);
+ *     a different address is a different job and is booked on its own.
  */
 import { db } from '@/lib/db';
 import { isBookableSlot, SLOT_DURATION_MINUTES, localDateKey } from '@/lib/booking/availability';
@@ -46,9 +47,20 @@ export type BookMeasureInput = {
 export type BookMeasureResult =
   | { kind: 'booked'; quoteId: string; appointmentId: string; startsAt: Date }
   | { kind: 'already'; appointmentId: string; startsAt: Date }
-  | { kind: 'taken' };
+  | { kind: 'taken' }
+  /* Only ever returned after every retry lost a serialization race: the slot
+     may well still be free, so the caller must NOT say it was taken. */
+  | { kind: 'busy' };
 
-const MAX_ATTEMPTS = 3;
+const MAX_ATTEMPTS = 5;
+
+/** Postal codes / street addresses compare by their letters and digits only. */
+function addressKey(a: string | null | undefined): string {
+  return (a ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+/** Jittered, growing pause so losers of a serialization race stop colliding in lock-step. */
+const backoff = (attempt: number) => new Promise<void>((r) => setTimeout(r, Math.random() * 60 * 2 ** attempt));
 
 export async function bookMeasure(input: BookMeasureInput): Promise<BookMeasureResult> {
   const startsAt = new Date(input.startsAtIso);
@@ -65,12 +77,17 @@ export async function bookMeasure(input: BookMeasureInput): Promise<BookMeasureR
               status: 'SCHEDULED',
               startsAt: { gte: new Date(`${dayKey}T00:00:00Z`), lte: new Date(`${dayKey}T23:59:59Z`) },
             },
-            select: { id: true, startsAt: true, customerEmail: true },
+            select: { id: true, startsAt: true, customerEmail: true, quoteRequest: { select: { address: true } } },
           });
           /* A double-click or a retried request is the same booking, not a
              second one. */
           const already = sameDay.find(
-            (r) => r.startsAt.getTime() === startsAt.getTime() && (r.customerEmail ?? '').trim().toLowerCase() === emailKey,
+            (r) =>
+              r.startsAt.getTime() === startsAt.getTime() &&
+              (r.customerEmail ?? '').trim().toLowerCase() === emailKey &&
+              /* Same household, second property, same hour: not a retry. A row
+                 whose address was not loaded is judged on email + instant. */
+              (r.quoteRequest === undefined || addressKey(r.quoteRequest?.address) === addressKey(input.address)),
           );
           if (already) return { kind: 'already', appointmentId: already.id, startsAt: already.startsAt };
 
@@ -114,9 +131,10 @@ export async function bookMeasure(input: BookMeasureInput): Promise<BookMeasureR
     } catch (err) {
       const conflict = typeof err === 'object' && err !== null && (err as { code?: string }).code === 'P2034';
       if (!conflict) throw err;
-      // Still contended after the last retry: do not guess, ask them to pick again.
-      if (attempt === MAX_ATTEMPTS - 1) return { kind: 'taken' };
+      // Still contended after the last retry: do not guess, and do not claim the slot was taken.
+      if (attempt === MAX_ATTEMPTS - 1) return { kind: 'busy' };
+      await backoff(attempt);
     }
   }
-  return { kind: 'taken' };
+  return { kind: 'busy' };
 }
