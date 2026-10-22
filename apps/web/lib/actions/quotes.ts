@@ -11,7 +11,7 @@ import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { recordPrediction } from '@/lib/floor-graph/prediction';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
-import { recordFunnelEvent, recordFunnelEventOnce } from '@/lib/funnel-ledger';
+import { recordFunnelEventOnce, recordQuoteAccepted } from '@/lib/funnel-ledger';
 import { escapeHtml } from '@/lib/email/html';
 import { estimateAmounts, isValidAmount } from '@/lib/money';
 import { siteOrigin } from '@/lib/site-origin';
@@ -265,10 +265,22 @@ export async function updateQuoteStatus(quoteId: string, status: string, adminNo
   if (session?.user?.role !== 'ADMIN') throw new Error('Unauthorized');
   if (!(['PENDING', 'QUOTED', 'ACCEPTED', 'REJECTED'] as const).includes(status as never)) throw new Error('Unknown quote status.');
 
-  await db.quoteRequest.update({
+  const updated = await db.quoteRequest.update({
     where: { id: quoteId },
     data: { status: status as 'PENDING' | 'QUOTED' | 'ACCEPTED' | 'REJECTED', adminNotes },
   });
+
+  /* Accepting a quote here is the same milestone as converting it to a project:
+     one QUOTE_ACCEPTED row per quote, whichever happens first (see
+     recordQuoteAccepted). Best-effort and not awaited, like every ledger write. */
+  if (updated.status === 'ACCEPTED') {
+    void recordQuoteAccepted({
+      quoteId,
+      designId: updated.designId,
+      projectId: updated.projectId,
+      amountCad: Number(updated.quotedAmount ?? 0) || null,
+    });
+  }
 
   revalidatePath('/admin/quotes');
   revalidatePath(`/admin/quotes/${quoteId}`);
@@ -346,8 +358,7 @@ export async function convertQuoteToProject(
   });
 
   /* MEAS-02 — the brief's `acceptance` event. */
-  void recordFunnelEvent({
-    stage: 'QUOTE_ACCEPTED',
+  void recordQuoteAccepted({
     designId: quote.designId,
     quoteId,
     projectId: project.id,
