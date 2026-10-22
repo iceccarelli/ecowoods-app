@@ -155,6 +155,14 @@ describe('the six instrumentation points still exist', () => {
     expect(src).toContain("invoice.stage === 'DEPOSIT'");
   });
 
+  it('a deposit confirmed by bank transfer or cash is recorded too, for the DEPOSIT stage only', () => {
+    /* Only the Stripe path used to record DEPOSIT_PAID, so every e-transfer
+       deposit was missing from /admin/funnel. */
+    const src = read('lib/actions/invoices.ts');
+    expect(src).toContain("paid.stage === 'DEPOSIT'");
+    expect(src).toContain("stage: 'DEPOSIT_PAID'");
+  });
+
   it('the ledger holds no personal data', () => {
     const schema = read('prisma/schema.prisma');
     const block = schema.slice(schema.indexOf('model FunnelEvent'));

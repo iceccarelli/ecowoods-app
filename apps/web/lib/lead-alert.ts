@@ -46,7 +46,15 @@ const TIMEOUT_MS = 4000;
 
 export type LeadAlert = {
   /** What happened. Kept short — it is the first thing read on a lock screen. */
-  kind: 'lead' | 'lead (NOT SAVED)' | 'measure booked' | 'photos';
+  kind:
+    | 'lead'
+    | 'lead (NOT SAVED)'
+    | 'measure booked'
+    | 'photos'
+    /* The lead is saved but the photographs never reached the desk's inbox. */
+    | 'photos (EMAIL FAILED)'
+    /* The lead is saved but the customer was not sent their confirmation. */
+    | 'confirmation email failed';
   name: string;
   /** The number to call back. This is the entire point of the message. */
   phone?: string | null;

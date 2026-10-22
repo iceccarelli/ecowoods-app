@@ -12,6 +12,7 @@ import { grantConsent, readCheckbox } from '@/lib/floor-graph/consent';
 import { storePhoto } from '@/lib/floor-graph/photo-storage';
 import { markRecoveryConverted } from '@/lib/quote-recovery';
 import { recordFunnelEvent, sanitiseSource } from '@/lib/funnel-ledger';
+import { acknowledgeLead } from '@/lib/lead-acknowledgement';
 
 /**
  * POST /api/photo-triage — track B of the two-track quote form.
@@ -212,7 +213,12 @@ export async function POST(request: Request) {
   if (quoteId) {
     runAfterResponse(recordFunnelEvent({
       stage: 'LEAD_CAPTURED',
-      source: sanitiseSource(lead.source) ?? 'photo-triage',
+      /* The form posts the PAGE it sits on as `source` ("hardwood-stairs-toronto"),
+         so recording that alone filed every photo triage under "Estimate form"
+         in /admin/funnel and left the Photo triage channel permanently empty.
+         The surface comes first (channelOf reads the prefix) and the page is
+         kept after it. */
+      source: sanitiseSource(lead.source ? `photo-triage:${lead.source.trim()}` : 'photo-triage'),
       quoteId,
     }));
   }
@@ -252,7 +258,38 @@ export async function POST(request: Request) {
     console.error(
       JSON.stringify({ event: 'photo_triage.email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' }),
     );
+    /* The photographs are NOT retained unless the customer ticked the box, so
+       this email was their only route to the desk. A log line is not visibility:
+       the SMS alert said "photos" before the email result was known, and the
+       lead's note still claims they were emailed. Tell the desk, and correct the
+       note, so somebody asks the customer to resend them. */
+    runAfterResponse(sendLeadAlert({
+      kind: 'photos (EMAIL FAILED)',
+      name: lead.name,
+      phone: lead.phone ?? null,
+      where: lead.area ?? null,
+      service: `photo triage: ${lead.intent}`,
+      source: 'estimate-form',
+    }));
+    if (quoteId) {
+      const failedQuoteId = quoteId;
+      runAfterResponse(db.quoteRequest.update({
+        where: { id: failedQuoteId },
+        data: {
+          notes: `PHOTO TRIAGE — PHOTOS NOT DELIVERED (the email to the desk failed${photoConsent ? '; retention was consented, check the Floor Graph' : '; they were not retained'}). Ask the customer to resend them.\n${lead.designSummary ? `Design config: ${lead.designSummary}\n` : ''}Photos: ${files.map((f) => f.name).join(', ')}`,
+        },
+      }));
+    }
   }
+
+  /* The customer is told it arrived — the form's own success message is the
+     only other proof they have, and a person who reaches for their inbox finds
+     nothing. Same acknowledgement /api/leads sends (limited per address and per
+     IP); a failure to send it is reported to the desk by the helper. */
+  runAfterResponse(acknowledgeLead({
+    name: lead.name, email: lead.email, ref: quoteId ?? leadId, ip: getClientIp(request), surface: 'photo-triage',
+    phone: lead.phone ?? null, where: lead.area ?? null,
+  }));
 
   // 5. FLOOR GRAPH — strictly downstream. Nothing below this line may change
   //    the response, and nothing below this line may throw out of the route.
