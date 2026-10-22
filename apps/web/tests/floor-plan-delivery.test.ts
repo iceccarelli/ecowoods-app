@@ -56,8 +56,10 @@ vi.mock('@/lib/db', () => {
           Object.assign(o, data);
           return { count: 1 };
         },
-        findMany: async ({ where }: { where: { notes: { startsWith: string }; NOT?: { notes: { contains: string } } } }) =>
-          [...s.orders.values()].filter((o) => ['PAID', 'FULFILLED'].includes(o.status) && o.notes.startsWith(where.notes.startsWith) && !(where.NOT && o.notes.includes(where.NOT.notes.contains))).map((o) => ({ id: o.id })),
+        findMany: async ({ where }: { where: { notes?: { startsWith: string }; NOT?: { notes: { contains: string } } } }) =>
+          !where.notes
+            ? [] // the payment-confirmation retry query (plain orders): none in this fixture
+            : [...s.orders.values()].filter((o) => ['PAID', 'FULFILLED'].includes(o.status) && o.notes.startsWith(where.notes!.startsWith) && !(where.NOT && o.notes.includes(where.NOT.notes.contains))).map((o) => ({ id: o.id })),
       },
     },
   };

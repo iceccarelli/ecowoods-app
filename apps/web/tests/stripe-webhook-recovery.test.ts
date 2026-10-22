@@ -36,6 +36,7 @@ function maybeFail(key: keyof typeof s.fail, msg: string) {
   }
 }
 
+vi.mock('@/lib/email/order-confirmation', () => ({ sendOrderConfirmationOnce: async () => 'sent' }));
 vi.mock('@/lib/funnel-ledger', () => ({ recordFunnelEvent: (e: unknown) => void s.funnel.push(e) }));
 
 vi.mock('@/lib/db', () => {
@@ -87,6 +88,11 @@ vi.mock('@/lib/db', () => {
   const makeTx = () => ({
     creditWallet: wallet,
     creditTransaction: credit,
+    // SELECT ... FOR UPDATE: the row lock is the serialised $transaction below; values[0] is the invoice id.
+    $queryRaw: async (_strings: TemplateStringsArray, id: string) => {
+      const inv = s.invoices.get(id);
+      return inv ? [{ status: inv.status, stripePaymentIntentId: inv.stripePaymentIntentId ?? null }] : [];
+    },
     invoice: {
       update: async ({ where, data }: { where: { id: string }; data: Row }) => Object.assign(s.invoices.get(where.id)!, data),
       updateMany: async ({ where, data }: { where: { id: string; status: { notIn?: string[]; not?: string } }; data: Row }) => {
@@ -381,5 +387,22 @@ describe('invoice', () => {
     expect((await webhook.POST(invoiceEvent({ amount_total: 100 }))).status).toBe(200);
     expect(s.invoices.get('inv-1')!.status).toBe('SENT');
     expect(s.payments).toHaveLength(0);
+    // The charge is real: a durable case, not only a log line (once, however often it is redelivered).
+    await webhook.POST(invoiceEvent({ amount_total: 100 }));
+    expect(s.cases).toHaveLength(1);
+    expect(s.cases[0]).toMatchObject({ kind: 'UNAPPLIED_PAYMENT', idempotencyKey: 'unapplied:amount_mismatch:pi_1', invoiceId: 'inv-1' });
+  });
+
+  it('a second payment intent on a PAID invoice is recorded and flagged; the invoice is untouched', async () => {
+    addInvoice();
+    await webhook.POST(invoiceEvent());
+    const before = { ...s.invoices.get('inv-1')! };
+    const second = () => invoiceEvent({ id: 'cs_inv_2', payment_intent: 'pi_2' });
+    expect((await webhook.POST(second())).status).toBe(200);
+    expect((await webhook.POST(second())).status).toBe(200);
+    expect(s.invoices.get('inv-1')).toEqual(before);
+    expect(s.payments.map((p) => p.stripePaymentIntentId)).toEqual(['pi_1', 'pi_2']);
+    expect(s.cases).toHaveLength(1);
+    expect(s.cases[0]).toMatchObject({ kind: 'DUPLICATE_PAYMENT', idempotencyKey: 'duplicate-payment:pi_2', invoiceId: 'inv-1' });
   });
 });
