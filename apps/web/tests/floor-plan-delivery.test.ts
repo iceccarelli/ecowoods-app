@@ -15,6 +15,7 @@ const s = vi.hoisted(() => ({
   fail: { mail: 0, store: 0 },
   storeUrl: 'https://blob.example/fp.pdf',
   lostRace: 0,
+  cases: new Map<string, Record<string, unknown>>(),
 }));
 
 vi.mock('@/lib/stripe', () => ({ stripe: { checkout: { sessions: { list: () => (async function* () {})() } } } }));
@@ -45,8 +46,20 @@ vi.mock('@/lib/db', () => {
     if (st && !(typeof st === 'string' ? [st] : st.in).includes(o.status)) return false;
     return true;
   };
+  const tx = {
+    $executeRaw: async () => 0,
+    paymentCase: {
+      findMany: async () => [],
+      createMany: async ({ data }: { data: Array<Record<string, unknown>> }) => {
+        let count = 0;
+        for (const d of data) if (!s.cases.has(d.idempotencyKey as string)) { s.cases.set(d.idempotencyKey as string, d); count += 1; }
+        return { count };
+      },
+    },
+  };
   return {
     db: {
+      $transaction: async (fn: (t: typeof tx) => unknown) => fn(tx),
       order: {
         findUnique: async ({ where }: { where: { id: string } }) => { const o = s.orders.get(where.id); return o ? { ...o } : null; },
         updateMany: async ({ where, data }: { where: Record<string, unknown>; data: Partial<Order> }) => {
@@ -77,7 +90,7 @@ const session = (): Stripe.Checkout.Session =>
   ({ id: 'cs_1', payment_status: 'paid', currency: 'cad', amount_total: 11187, payment_intent: 'pi_1', metadata: { orderId: 'ord-1', userId: 'u1' } }) as unknown as Stripe.Checkout.Session;
 
 beforeEach(() => {
-  s.orders.clear(); s.mail.length = 0; s.fail.mail = 0; s.fail.store = 0; s.lostRace = 0;
+  s.orders.clear(); s.cases.clear(); s.mail.length = 0; s.fail.mail = 0; s.fail.store = 0; s.lostRace = 0;
   vi.spyOn(console, 'error').mockImplementation(() => undefined);
   vi.spyOn(console, 'log').mockImplementation(() => undefined);
 });
@@ -152,6 +165,9 @@ describe('payment webhook → floor plan', () => {
   it('acknowledges but flags a paid order whose design cannot be decoded', async () => {
     seed({ status: 'PENDING', paidAt: null, notes: 'Personal Floor Plan\nFP_DESIGN:BAD' });
     expect(await fulfilCheckoutSession(session())).toEqual({ status: 'rejected', reason: 'bad_design' });
+    expect(await fulfilCheckoutSession(session())).toEqual({ status: 'rejected', reason: 'bad_design' }); // replay
+    expect([...s.cases.values()]).toMatchObject([{ kind: 'UNAPPLIED_PAYMENT', idempotencyKey: 'unapplied:bad_design:pi_1', orderId: 'ord-1', userId: 'u1' }]);
+    expect(s.mail).toHaveLength(0);
   });
 });
 
@@ -163,5 +179,8 @@ describe('reconcile sweep', () => {
     const summary = await reconcilePendingFulfillments();
     expect(summary).toMatchObject({ examined: 2, fulfilled: 1, failed: 1 });
     expect(s.mail.map((m) => m.html).length).toBe(1);
+    expect([...s.cases.values()]).toMatchObject([{ kind: 'UNAPPLIED_PAYMENT', orderId: 'ord-2' }]); // the bad design is no longer a log line only
+    await reconcilePendingFulfillments();
+    expect(s.cases.size).toBe(1);
   });
 });

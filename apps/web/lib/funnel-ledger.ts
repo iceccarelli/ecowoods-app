@@ -80,21 +80,6 @@ export const sanitiseAmount = (value: unknown): number | null => {
   return Number.isFinite(n) ? Math.round(n * 100) / 100 : null;
 };
 
-function funnelRowOf(input: FunnelEventInput) {
-  return {
-    stage: input.stage,
-    /* Validated rather than trusted, for the same reason MEAS-01 validates
-       on the way in: a designId we did not mint joins to nothing, and a
-       ledger row that joins to nothing is worse than an absent one —
-       it looks like data. */
-    designId: designIdOf(input.designId) ?? null,
-    source: sanitiseSource(input.source),
-    quoteId: input.quoteId ?? null,
-    projectId: input.projectId ?? null,
-    amountCad: sanitiseAmount(input.amountCad),
-  };
-}
-
 /**
  * Write one stage. Fire and forget.
  *
@@ -105,7 +90,20 @@ function funnelRowOf(input: FunnelEventInput) {
  */
 export function recordFunnelEvent(input: FunnelEventInput): Promise<void> {
   return db.funnelEvent
-    .create({ data: funnelRowOf(input) })
+    .create({
+      data: {
+        stage: input.stage,
+        /* Validated rather than trusted, for the same reason MEAS-01 validates
+           on the way in: a designId we did not mint joins to nothing, and a
+           ledger row that joins to nothing is worse than an absent one —
+           it looks like data. */
+        designId: designIdOf(input.designId) ?? null,
+        source: sanitiseSource(input.source),
+        quoteId: input.quoteId ?? null,
+        projectId: input.projectId ?? null,
+        amountCad: sanitiseAmount(input.amountCad),
+      },
+    })
     .then(() => undefined)
     .catch((err: unknown) => {
       console.error(
@@ -129,28 +127,52 @@ export function recordFunnelEvent(input: FunnelEventInput): Promise<void> {
  *
  * For the admin actions whose trigger can be repeated by a person — re-sending
  * an estimate, saving a project as COMPLETED again — where `recordFunnelEvent`
- * alone made the period totals in /admin/funnel count one quote twice. The
- * check and the insert run under an advisory lock, so simultaneous calls write
- * one row; failure is best-effort like everything else here and never a lost
- * commercial action. With neither id there is nothing to de-duplicate on
+ * alone made the period totals in /admin/funnel count one quote twice.
+ *
+ * The check and the insert run in one transaction behind a per-(stage, scope)
+ * advisory lock, so two simultaneous calls cannot both write. The write stays
+ * best-effort like everything else here: a failure is logged and never reaches
+ * the commercial action. With neither id there is nothing to de-duplicate on
  * and it records unconditionally.
+ *
+ * `onceBy` picks the scope explicitly. Without it the scope is the project when
+ * the event carries one, otherwise the quote.
  */
-export function recordFunnelEventOnce(input: FunnelEventInput): Promise<void> {
-  const scope = input.projectId ? { projectId: input.projectId } : input.quoteId ? { quoteId: input.quoteId } : null;
-  if (!scope) return recordFunnelEvent(input);
-  /* Check and insert under a transaction-scoped advisory lock keyed on
-     (stage, scope), so two simultaneous callers (a double-click, two admins)
-     cannot both pass the existence check. The lock only SERIALISES: a 64-bit
-     hash collision between two unrelated keys makes them wait for each other,
-     it can never make either of them skip its row, because the decision to
-     skip is the findFirst below, on the real columns. */
-  const lockKey = `ecowoods:funnel-once:${input.stage}:${input.projectId ? `project:${input.projectId}` : `quote:${input.quoteId}`}`;
+export function recordFunnelEventOnce(
+  input: FunnelEventInput,
+  options: { onceBy?: 'quote' | 'project' } = {},
+): Promise<void> {
+  const scopeKind = options.onceBy ?? (input.projectId ? 'project' : input.quoteId ? 'quote' : null);
+  const scopeId = scopeKind === 'project' ? input.projectId : scopeKind === 'quote' ? input.quoteId : null;
+  if (!scopeKind || !scopeId) return recordFunnelEvent(input);
+  const scope = scopeKind === 'project' ? { projectId: scopeId } : { quoteId: scopeId };
   return db
     .$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`;
-      const hit = await tx.funnelEvent.findFirst({ where: { stage: input.stage, ...scope }, select: { id: true } });
-      if (hit) return;
-      await tx.funnelEvent.create({ data: funnelRowOf(input) });
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`funnel:${input.stage}:${scopeKind}:${scopeId}`}))`;
+      const hit = await tx.funnelEvent.findFirst({ where: { stage: input.stage, ...scope }, select: { id: true, projectId: true } });
+      if (hit) {
+        /* The same milestone arriving again may know more than the first
+           recording did (a quote accepted before it was converted learns its
+           project and contract value at conversion). Fill that in; never
+           overwrite a value that is already there. */
+        if (hit.projectId === null && input.projectId) {
+          await tx.funnelEvent.update({
+            where: { id: hit.id },
+            data: { projectId: input.projectId, ...(sanitiseAmount(input.amountCad) !== null ? { amountCad: sanitiseAmount(input.amountCad) } : {}) },
+          });
+        }
+        return;
+      }
+      await tx.funnelEvent.create({
+        data: {
+          stage: input.stage,
+          designId: designIdOf(input.designId) ?? null,
+          source: sanitiseSource(input.source),
+          quoteId: input.quoteId ?? null,
+          projectId: input.projectId ?? null,
+          amountCad: sanitiseAmount(input.amountCad),
+        },
+      });
     })
     .then(() => undefined)
     .catch((err: unknown) => {
@@ -161,10 +183,32 @@ export function recordFunnelEventOnce(input: FunnelEventInput): Promise<void> {
           quoteId: input.quoteId ?? null,
           projectId: input.projectId ?? null,
           error: err instanceof Error ? err.message : 'unknown',
-          hint: 'The existence check failed; the commercial action itself succeeded.',
+          hint: 'The once-only write failed; the commercial action itself succeeded.',
         }),
       );
     });
+}
+
+/**
+ * THE one place a quote's acceptance is recorded.
+ *
+ * A quote is accepted when its status becomes ACCEPTED, whichever way that
+ * happens: the admin status control, or conversion to a project (which also
+ * marks it ACCEPTED). Both call this, so the ledger holds exactly one
+ * QUOTE_ACCEPTED row per quote: the first call writes it, a later call (a
+ * retry, a repeated save, the conversion of a quote already accepted) only
+ * fills in the project and contract value the first one could not know.
+ */
+export function recordQuoteAccepted(input: {
+  quoteId: string;
+  designId?: string | null;
+  projectId?: string | null;
+  amountCad?: number | null;
+}): Promise<void> {
+  return recordFunnelEventOnce(
+    { stage: 'QUOTE_ACCEPTED', designId: input.designId, quoteId: input.quoteId, projectId: input.projectId ?? null, amountCad: input.amountCad },
+    { onceBy: 'quote' },
+  );
 }
 
 /* ── reading it back ──────────────────────────────────────────────────────── */

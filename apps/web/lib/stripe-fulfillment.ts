@@ -18,8 +18,12 @@
  *   PaymentCase instead of only logging: UNAPPLIED_PAYMENT (unknown order or
  *   invoice, amount/currency/session/user/project mismatch) and
  *   DUPLICATE_PAYMENT (a second payment intent for an order or invoice that is
- *   already PAID). Cases are keyed by payment intent, so replays and concurrent
- *   deliveries open exactly one. A PAID order/invoice is never altered by a
+ *   already PAID). The same UNAPPLIED_PAYMENT case covers a PAID order that
+ *   cannot be fulfilled (`unknown_credit_pack`, `bad_design`; the order stays
+ *   PAID, opened by the webhook and by the reconcile sweeps alike) and a paid
+ *   session with no reference that is marked as ours (`no_reference`).
+ *   Cases are keyed by payment intent + reason, so replays, concurrent
+ *   deliveries and sweeps open exactly one. A PAID order/invoice is never altered by a
  *   second payment, and nothing is refunded automatically.
  *
  * THE CONTRACT NOW
@@ -50,7 +54,7 @@ import { recordFunnelEvent } from '@/lib/funnel-ledger';
 import { CREDIT_PACK } from '@/lib/assistant-workspace/credits-config';
 import { deliverFloorPlanOrder } from '@/lib/floor-plan/deliver';
 import { isFloorPlanOrder } from '@/lib/floor-plan/notes';
-import { openPaymentCase, orderHasRefundCase } from '@/lib/payment-reconciliation';
+import { openPaymentCase, orderHasRefundCase, UNAPPLIED_REASON_ACTION } from '@/lib/payment-reconciliation';
 import { sendOrderConfirmationOnce } from '@/lib/email/order-confirmation';
 import { CONFIRMATION_MAX_AGE_MS, CONFIRMATION_MAX_ATTEMPTS } from '@/lib/email/order-confirmation-policy';
 
@@ -83,11 +87,47 @@ function paymentIntentId(session: Stripe.Checkout.Session): string | null {
 }
 
 /**
+ * The one place a PAID charge that cannot be applied becomes a durable
+ * PaymentCase (UNAPPLIED_PAYMENT, idempotent per payment intent + reason). The
+ * plain-language "what is needed" for each reason lives in
+ * `UNAPPLIED_REASON_ACTION` (lib/payment-reconciliation.ts) and is shown on
+ * /admin/payment-cases. Nothing is marked paid, granted, delivered or refunded.
+ * Throws on a database failure so the webhook answers 5xx (or the sweep counts
+ * it failed) and the case is retried.
+ */
+async function openUnappliedCase(input: {
+  reason: string;
+  /** Payment intent when known; otherwise the key falls back to `fallbackKey`. */
+  pi: string | null;
+  fallbackKey: string;
+  amountCents: number;
+  currency?: string | null;
+  links: { orderId?: string | null; invoiceId?: string | null; userId?: string | null };
+  details: Record<string, unknown>;
+}): Promise<boolean> {
+  const action = UNAPPLIED_REASON_ACTION[input.reason];
+  return db.$transaction((tx) =>
+    openPaymentCase(tx, {
+      kind: 'UNAPPLIED_PAYMENT',
+      idempotencyKey: `unapplied:${input.reason}:${input.pi ?? input.fallbackKey}`,
+      amountCents: input.amountCents,
+      currency: input.currency,
+      summary: `A successful Stripe payment could not be applied (${input.reason.replaceAll('_', ' ')}). ${
+        action ? `${action} ` : ''
+      }Nothing was granted, delivered, refunded or adjusted automatically; the charge needs an administrative decision.`,
+      stripePaymentIntentId: input.pi,
+      orderId: input.links.orderId ?? null,
+      invoiceId: input.links.invoiceId ?? null,
+      userId: input.links.userId ?? null,
+      details: { reason: input.reason, ...input.details },
+    }),
+  );
+}
+
+/**
  * A rejection of a session that Stripe says is PAID. The charge is real money
  * that the application did not apply, so a log line is not enough: open a
- * durable PaymentCase (idempotent per payment intent + reason) and then answer
- * `rejected` exactly as before. Nothing is marked paid or granted. Throws on a
- * database failure so the webhook answers 5xx and the case is retried.
+ * durable PaymentCase and then answer `rejected` exactly as before.
  */
 async function rejectPaid(
   reason: string,
@@ -95,23 +135,47 @@ async function rejectPaid(
   links: { orderId?: string | null; invoiceId?: string | null; userId?: string | null; expectedCents?: number | null },
 ): Promise<FulfillmentOutcome> {
   const outcome = reject(reason, { sessionId: session.id, orderId: links.orderId ?? null, invoiceId: links.invoiceId ?? null });
-  const pi = paymentIntentId(session);
-  await db.$transaction((tx) =>
-    openPaymentCase(tx, {
-      kind: 'UNAPPLIED_PAYMENT',
-      idempotencyKey: `unapplied:${reason}:${pi ?? session.id}`,
-      amountCents: session.amount_total ?? 0,
-      currency: session.currency,
-      summary: `A successful Stripe payment could not be applied (${reason.replaceAll('_', ' ')}). Nothing was marked paid or granted; the charge needs an administrative decision.`,
-      stripePaymentIntentId: pi,
-      orderId: links.orderId ?? null,
-      invoiceId: links.invoiceId ?? null,
-      userId: links.userId ?? null,
-      details: { reason, checkoutSessionId: session.id, expectedCents: links.expectedCents ?? null, metadata: session.metadata ?? {} },
-    }),
-  );
+  await openUnappliedCase({
+    reason,
+    pi: paymentIntentId(session),
+    fallbackKey: session.id,
+    amountCents: session.amount_total ?? 0,
+    currency: session.currency,
+    links,
+    details: { checkoutSessionId: session.id, expectedCents: links.expectedCents ?? null, metadata: session.metadata ?? {} },
+  });
   return outcome;
 }
+
+/**
+ * A PAID order that stays PAID because it cannot be fulfilled (the pack is not
+ * in the catalogue, the floor-plan design cannot be read). Called from the
+ * webhook AND from the reconcile sweeps, which re-run these orders every cycle:
+ * the case key is payment intent + reason, so every path converges on one case.
+ * The order is not touched; if the cause is later fixed the sweep fulfils it
+ * and the open case is still resolved by a person.
+ */
+async function flagPaidOrderNotFulfilled(
+  reason: 'unknown_credit_pack' | 'bad_design',
+  order: { id: string; userId: string; total: unknown; stripePaymentIntentId?: string | null; stripeCheckoutSessionId?: string | null },
+  pi: string | null,
+): Promise<FulfillmentOutcome> {
+  const outcome = reject(reason, { orderId: order.id });
+  await openUnappliedCase({
+    reason,
+    pi: pi ?? order.stripePaymentIntentId ?? null,
+    fallbackKey: order.stripeCheckoutSessionId ?? `order:${order.id}`,
+    amountCents: toCents(order.total),
+    currency: 'cad',
+    links: { orderId: order.id, userId: order.userId },
+    details: { checkoutSessionId: order.stripeCheckoutSessionId ?? null },
+  });
+  return outcome;
+}
+
+/** `metadata.kind` values written by this application's own checkout routes. */
+const OUR_CHECKOUT_KINDS = ['floor-plan', 'renovation-credits', 'well-installed-review', 'listing-floor-report'];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const SETTLED_ORDER_STATUSES = ['PAID', 'FULFILLED', 'REFUNDED'];
 
@@ -166,9 +230,13 @@ export function isRenovationCreditsOrder(notes: string | null | undefined): bool
  * Throws on a ledger failure so the caller can retry; returns 'rejected' only
  * for an order that cannot ever be granted.
  */
-async function fulfilCreditsOrder(order: { id: string; userId: string; notes: string | null }): Promise<FulfillmentOutcome> {
+async function fulfilCreditsOrder(
+  order: { id: string; userId: string; notes: string | null; total: unknown; stripePaymentIntentId?: string | null; stripeCheckoutSessionId?: string | null },
+  pi: string | null = order.stripePaymentIntentId ?? null,
+): Promise<FulfillmentOutcome> {
   if (order.notes !== `${CREDITS_NOTES_PREFIX}${CREDIT_PACK.id})`) {
-    return reject('unknown_credit_pack', { orderId: order.id });
+    // Paid, but the pack is not in the current catalogue: a person decides (grant or refund).
+    return flagPaidOrderNotFulfilled('unknown_credit_pack', order, pi);
   }
   // A pack that Stripe has since refunded (a case is open) must not be granted
   // by the reconcile sweep or a late redelivery. A person decides.
@@ -227,11 +295,11 @@ async function handleOrderSession(session: Stripe.Checkout.Session, orderId: str
     }
   }
 
-  if (isRenovationCreditsOrder(order.notes)) return fulfilCreditsOrder(order);
+  if (isRenovationCreditsOrder(order.notes)) return fulfilCreditsOrder(order, paymentIntentId(session));
   if (isFloorPlanOrder(order.notes)) {
     // Throws on a transient failure (webhook answers 5xx and Stripe redelivers).
     const delivery = await deliverFloorPlanOrder(orderId);
-    if (delivery.status === 'rejected') return reject(delivery.reason, { orderId, sessionId: session.id });
+    if (delivery.status === 'rejected') return flagPaidOrderNotFulfilled(delivery.reason, order, paymentIntentId(session));
     return { status: 'fulfilled', kind: 'order' };
   }
   // Plain confirmation email for every other paid product. Once per order
@@ -386,6 +454,16 @@ export async function fulfilCheckoutSession(session: Stripe.Checkout.Session): P
   if (orderId) return handleOrderSession(session, orderId);
   const invoiceId = session.metadata?.invoiceId;
   if (invoiceId) return handleInvoiceSession(session, invoiceId);
+  /* Neither an order nor an invoice. This endpoint receives every event of the
+     Stripe account, so a reference-less paid session may belong to another
+     product, and a case for it would be noise. It is opened ONLY when the
+     metadata marks it as one of this application's checkouts (`kind` is set by
+     every Ecowoods checkout route that has a kind): that is our customer's
+     money with nothing to link it to. Anything else stays a loud log line. */
+  if (OUR_CHECKOUT_KINDS.includes(session.metadata?.kind ?? '')) {
+    const userId = session.metadata?.userId;
+    return rejectPaid('no_reference', session, { userId: userId && UUID_RE.test(userId) ? userId : null });
+  }
   return reject('no_reference', { sessionId: session.id });
 }
 
@@ -479,7 +557,7 @@ export async function reconcilePendingFulfillments(options: { olderThanMs?: numb
   const cutoff = new Date(Date.now() - (options.olderThanMs ?? 5 * 60 * 1000));
   const pending = await db.order.findMany({
     where: { status: 'PAID', notes: { startsWith: CREDITS_NOTES_PREFIX }, paidAt: { lte: cutoff } },
-    select: { id: true, userId: true, notes: true },
+    select: { id: true, userId: true, notes: true, total: true, stripePaymentIntentId: true, stripeCheckoutSessionId: true },
     orderBy: { paidAt: 'asc' },
     take: options.batch ?? 25,
   });
@@ -508,7 +586,7 @@ export async function reconcilePendingFulfillments(options: { olderThanMs?: numb
       NOT: { notes: { contains: 'FP_NOTIFIED:' } },
       paidAt: { lte: cutoff, gte: new Date(Date.now() - 30 * 86_400_000) },
     },
-    select: { id: true },
+    select: { id: true, userId: true, total: true, stripePaymentIntentId: true, stripeCheckoutSessionId: true },
     orderBy: { paidAt: 'asc' },
     take: options.batch ?? 25,
   });
@@ -517,7 +595,11 @@ export async function reconcilePendingFulfillments(options: { olderThanMs?: numb
     try {
       const outcome = await deliverFloorPlanOrder(order.id);
       if (outcome.status === 'delivered' || outcome.status === 'already_delivered') summary.fulfilled += 1;
-      else summary.failed += 1;
+      else {
+        summary.failed += 1;
+        // Same case the webhook opens (payment intent + reason): the sweep re-runs this order every cycle.
+        if (outcome.status === 'rejected') await flagPaidOrderNotFulfilled(outcome.reason, order, order.stripePaymentIntentId);
+      }
     } catch (err) {
       summary.failed += 1;
       console.error(JSON.stringify({ event: 'stripe_fulfillment.unresolved', orderId: order.id, error: err instanceof Error ? err.message : 'unknown' }));
