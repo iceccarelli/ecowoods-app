@@ -172,7 +172,7 @@ jobs:
         run: pnpm --filter @ecowoods/web exec prisma migrate diff --from-url "$DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --exit-code
       - name: Run real PostgreSQL integration tests
         run: >-
-          pnpm --filter @ecowoods/web exec vitest run
+          pnpm --filter @ecowoods/web exec vitest run --no-file-parallelism
           tests/appointments-capacity.postgres.integration.test.ts
           tests/credits-concurrency.postgres.integration.test.ts
           tests/schema-structure.postgres.integration.test.ts
