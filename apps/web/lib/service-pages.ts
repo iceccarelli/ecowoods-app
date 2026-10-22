@@ -64,6 +64,13 @@ export type ServicePage = {
   terms: string[];
   /** An authority hub this service's work depends on, where one exists — e.g. colour matching for restoration and stair work. */
   hub?: { href: string; label: string };
+  /**
+   * The Toronto-wide commercial page for this service's search intent, where
+   * one exists. The service page and the head-term page answer the same buyer;
+   * each links the other so the pair reads as one primary page plus its detail,
+   * not two competitors. tests/seo-link-integrity.test.ts requires the link.
+   */
+  headTerm?: { href: string; label: string };
 };
 
 /**
@@ -78,6 +85,7 @@ export const SERVICE_PAGES: ServicePage[] = [
     standfirst:
       'What the substrate allows, what it costs, and the standard the finished floor is judged against — solid and engineered, including condominium slabs.',
     pricing: 'newInstall',
+    headTerm: { href: '/hardwood-flooring-toronto', label: 'Hardwood flooring in Toronto' },
     guides: ['solid-vs-engineered-hardwood-toronto', 'nail-down-glue-down-or-floating', 'hardwood-flooring-cost-toronto', 'white-oak-flooring-toronto', 'herringbone-chevron-parquet-toronto'],
     papers: [
       { paper: 'toronto-hardwood-climate-moisture-protocol', section: 'protocol', label: 'The moisture protocol before any board is opened' },
@@ -92,6 +100,7 @@ export const SERVICE_PAGES: ServicePage[] = [
     standfirst:
       'Sand to bare wood, stain, and finish — full sand and finish, not a screen and recoat. Four machines in one sequence, with containment at the source so the house stays livable while it happens.',
     pricing: 'fullSandAndFinish',
+    headTerm: { href: '/hardwood-floor-refinishing-toronto', label: 'Hardwood floor refinishing in Toronto' },
     guides: ['reference-refinishing-existing-hardwood', 'dustless-hardwood-refinishing-toronto', 'hardwood-flooring-cost-toronto'],
     papers: [
       { paper: 'hardwood-refinishing-machines-and-sequence', section: 'the-four-machines', label: 'The four machines and what each one can and cannot fix' },
@@ -105,6 +114,7 @@ export const SERVICE_PAGES: ServicePage[] = [
     h1: 'Dustless hardwood floor sanding in Toronto and the GTA',
     standfirst:
       'Containment at the source, measured at the machine — and what it means for whether you can stay in the house.',
+    headTerm: { href: '/hardwood-floor-refinishing-toronto', label: 'Hardwood floor refinishing in Toronto' },
     guides: ['reference-refinishing-existing-hardwood', 'dustless-hardwood-refinishing-toronto'],
     papers: [
       { paper: 'hardwood-refinishing-machines-and-sequence', section: 'belt-sander', label: 'The belt sander, and where the dust is actually made' },
@@ -139,6 +149,7 @@ export const SERVICE_PAGES: ServicePage[] = [
     standfirst:
       'Treads, risers, nosings and railings, matched to the floor they meet — the detail that gives a refinish away.',
     pricing: 'fullSandAndFinish',
+    headTerm: { href: '/hardwood-stairs-toronto', label: 'Hardwood stairs in Toronto' },
     guides: [
       'reference-refinishing-existing-hardwood',
       'hardwood-flooring-cost-toronto',

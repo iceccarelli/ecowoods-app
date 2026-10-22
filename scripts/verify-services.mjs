@@ -116,6 +116,16 @@ if (!/\/services\/\$\{config\.id\}#service/.test(builders)) {
   });
 }
 
+/* ── 6. head-term pairing ─────────────────────────────────────────────────── */
+// A service's headTerm must be a route that exists, so the cross-link the
+// service page renders can never point at a 404. (The rendered both-ways check
+// is tests/seo-link-integrity.test.ts.)
+for (const m of pagesSrc.matchAll(/headTerm:\s*\{\s*href:\s*'(\/[a-z0-9-]+)'/g)) {
+  if (!fs.existsSync(path.join(APP, m[1].slice(1), 'page.tsx'))) {
+    problems.push({ where: `SERVICE_PAGES headTerm ${m[1]}`, detail: 'no app route at that path — the service page would link a 404' });
+  }
+}
+
 if (problems.length) {
   console.error(`\n✗ ${problems.length} problem(s) between the service slugs and the routes:\n`);
   for (const p of problems) console.error(`  · ${p.where}\n      ${p.detail}\n`);
