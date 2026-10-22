@@ -124,7 +124,6 @@ describe('the six instrumentation points still exist', () => {
     ['app/api/leads/route.ts', 'LEAD_CAPTURED'],
     ['app/api/appointments/route.ts', 'APPOINTMENT_BOOKED'],
     ['lib/actions/quotes.ts', 'QUOTE_ISSUED'],
-    ['lib/actions/quotes.ts', 'QUOTE_ACCEPTED'],
     ['lib/stripe-fulfillment.ts', 'DEPOSIT_PAID'],
     ['lib/actions/projects.ts', 'JOB_COMPLETED'],
   ];
@@ -135,6 +134,16 @@ describe('the six instrumentation points still exist', () => {
       expect(src, `${file} must import the ledger`).toContain('recordFunnelEvent');
       expect(src, `${file} must record ${want}`).toContain(`stage: '${want}'`);
     }
+  });
+
+  it('quote acceptance is recorded in one place, reached from both the status control and the conversion', () => {
+    /* One QUOTE_ACCEPTED row per quote whichever path accepts it. The stage is
+       written only by recordQuoteAccepted; both quote actions must call it. */
+    expect(read('lib/funnel-ledger.ts')).toContain("stage: 'QUOTE_ACCEPTED'");
+    const quotes = read('lib/actions/quotes.ts');
+    expect(quotes.match(/recordQuoteAccepted\(/g) ?? []).toHaveLength(2);
+    expect(quotes).not.toContain("stage: 'QUOTE_ACCEPTED'");
+    expect(quotes).not.toContain('await recordQuoteAccepted');
   });
 
   it('none of them awaits the ledger — recording must not block commerce', () => {
