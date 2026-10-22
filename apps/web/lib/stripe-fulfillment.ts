@@ -52,6 +52,7 @@ import { deliverFloorPlanOrder } from '@/lib/floor-plan/deliver';
 import { isFloorPlanOrder } from '@/lib/floor-plan/notes';
 import { openPaymentCase, orderHasRefundCase } from '@/lib/payment-reconciliation';
 import { sendOrderConfirmationOnce } from '@/lib/email/order-confirmation';
+import { CONFIRMATION_MAX_AGE_MS, CONFIRMATION_MAX_ATTEMPTS } from '@/lib/email/order-confirmation-policy';
 
 /** Order.notes prefix written by /api/assistant/analysis/checkout. */
 const CREDITS_NOTES_PREFIX = 'Renovation Credits (';
@@ -530,8 +531,14 @@ export async function reconcilePendingFulfillments(options: { olderThanMs?: numb
     where: {
       status: { in: ['PAID', 'FULFILLED'] },
       confirmationEmailSentAt: null,
-      paidAt: { lte: cutoff, gte: new Date(Date.now() - 86_400_000) },
-      OR: [{ notes: null }, { AND: [{ NOT: { notes: { startsWith: CREDITS_NOTES_PREFIX } } }, { NOT: { notes: { startsWith: 'Personal Floor Plan' } } }] }],
+      paidAt: { lte: cutoff, gte: new Date(Date.now() - CONFIRMATION_MAX_AGE_MS) },
+      AND: [
+        { OR: [{ notes: null }, { AND: [{ NOT: { notes: { startsWith: CREDITS_NOTES_PREFIX } } }, { NOT: { notes: { startsWith: 'Personal Floor Plan' } } }] }] },
+        // Leased by a live attempt, in backoff, or out of attempts: not due. (The claim re-checks.)
+        { OR: [{ confirmationEmailLeaseUntil: null }, { confirmationEmailLeaseUntil: { lt: new Date() } }] },
+        { OR: [{ confirmationEmailNextAttemptAt: null }, { confirmationEmailNextAttemptAt: { lte: new Date() } }] },
+        { OR: [{ confirmationEmailAttempts: null }, { confirmationEmailAttempts: { lt: CONFIRMATION_MAX_ATTEMPTS } }] },
+      ],
     },
     select: { id: true },
     orderBy: { paidAt: 'asc' },
@@ -541,7 +548,7 @@ export async function reconcilePendingFulfillments(options: { olderThanMs?: numb
   for (const order of unconfirmed) {
     const outcome = await sendOrderConfirmationOnce(order.id);
     if (outcome === 'failed') summary.failed += 1;
-    else summary.fulfilled += 1;
+    else if (outcome === 'sent' || outcome === 'already_sent') summary.fulfilled += 1;
   }
   await reconcileLostWebhooks(summary, options.lostWebhook ?? {});
   return summary;

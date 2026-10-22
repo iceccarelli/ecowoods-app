@@ -19,6 +19,16 @@
  *     is possible, no spent credit is restored.
  *   · Nothing here calls Stripe, refunds, or reverses anything. A case
  *     resolution is a recorded decision; it does not itself move money.
+ *   · A duplicate / unapplied / late payment has no Order or Payment row of its
+ *     own (orders have no Payment table): its PaymentCase IS the record of that
+ *     money. A later refund, failed refund or dispute for the SAME payment
+ *     intent is correlated with that case (refundedAmount / refundFailedAt /
+ *     disputeId, monotonic) and linked to the affected order, never turned into
+ *     an unlinked case and never applied to the original order (whose own
+ *     payment intent is different). The case stays open for an administrator.
+ *     A refund or dispute that arrives BEFORE the case exists is held as an
+ *     ordinary review case and adopted when the case is opened; an advisory lock
+ *     per payment intent makes either order of arrival converge.
  *   · Idempotent and replay-safe: the event row is written in the same
  *     transaction as its effects (rollback leaves nothing, so a redelivery
  *     re-runs); a committed event row makes any replay a no-op; cases are
@@ -67,8 +77,65 @@ export interface OpenCaseInput {
   details?: Record<string, unknown>;
 }
 
+/** Cases whose payment intent is a charge with no Order/Payment row of its own (or a payment recorded without applying it). */
+export const MONEY_CASE_KINDS: PaymentCaseKind[] = ['DUPLICATE_PAYMENT', 'UNAPPLIED_PAYMENT', 'LATE_PAYMENT_VOID_INVOICE'];
+
+/** Transaction-scoped advisory lock per payment intent. */
+async function lockPaymentIntent(tx: Tx, pi: string): Promise<void> {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${`ecowoods:payment-intent:${pi}`}, 0))`;
+}
+
+/**
+ * A refund / failed refund / dispute for this intent that arrived before its
+ * case existed was held as an ordinary review case. Fold it into the new case
+ * (refund amount, failure, dispute id) and link the held, still-unlinked cases
+ * to the same order/invoice so an administrator sees one story. Nothing is
+ * closed and no order or invoice is touched.
+ */
+async function adoptEarlierMoneyEvents(tx: Tx, input: OpenCaseInput): Promise<void> {
+  const pi = input.stripePaymentIntentId!;
+  const held = await tx.paymentCase.findMany({
+    where: { stripePaymentIntentId: pi, kind: { in: ['REFUND_NEEDS_REVIEW', 'DISPUTE_OPENED'] } },
+    orderBy: { createdAt: 'asc' },
+  });
+  if (!held.length) return;
+  const refunds = held.filter((h) => h.idempotencyKey.startsWith('refund:'));
+  const failed = held.filter((h) => h.idempotencyKey.startsWith('refund-'));
+  const dispute = held.find((h) => h.kind === 'DISPUTE_OPENED' && h.idempotencyKey.startsWith('dispute:'));
+  const refundedCents = Math.max(0, ...refunds.map((h) => toCents(h.amount)));
+  const data: Prisma.PaymentCaseUpdateManyMutationInput = {};
+  if (refunds.length) {
+    data.refundedAmount = refundedCents / 100;
+    data.refundedAt = refunds[refunds.length - 1]!.createdAt;
+  }
+  if (failed.length) data.refundFailedAt = failed[failed.length - 1]!.createdAt;
+  if (dispute) {
+    data.disputeId = dispute.idempotencyKey.slice('dispute:'.length).slice(0, 100);
+    data.disputedAt = dispute.createdAt;
+  }
+  if (Object.keys(data).length) {
+    await tx.paymentCase.updateMany({ where: { idempotencyKey: input.idempotencyKey }, data });
+  }
+  const links = {
+    ...(input.orderId ? { orderId: input.orderId } : {}),
+    ...(input.invoiceId ? { invoiceId: input.invoiceId } : {}),
+    ...(input.paymentId ? { paymentId: input.paymentId } : {}),
+    ...(input.userId ? { userId: input.userId } : {}),
+  };
+  if (Object.keys(links).length) {
+    await tx.paymentCase.updateMany({
+      where: { id: { in: held.map((h) => h.id) }, orderId: null, invoiceId: null, paymentId: null, userId: null },
+      data: links,
+    });
+  }
+  console.log(JSON.stringify({ event: 'payment_case.adopted_earlier_events', key: input.idempotencyKey, held: held.length }));
+}
+
 /** Open a case once per natural key. ON CONFLICT DO NOTHING, so it is safe inside a transaction and under concurrency. */
 export async function openPaymentCase(tx: Tx, input: OpenCaseInput): Promise<boolean> {
+  const holdsMoney = MONEY_CASE_KINDS.includes(input.kind) && !!input.stripePaymentIntentId;
+  // Serialise with refund/dispute handling for this intent, so a concurrent event is either seen here or sees this case.
+  if (holdsMoney) await lockPaymentIntent(tx, input.stripePaymentIntentId!);
   const created = await tx.paymentCase.createMany({
     data: [
       {
@@ -89,6 +156,7 @@ export async function openPaymentCase(tx: Tx, input: OpenCaseInput): Promise<boo
     ],
     skipDuplicates: true,
   });
+  if (created.count === 1 && holdsMoney) await adoptEarlierMoneyEvents(tx, input);
   if (created.count === 1) {
     console.error(
       JSON.stringify({ event: 'payment_case.opened', kind: input.kind, key: input.idempotencyKey, amountCents: input.amountCents, orderId: input.orderId ?? null, invoiceId: input.invoiceId ?? null }),
@@ -129,16 +197,21 @@ interface MoneySignal {
 }
 
 async function linksFor(tx: Tx, pi: string | null) {
+  if (pi) await lockPaymentIntent(tx, pi);
   const found = await locate(tx, pi);
   const total = found.orders.length + found.payments.length;
+  const moneyCases = pi ? await tx.paymentCase.findMany({ where: { stripePaymentIntentId: pi, kind: { in: MONEY_CASE_KINDS } }, orderBy: { createdAt: 'asc' } }) : [];
+  // No Order/Payment row carries this intent: the money lives on its own case (duplicate/unapplied payment).
+  const viaCase = total === 0 && moneyCases.length > 0 ? moneyCases[0]! : null;
   return {
     ...found,
+    moneyCases,
     unique: total === 1,
     links: {
-      orderId: found.orders.length === 1 && total === 1 ? found.orders[0]!.id : null,
-      userId: total === 1 ? (found.orders[0]?.userId ?? found.payments[0]?.userId ?? null) : null,
-      invoiceId: total === 1 ? (found.payments[0]?.invoiceId ?? null) : null,
-      paymentId: total === 1 ? (found.payments[0]?.id ?? null) : null,
+      orderId: found.orders.length === 1 && total === 1 ? found.orders[0]!.id : (viaCase?.orderId ?? null),
+      userId: total === 1 ? (found.orders[0]?.userId ?? found.payments[0]?.userId ?? null) : (viaCase?.userId ?? null),
+      invoiceId: total === 1 ? (found.payments[0]?.invoiceId ?? null) : (viaCase?.invoiceId ?? null),
+      paymentId: total === 1 ? (found.payments[0]?.id ?? null) : (viaCase?.paymentId ?? null),
     },
   };
 }
@@ -174,6 +247,26 @@ export async function handleChargeRefunded(event: Stripe.Event): Promise<StripeM
         summary,
         details: { chargeCents, refundedCents, full, ...extra },
       });
+
+    if (m.moneyCases.length) {
+      // Cumulative and monotonic: a replay or reordered older event never lowers it.
+      await tx.paymentCase.updateMany({
+        where: { id: { in: m.moneyCases.map((c) => c.id) }, OR: [{ refundedAmount: null }, { refundedAmount: { lt: refundedCents / 100 } }] },
+        data: { refundedAmount: refundedCents / 100, refundedAt: new Date() },
+      });
+      if (m.orders.length + m.payments.length === 0) {
+        // The money belongs to a duplicate/unapplied payment that has no Order/Payment row: the
+        // case is the record. The original order is NOT touched (its payment intent is different).
+        const open = m.moneyCases.some((c) => c.status === 'OPEN');
+        const handled = m.moneyCases.some((c) => c.resolution === 'REFUNDED_MANUALLY');
+        if (!open && !handled) {
+          await review('A refund was reported in Stripe for a payment whose case was already resolved without a refund decision. Review.', { correlatedCaseIds: m.moneyCases.map((c) => c.id) });
+        }
+        await setOutcome(tx, event.id, 'case_refund_recorded');
+        log('stripe_refund.case', { caseIds: m.moneyCases.map((c) => c.id), refundedCents, full });
+        return 'recorded' as const;
+      }
+    }
 
     if (!m.unique) {
       await review(
@@ -244,6 +337,12 @@ export async function handleDisputeCreated(event: Stripe.Event): Promise<StripeM
   return db.$transaction(async (tx) => {
     if (!(await claimEvent(tx, event, dispute.id))) return 'duplicate' as const;
     const m = await linksFor(tx, pi);
+    if (m.moneyCases.length) {
+      await tx.paymentCase.updateMany({
+        where: { id: { in: m.moneyCases.map((c) => c.id) }, disputeId: null },
+        data: { disputeId: dispute.id.slice(0, 100), disputedAt: new Date() },
+      });
+    }
     await openPaymentCase(tx, {
       ...m.links,
       kind: 'DISPUTE_OPENED',
@@ -272,6 +371,9 @@ export async function handleRefundUpdated(event: Stripe.Event): Promise<StripeMo
       return 'ignored' as const;
     }
     const m = await linksFor(tx, pi);
+    if (m.moneyCases.length) {
+      await tx.paymentCase.updateMany({ where: { id: { in: m.moneyCases.map((c) => c.id) }, refundFailedAt: null }, data: { refundFailedAt: new Date() } });
+    }
     await openPaymentCase(tx, {
       ...m.links,
       kind: 'REFUND_NEEDS_REVIEW',
@@ -287,6 +389,16 @@ export async function handleRefundUpdated(event: Stripe.Event): Promise<StripeMo
     await setOutcome(tx, event.id, 'refund_failed_case_opened');
     return 'recorded' as const;
   });
+}
+
+/** Unresolved money cases, for the admin nav and dashboard. Null when the count cannot be read (the chrome must never fail on it). */
+export async function countOpenPaymentCases(): Promise<number | null> {
+  try {
+    return await db.paymentCase.count({ where: { status: 'OPEN' } });
+  } catch (err) {
+    console.error(JSON.stringify({ event: 'payment_case.count_failed', error: err instanceof Error ? err.message : 'unknown' }));
+    return null;
+  }
 }
 
 /** True when a refund case already exists for this order: credits must not be granted for a refunded pack. */

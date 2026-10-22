@@ -665,6 +665,12 @@ export default async function ServiceDetailPage({
             existing one,{' '}
             <Link href="/hardwood-floor-refinishing-toronto">refinishing</Link>.
           </p>
+          {page.headTerm && (
+            <p className="tlx-note">
+              The Toronto-wide page for this work, with the wider context and the pricing basis:{' '}
+              <Link href={page.headTerm.href}>{page.headTerm.label}</Link>.
+            </p>
+          )}
         </div>
       </section>
 

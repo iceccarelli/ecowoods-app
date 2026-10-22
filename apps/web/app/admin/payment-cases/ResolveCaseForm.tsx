@@ -43,7 +43,7 @@ export default function ResolveCaseForm({ caseId }: { caseId: string }) {
           <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
-      <textarea aria-label="Resolution note" rows={2} maxLength={2000} placeholder="What was done, and where (e.g. Stripe refund id)" value={note} onChange={(e) => setNote(e.target.value)} />
+      <textarea aria-label="Resolution note (required)" required minLength={5} rows={2} maxLength={2000} placeholder="Required: what was done, and where (e.g. Stripe refund id)" value={note} onChange={(e) => setNote(e.target.value)} />
       <button type="button" onClick={submit} disabled={loading || note.trim().length < 5} className="btn btn-copper btn-sm">
         {loading ? 'Recording…' : 'Record decision'}
       </button>

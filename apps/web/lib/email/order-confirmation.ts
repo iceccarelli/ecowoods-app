@@ -1,32 +1,46 @@
 /**
  * lib/email/order-confirmation.ts — the plain, factual "we received your
- * payment" email for a paid Order, sent exactly once per order.
+ * payment" email for a paid Order, delivered once, durably and retryably.
  *
  * Covers shop orders, Listing Floor Reports and Well-Installed Quote Reviews.
  * NOT sent for Personal Floor Plans (lib/floor-plan/deliver.ts already emails
  * the buyer their report) or Renovation Credits (no confirmation email exists
  * for them today and none is added here).
  *
- * ORDERING: CLAIM, THEN SEND, RELEASE ON FAILURE (chosen over send-then-mark)
+ * DELIVERY STATE (columns on Order; an email is never "claimed" by pretending it was sent)
  *
- *   1. A conditional update sets Order.confirmationEmailSentAt where it is
- *      still null. Of any number of concurrent or replayed webhook deliveries
- *      exactly one gets count 1 and goes on to send; the rest do nothing.
- *   2. The send happens with a stable Idempotency-Key.
- *   3. If the send throws, the claim is released (set back to null, only if it
- *      still holds OUR timestamp) so a webhook redelivery or the reconcile
- *      sweep can try again. The failure is logged and swallowed: it must never
- *      fail the webhook or touch the PAID state.
+ *   confirmationEmailSentAt         set ONLY after the provider accepted the
+ *                                   message. Rows written by the earlier
+ *                                   claim-first code carry it too and mean
+ *                                   "sent": nothing is re-sent after deploy.
+ *   confirmationEmailLeaseUntil     a short lease taken before the provider
+ *                                   call. A holder that dies leaves a lease
+ *                                   that simply expires; the next webhook
+ *                                   redelivery or reconcile sweep re-claims it.
+ *   confirmationEmailAttempts       attempts started (bounded).
+ *   confirmationEmailNextAttemptAt  backoff after a failed attempt.
+ *   confirmationEmailLastError      the last failure, trimmed, for operators.
  *
- * Send-then-mark (the floor-plan pattern) would be at-least-once: two
- * concurrent deliveries both send, and over SMTP (no idempotency header) the
- * customer gets two emails. Claim-first keeps it to one. The price is a
- * narrow window — the process dying between step 1 and the provider call —
- * where the email is never sent. That is the safer trade for a courtesy
- * message: the order, its PAID state and the order page are unaffected, while a
- * duplicate "payment received" email about money reads as a second charge. If
- * the provider accepted a message and the call then timed out, the release plus
- * a retry re-sends with the same Idempotency-Key, which Resend de-duplicates.
+ *   1. CLAIM: one conditional UPDATE takes the lease where the email is unsent,
+ *      the lease is free or expired, the backoff is due and attempts remain.
+ *      Of any number of concurrent webhook / sweep runs exactly one gets a row.
+ *   2. SEND with the same Idempotency-Key (order-confirmation/<orderId>/v1) on
+ *      every attempt, under a timeout. A timeout is an UNKNOWN outcome: the
+ *      provider may have accepted it, so it is retried with the same key and
+ *      Resend de-duplicates it.
+ *   3. MARK SENT after success. On failure the lease is dropped and the next
+ *      attempt is scheduled with backoff. The failure is logged and swallowed:
+ *      it never fails the webhook or touches the PAID state.
+ *
+ * A process killed between claim and provider call loses nothing (the lease
+ * expires and the sweep retries). A process killed after the provider accepted
+ * but before the sent-mark is retried with the same key: Resend de-duplicates
+ * within its window (24h, the same horizon as the sweep); over SMTP, which has
+ * no idempotency header, that one narrow window can produce a second copy. That
+ * is the accepted trade for never silently losing a payment confirmation.
+ *
+ * AGE RULE: an order paid more than 24h ago is never emailed (no retroactive
+ * messages, and the idempotency key would no longer protect a retry).
  */
 import { db } from '@/lib/db';
 import { siteOrigin } from '@/lib/site-origin';
@@ -35,6 +49,13 @@ import { isListingFloorReportOrder } from '@/lib/listing-floor-report/notes';
 import { isWellInstalledReviewOrder } from '@/lib/quote-intelligence/notes';
 import { escapeHtml } from './html';
 import { sendEmail } from './index';
+import {
+  CONFIRMATION_LEASE_MS,
+  CONFIRMATION_MAX_AGE_MS,
+  CONFIRMATION_MAX_ATTEMPTS,
+  CONFIRMATION_SEND_TIMEOUT_MS,
+  confirmationBackoffSeconds,
+} from './order-confirmation-policy';
 
 const CREDITS_NOTES_PREFIX = 'Renovation Credits (';
 
@@ -98,23 +119,75 @@ export function renderOrderConfirmation(input: OrderConfirmationInput): Rendered
   return { subject: `Payment received - order ${ref}`, html, text };
 }
 
-export type OrderConfirmationResult = 'sent' | 'already_sent' | 'skipped' | 'failed';
+export type OrderConfirmationResult = 'sent' | 'already_sent' | 'busy' | 'skipped' | 'failed';
+
+class SendTimeoutError extends Error {
+  constructor() {
+    super('provider_timeout: outcome unknown');
+  }
+}
+
+async function withTimeout<T>(work: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      work,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new SendTimeoutError()), ms);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+export interface ConfirmationOptions {
+  /** Test seam; production uses CONFIRMATION_SEND_TIMEOUT_MS. */
+  sendTimeoutMs?: number;
+}
+
+/** Take the lease. Returns the attempt number we now hold, or null if someone else holds it / it is not due. */
+async function claimLease(orderId: string): Promise<number | null> {
+  const rows = await db.$queryRaw<Array<{ attempts: number }>>`
+    UPDATE "ecowoods"."Order"
+       SET "confirmationEmailLeaseUntil" = now() + make_interval(secs => ${CONFIRMATION_LEASE_MS / 1000}),
+           "confirmationEmailAttempts" = COALESCE("confirmationEmailAttempts", 0) + 1
+     WHERE "id" = ${orderId}::uuid
+       AND "confirmationEmailSentAt" IS NULL
+       AND "status"::text IN ('PAID', 'FULFILLED')
+       AND ("confirmationEmailLeaseUntil" IS NULL OR "confirmationEmailLeaseUntil" < now())
+       AND ("confirmationEmailNextAttemptAt" IS NULL OR "confirmationEmailNextAttemptAt" <= now())
+       AND COALESCE("confirmationEmailAttempts", 0) < ${CONFIRMATION_MAX_ATTEMPTS}
+    RETURNING "confirmationEmailAttempts" AS "attempts"`;
+  return rows[0]?.attempts ?? null;
+}
+
+/** Record a failed attempt: drop our lease, schedule the next try. Fenced on our attempt number. */
+async function recordFailure(orderId: string, attempt: number, message: string): Promise<void> {
+  await db.$executeRaw`
+    UPDATE "ecowoods"."Order"
+       SET "confirmationEmailLeaseUntil" = NULL,
+           "confirmationEmailNextAttemptAt" = now() + make_interval(secs => ${confirmationBackoffSeconds(attempt)}),
+           "confirmationEmailLastError" = ${message.slice(0, 300)}
+     WHERE "id" = ${orderId}::uuid AND "confirmationEmailSentAt" IS NULL AND "confirmationEmailAttempts" = ${attempt}`;
+}
 
 /** Sent for plain paid orders only; never throws. */
-export async function sendOrderConfirmationOnce(orderId: string): Promise<OrderConfirmationResult> {
+export async function sendOrderConfirmationOnce(orderId: string, options: ConfirmationOptions = {}): Promise<OrderConfirmationResult> {
   try {
     const order = await db.order.findUnique({ where: { id: orderId }, include: { user: true, items: true } });
     if (!order || (order.status !== 'PAID' && order.status !== 'FULFILLED')) return 'skipped';
     if (isFloorPlanOrder(order.notes) || order.notes?.startsWith(CREDITS_NOTES_PREFIX)) return 'skipped';
     if (order.confirmationEmailSentAt) return 'already_sent';
     if (!order.user.email) return 'skipped';
+    if (order.paidAt && Date.now() - order.paidAt.getTime() > CONFIRMATION_MAX_AGE_MS) return 'skipped';
+    if ((order.confirmationEmailAttempts ?? 0) >= CONFIRMATION_MAX_ATTEMPTS) return 'skipped';
 
-    const claimedAt = new Date();
-    const claim = await db.order.updateMany({
-      where: { id: orderId, confirmationEmailSentAt: null, status: { in: ['PAID', 'FULFILLED'] } },
-      data: { confirmationEmailSentAt: claimedAt },
-    });
-    if (claim.count !== 1) return 'already_sent';
+    const attempt = await claimLease(orderId);
+    if (attempt === null) {
+      const fresh = await db.order.findUnique({ where: { id: orderId }, select: { confirmationEmailSentAt: true } });
+      return fresh?.confirmationEmailSentAt ? 'already_sent' : 'busy';
+    }
 
     try {
       const mail = renderOrderConfirmation({
@@ -125,16 +198,32 @@ export async function sendOrderConfirmationOnce(orderId: string): Promise<OrderC
         paidAt: order.paidAt,
         customerName: order.user.name,
       });
-      await sendEmail({ to: order.user.email, ...mail, idempotencyKey: orderConfirmationKey(order.id) });
+      await withTimeout(
+        sendEmail({ to: order.user.email, ...mail, idempotencyKey: orderConfirmationKey(order.id) }),
+        options.sendTimeoutMs ?? CONFIRMATION_SEND_TIMEOUT_MS,
+      );
     } catch (err) {
-      // Release only our own claim, so a later delivery or the sweep can retry.
-      await db.order
-        .updateMany({ where: { id: orderId, confirmationEmailSentAt: claimedAt }, data: { confirmationEmailSentAt: null } })
-        .catch(() => undefined);
-      console.error(JSON.stringify({ event: 'order_confirmation.email_failed', orderId, error: err instanceof Error ? err.message : 'unknown' }));
+      const message = err instanceof Error ? err.message : 'unknown';
+      await recordFailure(orderId, attempt, message).catch(() => undefined);
+      console.error(
+        JSON.stringify({
+          event: 'order_confirmation.email_failed',
+          orderId,
+          attempt,
+          unknownOutcome: err instanceof SendTimeoutError,
+          willRetry: attempt < CONFIRMATION_MAX_ATTEMPTS,
+          error: message,
+        }),
+      );
       return 'failed';
     }
-    console.log(JSON.stringify({ event: 'order_confirmation.sent', orderId }));
+    // The provider accepted it: only now is it "sent". If this write fails the lease expires and a
+    // retry re-sends with the same idempotency key (see header).
+    await db.order.updateMany({
+      where: { id: orderId, confirmationEmailSentAt: null },
+      data: { confirmationEmailSentAt: new Date(), confirmationEmailLeaseUntil: null, confirmationEmailNextAttemptAt: null, confirmationEmailLastError: null },
+    });
+    console.log(JSON.stringify({ event: 'order_confirmation.sent', orderId, attempt }));
     return 'sent';
   } catch (err) {
     console.error(JSON.stringify({ event: 'order_confirmation.failed', orderId, error: err instanceof Error ? err.message : 'unknown' }));
