@@ -102,7 +102,12 @@ vi.mock('@/lib/db', () => {
         return { count: 1 };
       },
     },
+    // Per-payment-intent advisory lock: the serialised $transaction below already provides it.
+    $executeRaw: async () => 0,
     paymentCase: {
+      // No earlier refund/dispute events to adopt in these scenarios.
+      findMany: async () => [] as Row[],
+      updateMany: async () => ({ count: 0 }),
       createMany: async ({ data }: { data: Row[] }) => {
         let count = 0;
         for (const d of data) {

@@ -287,7 +287,7 @@ describe.skipIf(!enabled)('payment follow-ups against real PostgreSQL', () => {
     expect((await db.order.findUniqueOrThrow({ where: { id: order.id } })).confirmationEmailSentAt).not.toBeNull();
   });
 
-  it('a send failure never fails the webhook path or the PAID state; the claim is released and a redelivery sends it once', async () => {
+  it('a send failure never fails the webhook path or the PAID state; the lease is dropped, a redelivery inside the backoff waits, and one after it sends it once', async () => {
     const { fulfilCheckoutSession } = await import('@/lib/stripe-fulfillment');
     const { db, order, session } = await orderFixture({ notes: null });
     const s = session();
@@ -297,6 +297,9 @@ describe.skipIf(!enabled)('payment follow-ups against real PostgreSQL', () => {
     expect(row.status).toBe('PAID');
     expect(row.confirmationEmailSentAt).toBeNull();
     expect(mail.sent).toHaveLength(0);
+    await fulfilCheckoutSession(s); // inside the backoff: nothing is retried yet
+    expect(mail.sent).toHaveLength(0);
+    await db.$executeRaw`UPDATE "ecowoods"."Order" SET "confirmationEmailNextAttemptAt" = now() - interval '1 second' WHERE id = ${order.id}::uuid`;
     await fulfilCheckoutSession(s);
     await fulfilCheckoutSession(s);
     expect(mail.sent).toHaveLength(1);
