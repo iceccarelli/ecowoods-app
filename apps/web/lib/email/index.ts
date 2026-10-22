@@ -409,6 +409,46 @@ export async function sendAdminNewQuoteEmail(data: {
   });
 }
 
+// ─── Admin: a customer confirmation could not be sent ─────────────────────────
+export async function sendAdminConfirmationFailedEmail(data: {
+  kind: string;
+  ref: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+  where?: string | null;
+}) {
+  const adminUrl = `${emailSiteBase()}/admin/quotes/${data.ref}`;
+  const rows: Array<[string, string]> = [
+    ['Name', data.name],
+    ['Email (typed by the customer)', data.email],
+    ['Phone', data.phone ?? '—'],
+    ['Where', data.where ?? '—'],
+    ['Step', data.kind],
+    ['Reference', data.ref],
+  ];
+  await sendEmail({
+    to: ADMIN_EMAIL,
+    subject: `Confirmation NOT sent — ${data.name}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:600px;color:#1a0f08;">
+        <h2>Customer confirmation was not sent</h2>
+        <p>The request is saved, but the confirmation email to the customer failed after a retry. They have not heard from us — please call or email them.</p>
+        <table style="width:100%;border-collapse:collapse;">
+          ${rows.map(([label, value]) => `
+            <tr>
+              <td style="padding:8px;border-bottom:1px solid #e8d4b8;font-weight:600;width:40%;color:#6b5d52;">${escapeHtml(label)}</td>
+              <td style="padding:8px;border-bottom:1px solid #e8d4b8;">${escapeHtml(value)}</td>
+            </tr>
+          `).join('')}
+        </table>
+        <a href="${escapeHtml(adminUrl)}" style="display:inline-block;margin-top:20px;background:#c87e4f;color:white;padding:12px 24px;text-decoration:none;border-radius:6px;">Open in Admin Portal →</a>
+      </div>
+    `,
+    text: `The request is saved, but the confirmation email to the customer failed after a retry. Contact them directly.\n\n${rows.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\nAdmin: ${adminUrl}`,
+  });
+}
+
 // ─── Admin: new inquiry notification ──────────────────────────────────────────
 export async function sendAdminNewInquiryEmail(data: {
   inquiryId: string;

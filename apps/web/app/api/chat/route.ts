@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { sendAdminNewQuoteEmail, sendAppointmentConfirmationEmail } from '@/lib/email';
 import {
-  computeAvailability, isBookableSlot, localDateKey,
+  computeAvailability, localDateKey,
   SLOT_DURATION_MINUTES, BUSINESS_TIMEZONE,
 } from '@/lib/booking/availability';
 import {
@@ -21,6 +21,12 @@ import { findOnSite, siteCapabilitiesBlock } from '@/lib/assistant-site';
 import { SITE_URL } from '@/lib/seo-data';
 import { recordFunnelEvent } from '@/lib/funnel-ledger';
 import { sendLeadAlert } from '@/lib/lead-alert';
+import { runAfterResponse } from '@/lib/background';
+import { bookMeasure } from '@/lib/booking/book-measure';
+import { reportConfirmationFailure, sendCustomerConfirmation } from '@/lib/customer-confirmation';
+import { acknowledgeLead } from '@/lib/lead-acknowledgement';
+import { findRecentDuplicate } from '@/lib/lead-dedupe';
+import { markRecoveryConverted } from '@/lib/quote-recovery';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -271,27 +277,46 @@ export async function POST(req: Request) {
           try {
             const startsAt = new Date(b.startsAt);
             if (Number.isNaN(startsAt.getTime())) return { ok: false, message: 'Invalid time — call get_availability again and offer a listed slot.' };
-            const counts = await liveCountsForDay(localDateKey(startsAt));
-            if (!isBookableSlot(b.startsAt, { now: new Date(), bookingCounts: counts })) {
+            const service = b.service ?? 'new-install';
+            /* The same Serializable booking the booking page uses
+               (lib/booking/book-measure.ts). This tool used to check capacity
+               outside its transaction, so simultaneous bookings could overfill
+               a two-seat window, and a retried call booked twice. */
+            const booked = await bookMeasure({
+              startsAtIso: b.startsAt,
+              name: b.name, email: b.email, phone: b.phone,
+              address: b.postal ?? null, city: b.postal ?? null,
+              service, squareFeet: b.squareFeet ?? null,
+              quoteNotes: `[booked via EcowoodsGuide chat]${b.species ? ' species: ' + b.species + '.' : ''}${b.notes ? ' ' + b.notes : ''}`.trim(),
+              appointmentNotes: b.notes ?? null,
+              userId: null, designId: null, designCode: null,
+            });
+            if (booked.kind === 'taken') {
               return { ok: false, message: 'That slot was just taken — call get_availability again and offer another time.' };
             }
-            const service = b.service ?? 'new-install';
-            const { quote, appt } = await db.$transaction(async (tx) => {
-              const quote = await tx.quoteRequest.create({ data: {
-                name: b.name, email: b.email, phone: b.phone, city: b.postal ?? null,
-                service, squareFeet: b.squareFeet ?? null,
-                notes: `[booked via EcowoodsGuide chat]${b.species ? ' species: ' + b.species + '.' : ''}${b.notes ? ' ' + b.notes : ''}`.trim(),
-              }});
-              const appt = await tx.appointment.create({ data: {
-                quoteRequestId: quote.id, startsAt, durationMinutes: SLOT_DURATION_MINUTES,
-                customerName: b.name, customerEmail: b.email, customerPhone: b.phone, notes: b.notes ?? null,
-              }});
-              return { quote, appt };
-            });
-            const label = whenLabel(startsAt);
-            sendAppointmentConfirmationEmail({ to: b.email, name: b.name, whenLabel: label, durationMinutes: SLOT_DURATION_MINUTES, service }).catch((e) => console.error('[chat] confirm email failed:', e));
-            sendAdminNewQuoteEmail({ quoteId: quote.id, name: b.name, email: b.email, phone: b.phone, city: b.postal, service, squareFeet: b.squareFeet, notes: `In-home measure booked for ${label}.${b.notes ? ' ' + b.notes : ''}` }).catch((e) => console.error('[chat] admin email failed:', e));
-            console.log(JSON.stringify({ event: 'measure.booked', source: 'chat', quoteId: quote.id, apptId: appt.id, startsAt: startsAt.toISOString() }));
+            const label = whenLabel(booked.startsAt);
+            if (booked.kind === 'already') {
+              // A retried call: they already hold this time. No second seat, lead or email.
+              return { ok: true, appointmentId: booked.appointmentId, whenLabel: label, message: `Already booked for ${label}. A confirmation email was sent.` };
+            }
+            const { quoteId, appointmentId } = booked;
+            /* The customer's confirmation is retried once; if it still fails the
+               desk is told (SMS + email). Kept alive past the response with
+               runAfterResponse: a bare floating promise can be frozen with the
+               function once the stream closes. */
+            runAfterResponse((async () => {
+              const confirmed = await sendCustomerConfirmation('chat-appointment', quoteId, () =>
+                sendAppointmentConfirmationEmail({ to: b.email, name: b.name, whenLabel: label, durationMinutes: SLOT_DURATION_MINUTES, service }));
+              if (!confirmed) {
+                await reportConfirmationFailure({ kind: 'chat-appointment', ref: quoteId, name: b.name, email: b.email, phone: b.phone, where: b.postal });
+              }
+            })());
+            runAfterResponse(sendAdminNewQuoteEmail({
+              quoteId, name: b.name, email: b.email, phone: b.phone, city: b.postal, service, squareFeet: b.squareFeet,
+              notes: `In-home measure booked for ${label}.${b.notes ? ' ' + b.notes : ''}`,
+            }).catch((e) => console.error('[chat] admin email failed:', e)));
+            runAfterResponse(markRecoveryConverted(b.email));
+            console.log(JSON.stringify({ event: 'measure.booked', source: 'chat', quoteId, apptId: appointmentId, startsAt: booked.startsAt.toISOString() }));
             /* MEAS-03 closes a hole MEAS-02 left. The ledger was wired to
                /api/leads and /api/appointments, and this tool writes the same
                two tables without going through either — so every measure the
@@ -304,19 +329,19 @@ export async function POST(req: Request) {
                transaction and not awaited: a measurement row must never be
                able to roll back a booking the customer has been told is
                confirmed. */
-            void recordFunnelEvent({ stage: 'LEAD_CAPTURED', source: 'assistant', quoteId: quote.id });
-            void recordFunnelEvent({ stage: 'APPOINTMENT_BOOKED', source: 'assistant', quoteId: quote.id });
+            runAfterResponse(recordFunnelEvent({ stage: 'LEAD_CAPTURED', source: 'assistant', quoteId }));
+            runAfterResponse(recordFunnelEvent({ stage: 'APPOINTMENT_BOOKED', source: 'assistant', quoteId }));
             /* SALE-04 — a measure booked by the assistant at 23:40 is exactly
                the case email was never going to cover. */
-            void sendLeadAlert({
+            runAfterResponse(sendLeadAlert({
               kind: 'measure booked',
               name: b.name,
               phone: b.phone,
               where: b.postal ?? null,
               service,
               source: 'assistant',
-            });
-            return { ok: true, appointmentId: appt.id, whenLabel: label, message: `Booked for ${label}. A confirmation email is on its way.` };
+            }));
+            return { ok: true, appointmentId, whenLabel: label, message: `Booked for ${label}. A confirmation email is on its way.` };
           } catch (err) {
             console.error(JSON.stringify({ event: 'measure.book_failed', source: 'chat', error: err instanceof Error ? err.message : 'unknown' }));
             return { ok: false, message: `Could not confirm that — ask them to call ${BUSINESS_NAP.phoneDisplay} and we will book it.` };
@@ -332,38 +357,67 @@ export async function POST(req: Request) {
           timeline: z.string().optional(), notes: z.string().optional(),
         }),
         execute: async (lead) => {
-          const adminNotify = (quoteId: string) =>
-            sendAdminNewQuoteEmail({
+          const service = lead.service ?? lead.species ?? null;
+          /* The desk's email, and the customer's acknowledgement (one retry,
+             rate limited per address and per IP — lib/lead-acknowledgement.ts;
+             a failure is reported to the desk there). The assistant used to
+             send the customer nothing. Kept alive past the response with
+             runAfterResponse. */
+          const notifyAfterCapture = (quoteId: string, saved: boolean) => {
+            runAfterResponse(sendAdminNewQuoteEmail({
               quoteId, name: lead.name, email: lead.email, phone: lead.phone, city: lead.postal,
               service: lead.service ?? lead.species, squareFeet: lead.squareFeet,
-              notes: `[via EcowoodsGuide chat] ${lead.notes ?? ''}`.trim(),
-            }).catch((e) => console.error('[chat] admin email failed:', e));
+              notes: (saved ? '' : 'NOT CONFIRMED SAVED — check /admin/quotes for this email/phone before entering it by hand.\n\n')
+                + `[via EcowoodsGuide chat] ${lead.notes ?? ''}`.trim(),
+            }).catch((e) => console.error('[chat] admin email failed:', e)));
+            runAfterResponse(acknowledgeLead({
+              name: lead.name, email: lead.email, ref: quoteId, ip, surface: 'chat-lead', phone: lead.phone, where: lead.postal,
+            }));
+          };
           try {
+            /* A model that calls the tool twice for one conversation, or a
+               customer who repeats themselves, is one lead — same rule as
+               /api/leads (lib/lead-dedupe.ts). */
+            const existing = await findRecentDuplicate(db, { email: lead.email, phone: lead.phone, service });
+            if (existing) {
+              console.log(JSON.stringify({ event: 'lead.duplicate', source: 'chat', quoteId: existing }));
+              return { ok: true, quoteId: existing, message: 'Saved. A specialist will call within 1 business day.' };
+            }
             const q = await db.quoteRequest.create({ data: {
               name: lead.name, email: lead.email, phone: lead.phone, city: lead.postal,
-              service: lead.service ?? lead.species ?? null, squareFeet: lead.squareFeet ?? null,
+              service, squareFeet: lead.squareFeet ?? null,
               timeline: lead.timeline ?? null, notes: `[via EcowoodsGuide chat] ${lead.notes ?? ''}`.trim(),
             }});
-            adminNotify(q.id);
+            notifyAfterCapture(q.id, true);
+            runAfterResponse(markRecoveryConverted(lead.email));
             console.log(JSON.stringify({ event: 'lead.captured', source: 'chat', leadId: q.id }));
             /* MEAS-03 — see book_measure above. Only on the path where a row
                actually exists: the fallback below deliberately has no quoteId,
                and a ledger row pointing at nothing would count a lead the
                funnel could never follow. The durable log line is what carries
                that case. */
-            void recordFunnelEvent({ stage: 'LEAD_CAPTURED', source: 'assistant', quoteId: q.id });
-            void sendLeadAlert({
+            runAfterResponse(recordFunnelEvent({ stage: 'LEAD_CAPTURED', source: 'assistant', quoteId: q.id }));
+            runAfterResponse(sendLeadAlert({
               kind: 'lead',
               name: lead.name,
               phone: lead.phone,
               where: lead.postal,
-              service: lead.service ?? lead.species ?? null,
+              service,
               source: 'assistant',
-            });
+            }));
             return { ok: true, quoteId: q.id, message: 'Saved. A specialist will call within 1 business day.' };
           } catch (err) {
-            // DB hiccup must NOT lose the lead — notify admin anyway with the raw details.
-            adminNotify('chat-fallback');
+            // DB hiccup must NOT lose the lead — notify admin anyway with the raw details,
+            // marked as unsaved, by SMS as well as email (the web form does the same).
+            notifyAfterCapture('chat-fallback', false);
+            runAfterResponse(sendLeadAlert({
+              kind: 'lead (NOT SAVED)',
+              name: lead.name,
+              phone: lead.phone,
+              where: lead.postal,
+              service,
+              source: 'assistant',
+            }));
             console.log(JSON.stringify({ event: 'lead.captured', source: 'chat', leadId: 'fallback', lead, dbError: err instanceof Error ? err.message : 'unknown' }));
             return { ok: true, quoteId: null, message: 'Got it — a specialist will reach out within 1 business day.' };
           }

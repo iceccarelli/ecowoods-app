@@ -1,12 +1,11 @@
 import { runAfterResponse } from '@/lib/background';
 import { NextResponse } from 'next/server';
 import { appointmentSchema, APPOINTMENT_SERVICES } from '@ecowoods/shared';
-import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { sendAdminNewQuoteEmail, sendAppointmentConfirmationEmail } from '@/lib/email';
-import {
-  isBookableSlot, localDateKey, SLOT_DURATION_MINUTES, BUSINESS_TIMEZONE,
-} from '@/lib/booking/availability';
+import { SLOT_DURATION_MINUTES, BUSINESS_TIMEZONE } from '@/lib/booking/availability';
+import { bookMeasure } from '@/lib/booking/book-measure';
+import { reportConfirmationFailure, sendCustomerConfirmation } from '@/lib/customer-confirmation';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { recordFunnelEvent, sanitiseSource } from '@/lib/funnel-ledger';
@@ -76,8 +75,6 @@ export async function POST(request: Request) {
   try {
     const session = await auth();
 
-    const dayKey = localDateKey(startsAt);
-
     /* ASSISTANT-07 — designId/designCode, same fields and same
        designIdOf() validation /api/leads already applies, so a booking that
        started in Ask Francisco (or any future caller that has a design)
@@ -88,97 +85,42 @@ export async function POST(request: Request) {
     const designId = designIdOf(data.designId);
     const designCode = typeof data.designCode === 'string' ? data.designCode.slice(0, 400) : null;
 
-    /* One Serializable transaction: the capacity re-check, the lead
-       (QuoteRequest) and the Appointment commit together. Checking outside the
-       transaction let two simultaneous bookings both see a free slot and both
-       insert. Under Serializable, Postgres aborts one of two conflicting
-       count-then-insert transactions (P2034); it is retried, and on the retry
-       it sees the other booking and answers "just taken". */
-    const SLOT_TAKEN = Symbol('slot taken');
-    const ALREADY_BOOKED = Symbol('already booked');
-    type Booked = { quote: { id: string }; appt: { id: string; startsAt: Date } };
-    let booked: Booked | { [ALREADY_BOOKED]: { id: string; startsAt: Date } } | typeof SLOT_TAKEN | null = null;
-    const emailKey = data.email.trim().toLowerCase();
-    for (let attempt = 0; attempt < 3 && booked === null; attempt++) {
-      try {
-        booked = await db.$transaction(
-          async (tx) => {
-            const sameDay = await tx.appointment.findMany({
-              where: {
-                status: 'SCHEDULED',
-                startsAt: { gte: new Date(`${dayKey}T00:00:00Z`), lte: new Date(`${dayKey}T23:59:59Z`) },
-              },
-              select: { id: true, startsAt: true, customerEmail: true },
-            });
-            /* A double-click or a retried request is the same booking, not a
-               second one: the same address asking for the same instant gets the
-               appointment it already holds (and no second estimator slot, lead
-               row or email) instead of consuming the window's other seat. */
-            const already = sameDay.find(
-              (r) => r.startsAt.getTime() === startsAt.getTime() && (r.customerEmail ?? '').trim().toLowerCase() === emailKey,
-            );
-            if (already) return { [ALREADY_BOOKED]: { id: already.id, startsAt: already.startsAt } };
-            const counts = new Map<string, number>();
-            for (const r of sameDay) {
-              const iso = r.startsAt.toISOString();
-              counts.set(iso, (counts.get(iso) ?? 0) + 1);
-            }
-            if (!isBookableSlot(data.startsAt, { now: new Date(), bookingCounts: counts })) return SLOT_TAKEN;
-
-            const quote = await tx.quoteRequest.create({
-              data: {
-                name: data.name,
-                email: data.email,
-                phone: data.phone ?? null,
-                // Same contract as /api/leads: postal code -> address; city is not collected here.
-                address: data.postal ?? null,
-                city: null,
-                service: data.service,
-                squareFeet: typeof data.sqft === 'number' ? Math.round(data.sqft) : null,
-                notes: data.notes ?? null,
-                userId: session?.user?.id ?? null,
-                designId: designId ?? null,
-                designCode,
-              },
-            });
-            const appt = await tx.appointment.create({
-              data: {
-                quoteRequestId: quote.id,
-                startsAt,
-                durationMinutes: SLOT_DURATION_MINUTES,
-                customerName: data.name,
-                customerEmail: data.email,
-                customerPhone: data.phone ?? null,
-                notes: data.notes ?? null,
-              },
-            });
-            return { quote, appt };
-          },
-          { isolationLevel: 'Serializable' },
-        );
-      } catch (err) {
-        const conflict = typeof err === 'object' && err !== null && (err as { code?: string }).code === 'P2034';
-        if (!conflict || attempt === 2) {
-          if (conflict) booked = SLOT_TAKEN; // still contended after retries: do not guess, ask them to pick again
-          else throw err;
-        }
-      }
-    }
-    if (booked === SLOT_TAKEN || booked === null) {
+    /* One Serializable transaction (lib/booking/book-measure.ts, shared with
+       the corner assistant's book_measure tool): the capacity re-check, the
+       lead (QuoteRequest) and the Appointment commit together, a serialization
+       conflict is retried, and the same address asking for the same instant
+       gets the appointment it already holds. */
+    const booked = await bookMeasure({
+      startsAtIso: data.startsAt,
+      name: data.name,
+      email: data.email,
+      phone: data.phone ?? null,
+      // Same contract as /api/leads: postal code -> address; city is not collected here.
+      address: data.postal ?? null,
+      city: null,
+      service: data.service,
+      squareFeet: typeof data.sqft === 'number' ? Math.round(data.sqft) : null,
+      quoteNotes: data.notes ?? null,
+      appointmentNotes: data.notes ?? null,
+      userId: session?.user?.id ?? null,
+      designId: designId ?? null,
+      designCode,
+    });
+    if (booked.kind === 'taken') {
       return NextResponse.json(
         { error: 'That time was just taken or is no longer available. Please pick another.' },
         { status: 409 },
       );
     }
-    if (typeof booked === 'object' && ALREADY_BOOKED in booked) {
-      const held = booked[ALREADY_BOOKED];
-      console.log(JSON.stringify({ event: 'appointment.duplicate', appointmentId: held.id }));
+    if (booked.kind === 'already') {
+      console.log(JSON.stringify({ event: 'appointment.duplicate', appointmentId: booked.appointmentId }));
       return NextResponse.json(
-        { id: held.id, startsAt: held.startsAt.toISOString(), durationMinutes: SLOT_DURATION_MINUTES, service: data.service },
+        { id: booked.appointmentId, startsAt: booked.startsAt.toISOString(), durationMinutes: SLOT_DURATION_MINUTES, service: data.service },
         { status: 200 },
       );
     }
-    const { quote, appt } = booked as Booked;
+    const quote = { id: booked.quoteId };
+    const appt = { id: booked.appointmentId, startsAt: booked.startsAt };
 
     /* MEAS-02 — the brief's `appointment` event. Outside the transaction on
        purpose: a measurement row must never be able to roll back a booking
@@ -214,12 +156,22 @@ export async function POST(request: Request) {
     runAfterResponse(markRecoveryConverted(data.email));
 
     // Notifications — non-blocking; a booking is never lost to a flaky email.
+    // The customer's confirmation is retried once; if it still fails the desk
+    // is told (SMS + email) instead of the failure living only in a log.
     const label = whenLabel(startsAt);
     const serviceLabel = SERVICE_LABELS[data.service] ?? data.service;
-    runAfterResponse(sendAppointmentConfirmationEmail({
-      to: data.email, name: data.name, whenLabel: label,
-      durationMinutes: SLOT_DURATION_MINUTES, service: serviceLabel,
-    }).catch((e) => console.error('[appointments] customer email failed:', e)));
+    runAfterResponse((async () => {
+      const confirmed = await sendCustomerConfirmation('appointment', quote.id, () =>
+        sendAppointmentConfirmationEmail({
+          to: data.email, name: data.name, whenLabel: label,
+          durationMinutes: SLOT_DURATION_MINUTES, service: serviceLabel,
+        }));
+      if (!confirmed) {
+        await reportConfirmationFailure({
+          kind: 'appointment', ref: quote.id, name: data.name, email: data.email, phone: data.phone ?? null, where: data.postal ?? null,
+        });
+      }
+    })());
     runAfterResponse(sendAdminNewQuoteEmail({
       quoteId: quote.id, name: data.name, email: data.email,
       phone: data.phone, city: data.postal, service: serviceLabel,

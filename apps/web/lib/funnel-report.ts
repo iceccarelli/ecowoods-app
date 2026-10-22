@@ -93,7 +93,9 @@ export const CHANNEL_LABEL: Record<Channel, string> = {
 export function channelOf(source: string | null | undefined, hasDesign: boolean): Channel {
   const s = (source ?? '').trim().toLowerCase();
   if (s === 'assistant' || s === 'chat' || s.startsWith('assistant')) return 'ASSISTANT';
-  if (s === 'photo-triage' || s === 'photo_triage') return 'PHOTO_TRIAGE';
+  /* `photo-triage:<page>` — /api/photo-triage records the surface first and the
+     page it was submitted from after it. */
+  if (s === 'photo-triage' || s === 'photo_triage' || s.startsWith('photo-triage:')) return 'PHOTO_TRIAGE';
   if (s.startsWith('configurator') || s.includes('floor-studio') || s.includes('floorstudio') || hasDesign) return 'FLOOR_STUDIO';
   if (s.includes('referral') || s.includes('realtor')) return 'REFERRAL';
   if (s === 'booking' || s === 'web_scheduler') return 'BOOKING_PAGE';

@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { leadSchema } from '@ecowoods/shared/schemas';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
-import { sendAdminNewQuoteEmail, sendQuoteReceivedEmail } from '@/lib/email';
+import { sendAdminNewQuoteEmail } from '@/lib/email';
+import { acknowledgeLead } from '@/lib/lead-acknowledgement';
 import { checkRateLimit, getClientIp, isTrustedBrowserOrigin, LEAD_POST_LIMIT } from '@/lib/rate-limit';
 import { webhookFromEnv, postWebhook } from '@/lib/outbound-webhook';
 import { designIdOf } from '@/lib/floor-studio/design-id';
@@ -14,7 +15,6 @@ import { safeLeadSource } from '@/lib/lead-redirect';
 import { findRecentDuplicate } from '@/lib/lead-dedupe';
 import { runAfterResponse } from '@/lib/background';
 import { withinMs } from '@/lib/with-timeout';
-import { enforceRateLimit } from '@/lib/rate-limit-durable';
 
 /**
  * POST /api/leads — THE conversion surface.
@@ -352,23 +352,18 @@ export async function POST(request: Request) {
   // 4. Customer acknowledgement — best-effort, never fatal. It goes to whatever
   //    address was typed, so it is limited durably per address and per IP; past
   //    the limit the lead is still captured, only the courtesy email is skipped.
+  //    If the send fails after a retry the desk is told (SMS + email) so someone
+  //    contacts the customer — see lib/lead-acknowledgement.ts.
   if (!duplicate) {
-    const ackEmail = String(lead.email ?? '').trim().toLowerCase();
-    runAfterResponse((async () => {
-      const [byEmail, byIp] = await Promise.all([
-        enforceRateLimit({ routeKey: 'lead-ack-email', identity: ackEmail, config: { windowMs: 60 * 60 * 1000, maxRequests: 2 } }),
-        enforceRateLimit({ routeKey: 'lead-ack-ip', identity: getClientIp(request), config: { windowMs: 60 * 60 * 1000, maxRequests: 5 } }),
-      ]);
-      if (!byEmail.allowed || !byIp.allowed) {
-        console.warn(JSON.stringify({ event: 'lead.ack_suppressed', leadId, byEmail: !byEmail.allowed, byIp: !byIp.allowed }));
-        return;
-      }
-      await sendQuoteReceivedEmail({
-        name: String(lead.name ?? ''),
-        email: String(lead.email ?? ''),
-        leadId: quoteId ?? leadId,
-      });
-    })().catch((err) =>
+    runAfterResponse(acknowledgeLead({
+      name: String(lead.name ?? ''),
+      email: String(lead.email ?? ''),
+      ref: quoteId ?? leadId,
+      ip: getClientIp(request),
+      surface: 'lead',
+      phone: lead.phone ? String(lead.phone) : null,
+      where: lead.postal ? String(lead.postal) : null,
+    }).catch((err) =>
       console.error(JSON.stringify({ event: 'lead.customer_email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
     ));
   }
