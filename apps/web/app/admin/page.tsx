@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { format, subDays } from 'date-fns';
 import { AGE_BAND_LABEL, buildQueue, summarise } from '@/lib/lead-queue';
 import { deliveryHealth } from '@/lib/delivery-health';
+import { countOpenPaymentCases } from '@/lib/payment-reconciliation';
 
 function formatCAD(amount: number | { toNumber(): number } | null | undefined) {
   return new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(
@@ -77,6 +78,8 @@ export default async function AdminDashboard() {
      THIS running deployment will do with the next lead. */
   const delivery = deliveryHealth();
 
+  const openPaymentCases = await countOpenPaymentCases();
+
   const pendingBankPayments = await db.payment.count({
     where: { method: 'BANK_TRANSFER', status: 'PENDING' },
   });
@@ -119,6 +122,15 @@ export default async function AdminDashboard() {
           </div>
           <Link href="/admin/inquiries" className="portal-stat-link">Reply →</Link>
         </div>
+        {openPaymentCases !== null && (
+          <div className="portal-stat-card">
+            <div className="portal-stat-label">Open payment cases</div>
+            <div className="portal-stat-value" style={{ color: openPaymentCases > 0 ? 'var(--warning)' : undefined }}>
+              {openPaymentCases}
+            </div>
+            <Link href="/admin/payment-cases" className="portal-stat-link">{openPaymentCases > 0 ? 'Resolve →' : 'View →'}</Link>
+          </div>
+        )}
         <div className="portal-stat-card">
           <div className="portal-stat-label">New Orders (30d)</div>
           <div className="portal-stat-value">{newOrders}</div>

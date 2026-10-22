@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/lib/auth';
+import { countOpenPaymentCases } from '@/lib/payment-reconciliation';
 import {
   DashboardIcon,
   QuotesIcon,
@@ -44,6 +45,9 @@ export default async function AdminLayout({
     redirect('/login');
   }
 
+  // Unresolved money cases stay visible from every admin page (admin-only: the guard above has run).
+  const openCases = await countOpenPaymentCases();
+
   return (
     <div className="portal-layout">
       {/* Admin Sidebar */}
@@ -53,6 +57,15 @@ export default async function AdminLayout({
             <Link key={item.href} href={item.href} className="portal-nav-item">
               <span className="portal-nav-icon">{item.icon}</span>
               {item.label}
+              {item.href === '/admin/payment-cases' && openCases ? (
+                <span
+                  role="status"
+                  aria-label={`${openCases} open payment case${openCases === 1 ? '' : 's'}`}
+                  style={{ marginLeft: 'auto', minWidth: '1.4rem', padding: '0 0.4rem', borderRadius: '999px', background: 'var(--warning, #b45309)', color: '#fff', fontSize: '0.75rem', fontWeight: 700, textAlign: 'center' }}
+                >
+                  {openCases}
+                </span>
+              ) : null}
             </Link>
           ))}
         </nav>

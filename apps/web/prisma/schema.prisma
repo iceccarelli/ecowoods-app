@@ -591,6 +591,16 @@ model PaymentCase {
   summary String  @db.Text
   details Json?   @db.JsonB
 
+  /// Money events seen later for THIS case's payment intent (a duplicate or
+  /// unapplied payment has no Payment/Order row of its own). refundedAmount is
+  /// the cumulative refunded amount reported by Stripe (monotonic). Recording
+  /// them never changes the order or invoice and never closes the case.
+  refundedAmount Decimal?  @db.Decimal(12, 2)
+  refundedAt     DateTime? @db.Timestamptz
+  refundFailedAt DateTime? @db.Timestamptz
+  disputeId      String?   @db.VarChar(100)
+  disputedAt     DateTime? @db.Timestamptz
+
   resolution     PaymentCaseResolution?
   resolutionNote String?                @db.Text
   resolvedById   String?                @db.Uuid
@@ -768,10 +778,17 @@ model Order {
   paidAt                  DateTime? @db.Timestamptz
   /// Cumulative amount Stripe reports as refunded for a plain order's charge.
   refundedAmount          Decimal   @default(0) @db.Decimal(12, 2)
-  /// Set (conditional update) when the plain payment-confirmation email is
-  /// claimed for this order; cleared again if the send fails. See
-  /// lib/email/order-confirmation.ts.
+  /// Set ONLY after the mail provider accepted the plain payment-confirmation
+  /// email (rows written by the earlier claim-first code also mean "sent").
+  /// See lib/email/order-confirmation.ts.
   confirmationEmailSentAt DateTime? @db.Timestamptz
+  /// Delivery state for that email: a lease taken before the provider call (a
+  /// stale lease may be re-claimed), the attempts made, the earliest next
+  /// attempt (backoff) and the last failure. All null on orders never tried.
+  confirmationEmailLeaseUntil    DateTime? @db.Timestamptz
+  confirmationEmailAttempts      Int?
+  confirmationEmailNextAttemptAt DateTime? @db.Timestamptz
+  confirmationEmailLastError     String?   @db.VarChar(300)
 
   items OrderItem[]
 
