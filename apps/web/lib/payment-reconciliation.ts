@@ -403,7 +403,12 @@ export async function countOpenPaymentCases(): Promise<number | null> {
 
 /** True when a refund case already exists for this order: credits must not be granted for a refunded pack. */
 export async function orderHasRefundCase(orderId: string): Promise<boolean> {
-  return (await db.paymentCase.count({ where: { orderId, kind: { in: REFUND_CASE_KINDS } } })) > 0;
+  // A refund that arrived BEFORE the order was marked paid matched nothing and was held
+  // unlinked; it is still this order's refund when the payment intent is the same.
+  const order = await db.order.findUnique({ where: { id: orderId }, select: { stripePaymentIntentId: true } });
+  const pi = order?.stripePaymentIntentId;
+  const where = pi ? { OR: [{ orderId }, { stripePaymentIntentId: pi }] } : { orderId };
+  return (await db.paymentCase.count({ where: { ...where, kind: { in: REFUND_CASE_KINDS } } })) > 0;
 }
 
 export type ResolveOutcome = { status: 'resolved' | 'already_resolved'; caseId: string };
