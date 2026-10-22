@@ -294,6 +294,9 @@ export async function POST(req: Request) {
             if (booked.kind === 'taken') {
               return { ok: false, message: 'That slot was just taken — call get_availability again and offer another time.' };
             }
+            if (booked.kind === 'busy') {
+              return { ok: false, message: 'The calendar is busy for a moment — try that same time once more, or call get_availability and offer another.' };
+            }
             const label = whenLabel(booked.startsAt);
             if (booked.kind === 'already') {
               // A retried call: they already hold this time. No second seat, lead or email.
@@ -378,7 +381,7 @@ export async function POST(req: Request) {
             /* A model that calls the tool twice for one conversation, or a
                customer who repeats themselves, is one lead — same rule as
                /api/leads (lib/lead-dedupe.ts). */
-            const existing = await findRecentDuplicate(db, { email: lead.email, phone: lead.phone, service });
+            const existing = await findRecentDuplicate(db, { email: lead.email, phone: lead.phone, service, place: lead.postal });
             if (existing) {
               console.log(JSON.stringify({ event: 'lead.duplicate', source: 'chat', quoteId: existing }));
               return { ok: true, quoteId: existing, message: 'Saved. A specialist will call within 1 business day.' };
