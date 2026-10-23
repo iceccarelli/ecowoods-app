@@ -26,3 +26,42 @@ export function leadRedirectOutcome(search: string, source: string): LeadRedirec
   const from = p.get('from');
   return from === source ? outcome : null;
 }
+
+/**
+ * Where a no-JavaScript lead POST is sent back to: the page it came from, with
+ * the outcome, the form's `source` and (for the photo form) `track=photos`, at
+ * `#estimate` — the id EstimateForm renders on every page that embeds it.
+ * Same-origin only; anything else goes to the homepage.
+ *
+ * The photo route used to build this itself with `#quote` and no `from`, so
+ * `leadRedirectOutcome` ignored it and the visitor landed on a silent page.
+ * Both routes now share this one function.
+ */
+export function leadBackTo(opts: {
+  referer: string | null;
+  siteUrl?: string;
+  ok: boolean;
+  source?: unknown;
+  track?: 'photos';
+}): string {
+  const siteUrl = opts.siteUrl ?? 'https://ecowoods.ca';
+  try {
+    const site = new URL(siteUrl);
+    const u = new URL(opts.referer ?? '/', site);
+    if (u.host !== site.host) return '/?sent=1';
+    for (const k of ['sent', 'error', 'from', 'track']) u.searchParams.delete(k);
+    u.searchParams.set(opts.ok ? 'sent' : 'error', '1');
+    const from = safeLeadSource(opts.source);
+    if (from) u.searchParams.set('from', from);
+    if (opts.track) u.searchParams.set('track', opts.track);
+    u.hash = 'estimate';
+    return `${u.pathname}${u.search}${u.hash}`;
+  } catch {
+    return opts.ok ? '/?sent=1' : '/?error=1';
+  }
+}
+
+/** Which form the redirect came from; only the photo form sets it. */
+export function leadRedirectTrack(search: string): 'photos' | null {
+  return new URLSearchParams(search).get('track') === 'photos' ? 'photos' : null;
+}

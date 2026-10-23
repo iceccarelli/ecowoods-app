@@ -7,7 +7,7 @@ import { CONSENT_WORDING } from '@/lib/floor-graph/wording';
 import { PHOTO_TRIAGE_INTENTS } from '@ecowoods/shared/schemas';
 import { SERVICE_AREAS } from '@/lib/seo-data';
 import { track } from '@/lib/analytics';
-import { leadRedirectOutcome } from '@/lib/lead-redirect';
+import { leadRedirectOutcome, leadRedirectTrack } from '@/lib/lead-redirect';
 import { compressPhoto, MAX_PHOTO_BYTES } from '@/lib/image-compress';
 import {
   readDesignConfig,
@@ -134,15 +134,17 @@ export function EstimateForm({
   useEffect(() => {
     const outcome = leadRedirectOutcome(window.location.search, source);
     if (!outcome) return;
+    const track = leadRedirectTrack(window.location.search) ?? 'measure';
     if (outcome === 'sent') {
-      setSentTrack('measure');
+      setSentTrack(track);
       setState('sent');
     } else {
+      setTrackTab(track);
       setBounced(true);
       setState('error');
     }
     const u = new URL(window.location.href);
-    for (const k of ['sent', 'error', 'from']) u.searchParams.delete(k);
+    for (const k of ['sent', 'error', 'from', 'track']) u.searchParams.delete(k);
     window.history.replaceState(null, '', `${u.pathname}${u.search}${u.hash}`);
   }, [source]);
 
