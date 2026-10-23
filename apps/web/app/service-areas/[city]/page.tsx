@@ -11,7 +11,7 @@ import { JobCardRail } from '../../components/JobCard';
 import { jobCardsForArea } from '@/content/job-cards';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
 import { MARKETS, marketBySlug, corridorsFor } from '@/lib/geo';
-import { areaDescription } from '@/lib/area-description';
+import { areaDescription, areaTitle } from '@/lib/area-description';
 import { areaOpening } from '@/lib/opening-answers';
 import { guidesForArea, corridorLinkForArea, projectsForArea, areaPlacement } from '@/lib/area-groups';
 import { EstimateForm } from '@/app/components/EstimateForm';
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const { city: slug } = await params;
   const city = cityBySlug(slug);
   if (!city) return {};
-  const title = pageTitle(city);
+  const title = areaTitle(city);
   const description = areaDescription(city);
   return {
     title,

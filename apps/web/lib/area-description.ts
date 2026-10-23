@@ -51,3 +51,33 @@ export function areaDescription(area: City): string {
   }
   return `${head}.${tail}`;
 }
+
+/** The root layout appends this to every page title (`%s · Ecowoods`). */
+export const TITLE_SUFFIX = ' · Ecowoods';
+/** About what a results page shows of a title before it cuts it with an ellipsis. */
+export const AREA_TITLE_LIMIT = 60;
+
+/**
+ * The <title> of a /service-areas/[slug] page, before the layout's suffix.
+ *
+ * The place name is what distinguishes these pages, so it must survive
+ * truncation. The full "refinishing & installation" form pushed the composed
+ * title to 61–75 characters on 97 of 100 pages, which cut the suffix on most
+ * and clipped the place name itself on the longest ("…Niagara-on-the-").
+ * Tiers, first one that fits with the suffix; the last is the fallback:
+ *
+ *   Hardwood floor refinishing & installation in {area}
+ *   Hardwood floor refinishing in {area}
+ *   Hardwood flooring in {area}
+ *
+ * The H1 and the schema names keep the full phrase; they are not truncated.
+ */
+export function areaTitle(area: City): string {
+  const where = areaDisplayName(area);
+  const tiers = [
+    `Hardwood floor refinishing & installation in ${where}`,
+    `Hardwood floor refinishing in ${where}`,
+    `Hardwood flooring in ${where}`,
+  ];
+  return tiers.find((t) => t.length + TITLE_SUFFIX.length <= AREA_TITLE_LIMIT) ?? tiers[tiers.length - 1];
+}
