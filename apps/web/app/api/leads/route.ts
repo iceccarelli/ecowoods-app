@@ -11,7 +11,7 @@ import { recordFunnelEvent } from '@/lib/funnel-ledger';
 import { sendLeadAlert } from '@/lib/lead-alert';
 import { designFor, speciesFromDesign } from '@/lib/floor-studio/lead-design';
 import { productById } from '@/lib/floor-studio/catalog';
-import { safeLeadSource } from '@/lib/lead-redirect';
+import { leadBackTo } from '@/lib/lead-redirect';
 import { findRecentDuplicate } from '@/lib/lead-dedupe';
 import { runAfterResponse } from '@/lib/background';
 import { withinMs } from '@/lib/with-timeout';
@@ -64,21 +64,7 @@ async function readBody(request: Request): Promise<{ body: unknown; isFormPost: 
 
 /** Where to send a no-JS browser back to. Same-origin only. */
 function backTo(request: Request, ok: boolean, source?: unknown): string {
-  const ref = request.headers.get('referer');
-  try {
-    const u = new URL(ref ?? '/', process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca');
-    const site = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca');
-    if (u.host !== site.host) return '/?sent=1';
-    u.searchParams.delete('sent');
-    u.searchParams.delete('error');
-    u.searchParams.set(ok ? 'sent' : 'error', '1');
-    const from = safeLeadSource(source);
-    if (from) u.searchParams.set('from', from);
-    u.hash = 'estimate';
-    return `${u.pathname}${u.search}${u.hash}`;
-  } catch {
-    return ok ? '/?sent=1' : '/?error=1';
-  }
+  return leadBackTo({ referer: request.headers.get('referer'), siteUrl: process.env.NEXT_PUBLIC_SITE_URL, ok, source });
 }
 
 /**
