@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isAuthorizedBearer } from '@/lib/cron-auth';
-import { db } from '@/lib/db';
-import { sendEmail } from '@/lib/email';
-import { BUSINESS_NAP } from '@ecowoods/shared/constants';
-import { escapeHtml } from '@/lib/email/html';
+import { QuoteRecoveryQueryError, runQuoteRecoveryCron } from '@/lib/quote-recovery-delivery';
 
 /**
  * GET /api/cron/quote-recovery — send the one reminder, once.
@@ -23,39 +20,31 @@ import { escapeHtml } from '@/lib/email/html';
  *   · no QuoteRequest for the address (case-insensitive) was created after the
  *     recovery row — covers leads, bookings and photo triage even if the row
  *     was never marked converted.
- *   · sentAt is null            — exactly one email per person, forever.
+ *   · sentAt is null            — exactly one email per person, forever. It is
+ *     written ONLY after the provider accepted the message.
  *   · convertedAt is null       — somebody who finished is never asked to.
  *   · The row is at least 2h old and at most 7 days old. A reminder about a
  *     form somebody abandoned last month is not a reminder, it is a cold email.
- *   · sentAt is stamped BEFORE the send. A crash after the send would otherwise
- *     re-queue the same person on the next run, and sending twice is worse than
- *     not sending at all.
+ *   · The claim is a ~3 minute LEASE taken in one atomic UPDATE that re-checks
+ *     all of the above (consent included); the send carries a stable
+ *     Idempotency-Key so a retry or a crashed holder cannot email twice. A failed
+ *     send backs off (1h, 3h, 6h, 12h), keeps a sanitised error, and after 5
+ *     attempts the row is exhausted: never retried, counted in the response and
+ *     on /admin/funnel. See lib/quote-recovery-delivery.ts.
+ *   · The response is counts only: {due, sent, failed, exhausted}.
  */
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-const MIN_AGE_MS = 2 * 60 * 60 * 1000; // the brief's two hours
-const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
-const BATCH = 50;
 
 export async function GET(request: Request) {
   if (!isAuthorizedBearer(request, process.env.CRON_SECRET)) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
-  const now = Date.now();
-  let due: Array<{ id: string; email: string; name: string | null; createdAt: Date }> = [];
   try {
-    due = await db.quoteRecovery.findMany({
-      where: {
-        sentAt: null,
-        convertedAt: null,
-        confirmedAt: { not: null },
-        createdAt: { lte: new Date(now - MIN_AGE_MS), gte: new Date(now - MAX_AGE_MS) },
-      },
-      select: { id: true, email: true, name: true, createdAt: true },
-      take: BATCH,
-    });
+    const result = await runQuoteRecoveryCron();
+    console.log(JSON.stringify({ event: 'quote_recovery.cron_run', ...result }));
+    return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     console.error(
       JSON.stringify({
@@ -63,77 +52,7 @@ export async function GET(request: Request) {
         error: err instanceof Error ? err.message : 'unknown',
       }),
     );
-    return NextResponse.json({ ok: false, error: 'query_failed' }, { status: 500 });
+    if (err instanceof QuoteRecoveryQueryError) return NextResponse.json({ ok: false, error: 'query_failed' }, { status: 500 });
+    return NextResponse.json({ ok: false, error: 'run_failed' }, { status: 500 });
   }
-
-  let sent = 0;
-  for (const row of due) {
-    // Somebody who submitted anything after starting the form has finished.
-    try {
-      const later = await db.quoteRequest.findFirst({
-        where: { email: { equals: row.email, mode: 'insensitive' }, createdAt: { gte: row.createdAt } },
-        select: { id: true },
-      });
-      if (later) {
-        await db.quoteRecovery.update({ where: { id: row.id }, data: { convertedAt: new Date() } });
-        continue;
-      }
-    } catch {
-      continue; // cannot prove they have not finished: do not send
-    }
-
-    // Stamp FIRST. A crash mid-send loses one email; a crash after an unstamped
-    // send emails the same person on every run until somebody notices.
-    // The stamp is also the CLAIM: a conditional update that only one of two
-    // overlapping runs (a retried invocation, a manual re-run during a cron)
-    // can win. The loser sees count 0 and skips, so nobody is emailed twice.
-    try {
-      const claimed = await db.quoteRecovery.updateMany({
-        where: { id: row.id, sentAt: null, convertedAt: null },
-        data: { sentAt: new Date() },
-      });
-      if (claimed.count !== 1) continue;
-    } catch {
-      continue;
-    }
-
-    const first = (row.name ?? '').trim().split(/\s+/)[0];
-    const greeting = first ? `${first},` : 'Hello,';
-
-    try {
-      await sendEmail({
-        to: row.email,
-        subject: 'Your floor is still unmeasured',
-        text:
-          `${greeting}\n\n` +
-          `You started an estimate with us and did not finish it — no problem, and this is the ` +
-          `only time we will mention it.\n\n` +
-          `If it is easier, reply to this email with three photos of the floor and we will tell ` +
-          `you what it needs. Or call ${BUSINESS_NAP.phoneDisplay} and we will book the measure ` +
-          `in about a minute.\n\n` +
-          `The measurement is free and the written price does not move afterwards.\n\n` +
-          `— ${BUSINESS_NAP.legalName}\n${BUSINESS_NAP.phoneDisplay}\n`,
-        html:
-          `<p>${escapeHtml(greeting)}</p>` +
-          `<p>You started an estimate with us and did not finish it — no problem, and this is the only time we will mention it.</p>` +
-          `<p>If it is easier, <strong>reply to this email with three photos of the floor</strong> and we will tell you what it needs. ` +
-          `Or call <a href="${BUSINESS_NAP.phoneHref}">${BUSINESS_NAP.phoneDisplay}</a> and we will book the measure in about a minute.</p>` +
-          `<p>The measurement is free and the written price does not move afterwards.</p>` +
-          `<p style="color:#6b5d4f;font-size:13px;">— ${BUSINESS_NAP.legalName} · ${BUSINESS_NAP.phoneDisplay}<br>` +
-          `You are receiving this once because you asked to be reminded if you left the form unfinished.</p>`,
-      });
-      sent += 1;
-    } catch (err) {
-      console.error(
-        JSON.stringify({
-          event: 'quote_recovery.send_failed',
-          id: row.id,
-          error: err instanceof Error ? err.message : 'unknown',
-        }),
-      );
-    }
-  }
-
-  console.log(JSON.stringify({ event: 'quote_recovery.cron_run', due: due.length, sent }));
-  return NextResponse.json({ ok: true, due: due.length, sent });
 }

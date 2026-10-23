@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { isAuthorizedBearer } from '@/lib/cron-auth';
-import { db } from '@/lib/db';
-import { requestReviewForProject } from '@/lib/review-request';
+import { countExhaustedReviewRequests, requestReviewForProject, selectDueReviewProjects } from '@/lib/review-request';
 
 /**
  * GET /api/cron/review-requests — the safety net for the post-job review ask.
@@ -12,17 +11,18 @@ import { requestReviewForProject } from '@/lib/review-request';
  *
  *   · The caller presents CRON_SECRET, or gets a 401.
  *   · status COMPLETED, reviewRequestedAt null — one request per project.
+ *   · A failed send is retried only after its backoff (1h, 3h, 6h, 12h) and at
+ *     most 5 times; exhausted and in-backoff projects are excluded in SQL.
  *   · Completed at least 1 hour ago (grace for the immediate trigger) and at
  *     most 30 days ago — a review request about a job finished last season is
  *     a cold email, and it is not sent.
  *   · Small batches, one send per row, the stamp set before the send inside
  *     requestReviewForProject().
+ *   · The response is counts only: {due, sent, failed, skipped, exhausted}.
  */
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const MIN_AGE_MS = 60 * 60 * 1000;
-const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 const BATCH = 25;
 
 export async function GET(request: Request) {
@@ -30,19 +30,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 });
   }
 
-  const now = Date.now();
   let due: Array<{ id: string }> = [];
   try {
-    due = await db.project.findMany({
-      where: {
-        status: 'COMPLETED',
-        reviewRequestedAt: null,
-        updatedAt: { lte: new Date(now - MIN_AGE_MS), gte: new Date(now - MAX_AGE_MS) },
-      },
-      select: { id: true },
-      orderBy: { updatedAt: 'asc' },
-      take: BATCH,
-    });
+    due = await selectDueReviewProjects(BATCH);
   } catch (err) {
     console.error(
       JSON.stringify({
@@ -53,7 +43,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: 'query_failed' }, { status: 500 });
   }
 
-  const results = { sent: 0, skipped: 0, failed: 0 };
+  const results = { sent: 0, failed: 0, skipped: 0 };
   for (const p of due) {
     const r = await requestReviewForProject(p.id);
     if (r.sent) results.sent += 1;
@@ -61,6 +51,14 @@ export async function GET(request: Request) {
     else results.skipped += 1;
   }
 
-  console.log(JSON.stringify({ event: 'review_request.cron', due: due.length, ...results }));
-  return NextResponse.json({ ok: true, due: due.length, ...results });
+  let exhausted = 0;
+  try {
+    exhausted = await countExhaustedReviewRequests();
+  } catch {
+    /* informational; never fail the sweep over it */
+  }
+
+  const body = { due: due.length, ...results, exhausted };
+  console.log(JSON.stringify({ event: 'review_request.cron', ...body }));
+  return NextResponse.json({ ok: true, ...body });
 }

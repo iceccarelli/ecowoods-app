@@ -21,7 +21,7 @@ describe.skipIf(!enabled)('funnel report against real PostgreSQL', () => {
   const tag = randomUUID().slice(0, 6).toUpperCase();
   // designIds are 12 Crockford base32 chars (no I, L, O, U).
   const did = (n: number) => `FR${tag.replace(/[ILOU]/g, 'A')}${String(n).padStart(4, '0')}`.slice(0, 12);
-  const ids = { quotes: [] as string[], convs: [] as string[], recs: [] as string[], events: [] as string[] };
+  const ids = { quotes: [] as string[], convs: [] as string[], recs: [] as string[], events: [] as string[], projects: [] as string[], users: [] as string[] };
 
   afterAll(async () => {
     if (!enabled) return;
@@ -30,6 +30,8 @@ describe.skipIf(!enabled)('funnel report against real PostgreSQL', () => {
     await client.assistantConversation.deleteMany({ where: { id: { in: ids.convs } } });
     await client.quoteRecovery.deleteMany({ where: { id: { in: ids.recs } } });
     await client.quoteRequest.deleteMany({ where: { id: { in: ids.quotes } } });
+    await client.project.deleteMany({ where: { id: { in: ids.projects } } });
+    await client.user.deleteMany({ where: { id: { in: ids.users } } });
     await client.$disconnect();
   });
 
@@ -136,7 +138,7 @@ describe.skipIf(!enabled)('funnel report against real PostgreSQL', () => {
     // No PII column is read by any statement the report issues.
     expect(queries.length).toBeGreaterThan(0);
     for (const q of queries) {
-      expect(q).not.toMatch(/"(email|name|phone|address|city|notes|adminNotes|customerName|customerEmail|customerPhone)"/);
+      expect(q).not.toMatch(/"(email|name|phone|address|city|notes|adminNotes|customerName|customerEmail|customerPhone|sendLastError|reviewEmailLastError|title)"/);
     }
     // And nothing identifying leaks into the serialised report.
     expect(JSON.stringify(out)).not.toMatch(/Pii|example\.test|416-555|Secret St/);
@@ -151,5 +153,43 @@ describe.skipIf(!enabled)('funnel report against real PostgreSQL', () => {
     expect(out.from).toBe('2024-01-09T05:00:00.000Z');
     expect(out.report.period.stages[0]).toMatchObject({ stage: 'LEAD_CAPTURED', count: 1 });
     expect(out.report.cohort.rows[0]!.unlinkedLeads).toBe(1);
+  });
+
+  it('counts messages that could not be sent (aggregates only; the stored error text is never read)', async () => {
+    const { loadFunnelReport } = await import('@/lib/funnel-report');
+    const now = new Date('2024-03-20T16:00:00Z'); // a window no other test seeds
+    const t = (v: string) => new Date(v);
+    const base = { consentedAt: t('2024-03-18T00:00:00Z'), createdAt: t('2024-03-18T10:00:00Z'), confirmedAt: t('2024-03-18T11:00:00Z') };
+    // The error text contains an address on purpose: it must never be read by the report.
+    const failed = { sendAttempts: 5, sendLastError: `Resend error: not allowed for pii-${tag}@example.test` };
+    const mk = async (n: string, extra: Record<string, unknown>) => {
+      const r = await client.quoteRecovery.create({ data: { email: `rec-${tag}-${n}@example.test`, ...base, ...extra } });
+      ids.recs.push(r.id);
+    };
+    await mk('x1', failed); // exhausted: counts
+    await mk('x2', { sendAttempts: 4 }); // still retrying: does not count
+    await mk('x3', { ...failed, convertedAt: t('2024-03-18T12:00:00Z') }); // converted anyway: does not count
+    await mk('x4', { ...failed, sentAt: t('2024-03-18T13:00:00Z') }); // delivered: does not count
+    await mk('x5', { ...failed, createdAt: t('2024-03-01T10:00:00Z') }); // before the window: does not count
+
+    const user = await client.user.create({ data: { email: `fr-${tag}@example.test`, name: 'Pat Pii-Name' } });
+    ids.users.push(user.id);
+    const mkProject = async (extra: Record<string, unknown>) => {
+      const p = await client.project.create({ data: { userId: user.id, title: `FR-${tag}`, status: 'COMPLETED', ...extra } });
+      await client.$executeRaw`UPDATE "ecowoods"."Project" SET "updatedAt" = ${t('2024-03-19T10:00:00Z')} WHERE "id" = ${p.id}::uuid`;
+      ids.projects.push(p.id);
+    };
+    await mkProject({ reviewEmailAttempts: 5, reviewEmailLastError: `boom for pii-${tag}@example.test` }); // counts
+    await mkProject({ reviewEmailAttempts: 4 }); // does not
+    await mkProject({ reviewEmailAttempts: 5, reviewRequestedAt: t('2024-03-19T11:00:00Z') }); // sent: does not
+
+    queries.length = 0;
+    const out = await loadFunnelReport(7, now, client as never);
+    expect(out.report.quoteRecovery).toMatchObject({ requested: 4, couldNotBeSent: 1, reviewRequestsCouldNotBeSent: 1 });
+    expect(queries.length).toBeGreaterThan(0);
+    for (const q of queries) {
+      expect(q).not.toMatch(/"(email|name|phone|address|city|notes|adminNotes|customerName|customerEmail|customerPhone|sendLastError|reviewEmailLastError|title)"/);
+    }
+    expect(JSON.stringify(out)).not.toMatch(/Pii|example\.test|not allowed|boom/);
   });
 });

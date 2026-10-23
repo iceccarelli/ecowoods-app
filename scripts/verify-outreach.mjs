@@ -174,12 +174,13 @@ if (!fs.existsSync(cardPath)) {
     fail(`${MODULE} is missing — nothing sends the review request.`);
   } else {
     const mod = fs.readFileSync(path.join(ROOT, MODULE), 'utf8');
-    const stampAt = mod.indexOf('reviewRequestedAt: new Date()');
+    /* The stamp is the atomic claim: one UPDATE ... RETURNING on the DB clock. */
+    const stampAt = mod.indexOf('SET "reviewRequestedAt" = now()');
     const sendAt = mod.indexOf('sendReviewRequestEmail(');
     if (stampAt < 0 || sendAt < 0 || stampAt > sendAt) {
       fail(`${MODULE} must stamp reviewRequestedAt BEFORE calling sendReviewRequestEmail().`);
     }
-    if (!/reviewRequestedAt: null/.test(mod)) fail(`${MODULE} does not guard on reviewRequestedAt being null.`);
+    if (!/"reviewRequestedAt" IS NULL/.test(mod)) fail(`${MODULE} does not guard on reviewRequestedAt being null.`);
   }
   if (!fs.existsSync(path.join(ROOT, CRON))) {
     fail(`${CRON} is missing — completed projects the trigger misses are never asked.`);

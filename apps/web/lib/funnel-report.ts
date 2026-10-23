@@ -20,6 +20,7 @@
  */
 import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
+import { CRON_EMAIL_MAX_ATTEMPTS } from '@/lib/email/cron-email-policy';
 import { BUSINESS_TIMEZONE, addDaysToKey, localDateKey } from '@/lib/booking/availability';
 import { FUNNEL_ORDER, type FunnelStage } from '@/lib/funnel-ledger';
 
@@ -118,7 +119,16 @@ export type ReportInput = {
   ledger: LedgerRow[];
   quoteRequestsCreated: number;
   appointmentsCreated: number;
-  recovery: { requested: number; confirmed: number; sent: number; converted: number };
+  recovery: {
+    requested: number;
+    confirmed: number;
+    sent: number;
+    converted: number;
+    /** Reminders that failed 5 times and were never sent (need attention). Aggregate only. */
+    couldNotBeSent: number;
+    /** Post-job review requests that failed 5 times and were never sent (need attention). Aggregate only. */
+    reviewRequestsCouldNotBeSent: number;
+  };
   assistant: { conversationsCreated: number; withLeadHandoff: number };
 };
 
@@ -168,6 +178,8 @@ export type FunnelReport = {
     confirmed: number;
     sent: number;
     converted: number;
+    couldNotBeSent: number;
+    reviewRequestsCouldNotBeSent: number;
     rates: { confirmed: number | null; sent: number | null; converted: number | null };
   };
   assistant: {
@@ -300,7 +312,7 @@ export type FunnelReportResponse = {
 /** The subset of the Prisma client the loader uses (lets a test pass a query-logging client). */
 type Client = Pick<
   typeof db,
-  'funnelEvent' | 'quoteRequest' | 'appointment' | 'quoteRecovery' | 'assistantConversation' | '$queryRaw'
+  'funnelEvent' | 'quoteRequest' | 'appointment' | 'quoteRecovery' | 'project' | 'assistantConversation' | '$queryRaw'
 >;
 
 export async function loadFunnelReport(
@@ -311,7 +323,7 @@ export async function loadFunnelReport(
   const from = windowStart(now, days);
   const range = { gte: from, lte: now };
 
-  const [ledgerRows, quoteRequestsCreated, appointmentsCreated, requested, confirmed, sent, converted, conversations, handoffRows] =
+  const [ledgerRows, quoteRequestsCreated, appointmentsCreated, requested, confirmed, sent, converted, couldNotBeSent, reviewRequestsCouldNotBeSent, conversations, handoffRows] =
     await Promise.all([
       client.funnelEvent.findMany({
         where: { occurredAt: range },
@@ -324,6 +336,11 @@ export async function loadFunnelReport(
       client.quoteRecovery.count({ where: { createdAt: range, confirmedAt: { not: null } } }),
       client.quoteRecovery.count({ where: { createdAt: range, sentAt: { not: null } } }),
       client.quoteRecovery.count({ where: { createdAt: range, convertedAt: { not: null } } }),
+      /* "Could not be sent": five failed provider attempts, never delivered. Counts only. */
+      client.quoteRecovery.count({ where: { createdAt: range, sentAt: null, convertedAt: null, sendAttempts: { gte: CRON_EMAIL_MAX_ATTEMPTS } } }),
+      client.project.count({
+        where: { status: 'COMPLETED', reviewRequestedAt: null, reviewEmailAttempts: { gte: CRON_EMAIL_MAX_ATTEMPTS }, updatedAt: range },
+      }),
       client.assistantConversation.count({ where: { createdAt: range } }),
       /* A conversation "handed off" when a lead was later captured against the
          same design id. Counts only: the join reads two ids and two timestamps. */
@@ -347,7 +364,7 @@ export async function loadFunnelReport(
     })),
     quoteRequestsCreated,
     appointmentsCreated,
-    recovery: { requested, confirmed, sent, converted },
+    recovery: { requested, confirmed, sent, converted, couldNotBeSent, reviewRequestsCouldNotBeSent },
     assistant: { conversationsCreated: conversations, withLeadHandoff: Number(handoffRows[0]?.n ?? 0) },
   });
 

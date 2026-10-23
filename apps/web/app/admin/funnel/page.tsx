@@ -142,8 +142,17 @@ export default async function FunnelPage({
             <tr><td>Confirmed (double opt-in)</td><td>{rec.confirmed}</td><td>{pct(rec.rates.confirmed)}</td></tr>
             <tr><td>Reminder sent</td><td>{rec.sent}</td><td>{pct(rec.rates.sent)}</td></tr>
             <tr><td>Converted</td><td>{rec.converted}</td><td>{pct(rec.rates.converted)}</td></tr>
+            <tr><td>Reminder could not be sent</td><td>{rec.couldNotBeSent}</td><td>—</td></tr>
+            <tr><td>Review request could not be sent</td><td>{rec.reviewRequestsCouldNotBeSent}</td><td>—</td></tr>
           </tbody>
         </table>
+        <p className="admin-sub">
+          &ldquo;Could not be sent&rdquo; counts messages the email provider refused five times in a row. They are not
+          retried any more and the person never received them, so a count above zero needs attention: usually the
+          sending domain or the email provider settings. Numbers only are shown here; the cause is in the server log
+          and in the row&rsquo;s last-error field. &ldquo;Reminder sent&rdquo; may include reminders recorded as sent
+          before this tracking existed that never left.
+        </p>
       </section>
 
       <section className="admin-card">

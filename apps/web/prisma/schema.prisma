@@ -284,8 +284,21 @@ model QuoteRecovery {
 
   /// When the visitor ticked the reminder box. No consent, no send. Ever.
   consentedAt DateTime @db.Timestamptz
-  /// Set once, when the single reminder goes out.
+  /// Set once, and ONLY after the provider accepted the single reminder. A
+  /// failed send leaves it null (see sendAttempts / sendLastError below).
+  /// LIMITATION: rows stamped by the earlier code (which wrote sentAt BEFORE
+  /// sending and never cleared it on failure) cannot be told apart from rows
+  /// that were genuinely sent.
   sentAt      DateTime? @db.Timestamptz
+  /// Delivery state for the reminder (lib/quote-recovery-delivery.ts), the same
+  /// lease design as Order.confirmationEmail*. Lease taken before the provider call.
+  sendLeaseUntil    DateTime? @db.Timestamptz
+  /// Attempts started; the row is exhausted (never retried) at 5.
+  sendAttempts      Int?
+  /// Backoff: no new attempt before this instant.
+  sendNextAttemptAt DateTime? @db.Timestamptz
+  /// Last failure, trimmed to 300 chars with email-address-looking text redacted.
+  sendLastError     String?   @db.VarChar(300)
   /// Set when this address submitted a real lead — cancels the reminder.
   convertedAt DateTime? @db.Timestamptz
   /// Double opt-in (CASL): set only when the owner of the mailbox clicks the
@@ -416,6 +429,12 @@ model Project {
   /// Stamped once, before the post-job review request is sent. One request per
   /// project, identical for every customer — see lib/review-request.ts.
   reviewRequestedAt DateTime? @db.Timestamptz
+  /// Failed review-request sends (the stamp above is released on failure).
+  /// Exhausted at 5 attempts; see lib/review-request.ts.
+  reviewEmailAttempts      Int?
+  reviewEmailNextAttemptAt DateTime? @db.Timestamptz
+  /// Last failure, trimmed to 300 chars with email-address-looking text redacted.
+  reviewEmailLastError     String?   @db.VarChar(300)
 
   /// MEAS-01 — copied forward from the QuoteRequest this project was converted
   /// from, so revenue joins to the design without a three-table hop.

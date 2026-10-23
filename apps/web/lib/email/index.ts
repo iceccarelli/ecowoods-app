@@ -772,13 +772,16 @@ export async function sendReviewRequestEmail({
   to,
   name,
   projectTitle,
+  idempotencyKey,
 }: {
   to: string;
   name: string;
   projectTitle: string;
+  /** Stable per project, so a retried attempt is de-duplicated by Resend. */
+  idempotencyKey?: string;
 }) {
   const { subject, html, text } = reviewRequestEmail({ name, projectTitle });
-  await sendEmail({ to, subject, html, text });
+  await sendEmail({ to, subject, html, text, ...(idempotencyKey ? { idempotencyKey } : {}) });
 }
 
 /**
