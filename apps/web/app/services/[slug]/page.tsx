@@ -665,6 +665,11 @@ export default async function ServiceDetailPage({
             existing one,{' '}
             <Link href="/hardwood-floor-refinishing-toronto">refinishing</Link>.
           </p>
+          <p className="tlx-note">
+            Booking for a condo corporation, a property manager or a commercial space? That work is
+            scheduled and documented differently:{' '}
+            <Link href="/commercial">commercial hardwood flooring for condo boards and property managers</Link>.
+          </p>
           {page.headTerm && (
             <p className="tlx-note">
               The Toronto-wide page for this work, with the wider context and the pricing basis:{' '}
