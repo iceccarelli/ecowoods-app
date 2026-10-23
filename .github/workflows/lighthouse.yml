@@ -25,3 +25,10 @@ jobs:
         run: |
           pnpm add -g @lhci/cli@0.14.x
           cd apps/web && lhci autorun
+      # Phones are where the estimate form is filled in. The desktop run above
+      # never saw the estimate path on a mobile profile or any per-metric
+      # budget; this run uses Lighthouse's default mobile emulation and only
+      # warns, so it measures without blocking.
+      - name: Run Lighthouse CI (mobile, warn-only)
+        continue-on-error: true
+        run: cd apps/web && lhci autorun --config=./lighthouserc.mobile.json
