@@ -36,6 +36,30 @@ vi.mock('@/lib/db', () => ({
     quoteRequest: { findFirst: async ({ where }: any) => h.quotes.find((q) => matches(q, where)) ?? null },
   },
 }));
+/* The cron's claim/selection are raw SQL on the DB clock (covered against real
+   PostgreSQL in cron-email-delivery.postgres.integration.test.ts); here they are
+   an in-memory twin of the same rules over the same rows. */
+const eligible = (r: Record<string, any>) =>
+  r.sentAt == null &&
+  r.convertedAt == null &&
+  r.confirmedAt != null &&
+  r.consentedAt != null &&
+  Date.now() - r.createdAt.getTime() >= 2 * 3600_000 &&
+  Date.now() - r.createdAt.getTime() <= 7 * 86_400_000 &&
+  (r.sendAttempts ?? 0) < 5 &&
+  !(r.sendLeaseUntil && r.sendLeaseUntil.getTime() > Date.now());
+vi.mock('@/lib/quote-recovery-store', () => ({
+  selectDueQuoteRecoveries: async () => h.rows.filter(eligible),
+  claimQuoteRecovery: async (id: string) => {
+    const r = h.rows.find((x) => x.id === id);
+    if (!r || !eligible(r)) return null;
+    r.sendLeaseUntil = new Date(Date.now() + 180_000);
+    r.sendAttempts = (r.sendAttempts ?? 0) + 1;
+    return r.sendAttempts as number;
+  },
+  recordQuoteRecoveryFailure: async () => undefined,
+  countExhaustedQuoteRecoveries: async () => 0,
+}));
 vi.mock('@/lib/rate-limit-durable', () => ({ enforceRateLimit: h.rl }));
 vi.mock('@/lib/email', () => ({
   sendQuoteRecoveryConfirmEmail: async (a: { to: string; confirmUrl: string }) => void h.sent.push(a),

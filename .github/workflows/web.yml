@@ -187,6 +187,7 @@ jobs:
           tests/paid-session-cases.postgres.integration.test.ts
           tests/funnel-report.postgres.integration.test.ts
           tests/payment-audit.postgres.integration.test.ts
+          tests/cron-email-delivery.postgres.integration.test.ts
           tests/quote-accepted-event.postgres.integration.test.ts
           tests/order-confirmation-outbox.postgres.integration.test.ts
           tests/payment-refund-correlation.postgres.integration.test.ts

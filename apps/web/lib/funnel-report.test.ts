@@ -17,7 +17,7 @@ const base = (ledger: LedgerRow[], over: Partial<ReportInput> = {}): ReportInput
   ledger,
   quoteRequestsCreated: 0,
   appointmentsCreated: 0,
-  recovery: { requested: 0, confirmed: 0, sent: 0, converted: 0 },
+  recovery: { requested: 0, confirmed: 0, sent: 0, converted: 0, couldNotBeSent: 0, reviewRequestsCouldNotBeSent: 0 },
   assistant: { conversationsCreated: 0, withLeadHandoff: 0 },
   ...over,
 });
@@ -142,10 +142,11 @@ describe('buildFunnelReport', () => {
 
   it('quote recovery and assistant figures are counts with honest rates', () => {
     const r = buildFunnelReport(base([], {
-      recovery: { requested: 10, confirmed: 4, sent: 2, converted: 1 },
+      recovery: { requested: 10, confirmed: 4, sent: 2, converted: 1, couldNotBeSent: 3, reviewRequestsCouldNotBeSent: 2 },
       assistant: { conversationsCreated: 8, withLeadHandoff: 2 },
     }));
     expect(r.quoteRecovery.rates).toEqual({ confirmed: 40, sent: 50, converted: 50 });
+    expect(r.quoteRecovery).toMatchObject({ couldNotBeSent: 3, reviewRequestsCouldNotBeSent: 2 });
     expect(r.assistant.handoffRate).toBe(25);
   });
 });
