@@ -135,6 +135,7 @@ run "verify:schema"       node scripts/verify-schema.mjs
 [ -f scripts/verify-markdown.mjs ] && run "verify:markdown" node scripts/verify-markdown.mjs
 [ -f scripts/verify-services.mjs ] && run "verify:services" node scripts/verify-services.mjs
 [ -f scripts/verify-cities.mjs ] && run "verify:cities" node scripts/verify-cities.mjs
+[ -f scripts/verify-area-overlap.mjs ] && run "verify:overlap" node scripts/verify-area-overlap.mjs
 [ -f scripts/verify-manifests.mjs ] && run "verify:manifests" node scripts/verify-manifests.mjs
 [ -f scripts/verify-assets.mjs ] && run "verify:assets" node scripts/verify-assets.mjs
 [ -f scripts/verify-entity.mjs ] && run "verify:entity" node scripts/verify-entity.mjs
