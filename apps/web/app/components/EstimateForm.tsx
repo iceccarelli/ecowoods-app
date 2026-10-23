@@ -400,7 +400,13 @@ export function EstimateForm({
   const areaSelect = (fieldName: string) => (
     <label className="ef-field">
       <span>Your area</span>
-      <select name={fieldName} defaultValue="" onFocus={onFirstInteraction}>
+      <select
+        name={fieldName}
+        defaultValue=""
+        onFocus={onFirstInteraction}
+        aria-invalid={errors[fieldName] ? true : undefined}
+        aria-describedby={errors[fieldName] ? `ef-err-${fieldName}-${source}` : undefined}
+      >
         <option value="" disabled>
           Choose your area
         </option>
@@ -410,7 +416,7 @@ export function EstimateForm({
           </option>
         ))}
       </select>
-      {errors[fieldName] && <em className="ef-err">{errors[fieldName]}</em>}
+      {errors[fieldName] && <em className="ef-err" id={`ef-err-${fieldName}-${source}`}>{errors[fieldName]}</em>}
     </label>
   );
 
@@ -622,6 +628,8 @@ export function EstimateForm({
             <input
               name="photos"
               type="file"
+              aria-invalid={errors.photos ? true : undefined}
+              aria-describedby={errors.photos ? `ef-pt-err-photos-${source}` : undefined}
               accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
               multiple
               onChange={(e) => void onPickPhotos(e.currentTarget.files)}
@@ -632,7 +640,7 @@ export function EstimateForm({
               </em>
             )}
             {photoNote && <em className="ef-err">{photoNote}</em>}
-            {errors.photos && <em className="ef-err">{errors.photos}</em>}
+            {errors.photos && <em className="ef-err" id={`ef-pt-err-photos-${source}`}>{errors.photos}</em>}
           </label>
 
           <div className="ef-row">
@@ -665,21 +673,21 @@ export function EstimateForm({
           <div className="ef-row">
             <label className="ef-field">
               <span>Name</span>
-              <input name="name" type="text" autoComplete="name" required placeholder="Jane Doe" />
-              {errors.name && <em className="ef-err">{errors.name}</em>}
+              <input name="name" aria-invalid={errors.name ? true : undefined} aria-describedby={errors.name ? `ef-pt-err-name-${source}` : undefined} type="text" autoComplete="name" required placeholder="Jane Doe" />
+              {errors.name && <em className="ef-err" id={`ef-pt-err-name-${source}`}>{errors.name}</em>}
             </label>
             <label className="ef-field">
               <span>Phone</span>
-              <input name="phone" type="tel" autoComplete="tel" required placeholder="(416) 555-0142" />
-              {errors.phone && <em className="ef-err">{errors.phone}</em>}
+              <input name="phone" aria-invalid={errors.phone ? true : undefined} aria-describedby={errors.phone ? `ef-pt-err-phone-${source}` : undefined} type="tel" autoComplete="tel" required placeholder="(416) 555-0142" />
+              {errors.phone && <em className="ef-err" id={`ef-pt-err-phone-${source}`}>{errors.phone}</em>}
             </label>
           </div>
 
           <div className="ef-row">
             <label className="ef-field">
               <span>Email</span>
-              <input name="email" type="email" autoComplete="email" required placeholder="jane@example.com" />
-              {errors.email && <em className="ef-err">{errors.email}</em>}
+              <input name="email" aria-invalid={errors.email ? true : undefined} aria-describedby={errors.email ? `ef-pt-err-email-${source}` : undefined} type="email" autoComplete="email" required placeholder="jane@example.com" />
+              {errors.email && <em className="ef-err" id={`ef-pt-err-email-${source}`}>{errors.email}</em>}
             </label>
             {areaSelect('area')}
           </div>
