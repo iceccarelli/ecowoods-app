@@ -70,10 +70,8 @@ jobs:
       # from its first commit with no second edit.
       - name: All guards (derived from package.json — nothing can be left out)
         run: node scripts/verify-all.mjs
-      - name: Guard self-tests (overlap metric and ratchet; generated area titles and descriptions)
-        run: |
-          node --test scripts/area-overlap.test.mjs scripts/article-path.test.mjs
-          node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs --test scripts/area-meta.test.mjs
+      - name: Guard self-tests (every scripts/*.test.mjs)
+        run: node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs --test scripts/*.test.mjs
 
   build:
     name: Typecheck & Build

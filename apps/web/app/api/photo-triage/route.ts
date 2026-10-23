@@ -13,6 +13,7 @@ import { storePhoto } from '@/lib/floor-graph/photo-storage';
 import { markRecoveryConverted } from '@/lib/quote-recovery';
 import { recordFunnelEvent, sanitiseSource } from '@/lib/funnel-ledger';
 import { acknowledgeLead } from '@/lib/lead-acknowledgement';
+import { leadBackTo } from '@/lib/lead-redirect';
 
 /**
  * POST /api/photo-triage — track B of the two-track quote form.
@@ -65,18 +66,8 @@ function triageId(): string {
 }
 
 /** Where to send a no-JS browser back to. Same-origin only. */
-function backTo(request: Request, ok: boolean): string {
-  const ref = request.headers.get('referer');
-  try {
-    const site = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca');
-    const u = new URL(ref ?? '/', site);
-    if (u.host !== site.host) return '/?sent=1';
-    u.searchParams.set(ok ? 'sent' : 'error', '1');
-    u.hash = 'quote';
-    return `${u.pathname}${u.search}${u.hash}`;
-  } catch {
-    return ok ? '/?sent=1' : '/?error=1';
-  }
+function backTo(request: Request, ok: boolean, source?: unknown): string {
+  return leadBackTo({ referer: request.headers.get('referer'), siteUrl: process.env.NEXT_PUBLIC_SITE_URL, ok, source, track: 'photos' });
 }
 
 export async function POST(request: Request) {
@@ -110,7 +101,7 @@ export async function POST(request: Request) {
   // Honeypot — accept silently so a bot cannot learn it was detected.
   if (fields.company?.trim()) {
     console.log(JSON.stringify({ event: 'photo_triage.honeypot', at: new Date().toISOString() }));
-    if (isFormPost) return NextResponse.redirect(new URL(backTo(request, true), request.url), 303);
+    if (isFormPost) return NextResponse.redirect(new URL(backTo(request, true, form.get('source')), request.url), 303);
     return NextResponse.json({ success: true, message: 'Photos received. We will call you back.' }, { status: 201 });
   }
 
@@ -137,7 +128,7 @@ export async function POST(request: Request) {
     }
     if (fileErrors.length) fieldErrors.photos = fileErrors.join(' ');
     if (isFormPost && !request.headers.get('accept')?.includes('application/json')) {
-      return NextResponse.redirect(new URL(backTo(request, false), request.url), 303);
+      return NextResponse.redirect(new URL(backTo(request, false, form.get('source')), request.url), 303);
     }
     return NextResponse.json(
       { success: false, message: 'Please check the highlighted fields.', fieldErrors },
@@ -347,7 +338,7 @@ export async function POST(request: Request) {
   }
 
   if (isFormPost && !request.headers.get('accept')?.includes('application/json')) {
-    return NextResponse.redirect(new URL(backTo(request, true), request.url), 303);
+    return NextResponse.redirect(new URL(backTo(request, true, fields.source), request.url), 303);
   }
   return NextResponse.json(
     {
