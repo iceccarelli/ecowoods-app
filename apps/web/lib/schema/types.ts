@@ -109,9 +109,10 @@ export interface Service extends SchemaBase {
   '@id': string;
   name: string;
   description: string;
-  areaServed: AreaServed | string;
+  areaServed: AreaServed | (AreaServedCity | AreaServedPlace)[] | string;
   offers?: Offer[];
-  provider?: Organization;
+  /** The organisation, in full or by `@id` reference. */
+  provider?: Organization | { '@id': string };
 }
 
 export interface Offer extends SchemaBase {
