@@ -385,7 +385,7 @@ export const ROOT_ORG_CONFIG: OrganizationConfig = {
     name: s.name,
     description: s.blurb,
     band: serviceBand(s.slug),
-    areaServed: GTA,
+    areaServed: CITIES.map((c) => placeForArea(c)),
   })),
   foundingYear: BUSINESS_NAP.foundedYear,
   // Francisco Oller owns this organisation — content/claims.ts workforce.francisco.

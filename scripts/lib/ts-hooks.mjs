@@ -39,3 +39,11 @@ export async function resolve(specifier, context, next) {
   }
   return next(specifier, context);
 }
+
+/** Image imports (next/image static imports) become a placeholder module: verifiers read registries, not pixels. */
+export async function load(url, context, next) {
+  if (/\.(jpe?g|png|webp|avif|gif|svg|ico)$/i.test(url)) {
+    return { format: 'module', shortCircuit: true, source: `export default ${JSON.stringify({ src: url, width: 1, height: 1 })};` };
+  }
+  return next(url, context);
+}

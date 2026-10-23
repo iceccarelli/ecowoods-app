@@ -73,7 +73,7 @@ jobs:
       - name: Guard self-tests (overlap metric and ratchet; generated area titles and descriptions)
         run: |
           node --test scripts/area-overlap.test.mjs
-          node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs --test scripts/area-meta.test.mjs
+          node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs --test scripts/area-meta.test.mjs scripts/schema-service.test.mjs
 
   build:
     name: Typecheck & Build

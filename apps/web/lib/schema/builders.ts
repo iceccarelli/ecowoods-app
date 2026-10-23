@@ -24,6 +24,7 @@ import type {
   GeoCoordinates,
   OpeningHoursSpecification,
   AreaServedCity,
+  AreaServedPlace,
   AreaServedRegion,
   Person,
   OfferCatalog,
@@ -102,7 +103,8 @@ export interface ServiceConfig {
   description: string;
   /** The published band behind this service, or undefined where none is published. */
   band?: PriceBand;
-  areaServed: string[];
+  /** Place nodes that name their province or state; see placeForArea. */
+  areaServed: (AreaServedCity | AreaServedPlace)[];
 }
 
 export function buildOrganization(config: OrganizationConfig): Organization {
@@ -257,7 +259,7 @@ export interface ServiceConfig2 {
   name: string;
   description: string;
   band?: PriceBand;
-  areaServed: string[];
+  areaServed: (AreaServedCity | AreaServedPlace)[];
   siteUrl: string;
 }
 
@@ -268,7 +270,14 @@ export function buildService(config: ServiceConfig2): Service {
     '@id': `${config.siteUrl}/services/${config.id}#service`,
     name: config.name,
     description: config.description,
-    areaServed: config.areaServed.map((name) => ({ '@type': 'City' as const, name })),
+    /* The same @id is emitted again by app/services/[slug]/page.tsx. The two
+       nodes must agree on everything they both say: this one used to carry bare
+       `{ "@type": "City", "name": "Brighton" }` entries (Brighton, Ontario or
+       Brighton, New York?) and no provider, the page carried place nodes with
+       their province or state and a provider. A consumer merging by @id got the
+       union with no way to choose. Places come from placeForArea, as on the page. */
+    areaServed: config.areaServed,
+    provider: { '@id': `${config.siteUrl}/#organization` },
     ...(config.band && {
       offers: [
         {
