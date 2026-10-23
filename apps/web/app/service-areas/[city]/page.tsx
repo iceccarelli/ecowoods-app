@@ -11,6 +11,7 @@ import { JobCardRail } from '../../components/JobCard';
 import { jobCardsForArea } from '@/content/job-cards';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
 import { MARKETS, marketBySlug, corridorsFor } from '@/lib/geo';
+import { areaDescription } from '@/lib/area-description';
 import { areaOpening } from '@/lib/opening-answers';
 import { guidesForArea, corridorLinkForArea, projectsForArea, areaPlacement } from '@/lib/area-groups';
 import { EstimateForm } from '@/app/components/EstimateForm';
@@ -35,23 +36,7 @@ export async function generateMetadata({ params }: { params: Promise<{ city: str
   const city = cityBySlug(slug);
   if (!city) return {};
   const title = pageTitle(city);
-  /* The description leads with what is TRUE OF THIS AREA rather than what is
-     true of all 32. `cityContent` is the only per-area copy on the page, so the
-     first clause of the snippet is the first thing that differs between them. */
-  const cc = cityContent(city.slug);
-  const localClause = cc ? cc.intro.split(/(?<=\.)\s/)[0] : '';
-  /* Fixed head and tail are never cut: the area name leads and the phone call
-     to action closes. Only the local clause flexes, at a word boundary. */
-  const head = `Dust-free hardwood refinishing and installation in ${areaDisplayName(city)}.`;
-  const tail = ` Fixed written estimates. Call ${BUSINESS.phoneDisplay}.`;
-  const room = 158 - head.length - tail.length - 1;
-  let local = '';
-  if (localClause.length <= room) local = localClause;
-  else if (room >= 50) {
-    const cut = localClause.slice(0, room - 1);
-    local = `${cut.slice(0, cut.lastIndexOf(' ')).replace(/[\s,;:—–-]+$/, '')}…`;
-  }
-  const description = `${head}${local ? ` ${local}` : ''}${tail}`;
+  const description = areaDescription(city);
   return {
     title,
     description,
