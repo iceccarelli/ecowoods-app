@@ -11,6 +11,7 @@ import {
   interiors,
   filmFor,
   stillById,
+  projectAddressLocality,
 } from '@/lib/projects';
 import { getTrilogy, TRILOGIES } from '@/lib/trilogies';
 import { trilogySlides } from '@/lib/trilogy-slides';
@@ -121,7 +122,7 @@ export default async function ProjectPage({
       '@type': 'Place',
       address: {
         '@type': 'PostalAddress',
-        addressLocality: project.location.neighbourhood,
+        addressLocality: projectAddressLocality(project.location),
         addressRegion: project.location.province,
         addressCountry: 'CA',
       },
