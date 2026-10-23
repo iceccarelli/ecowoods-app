@@ -70,6 +70,8 @@ jobs:
       # from its first commit with no second edit.
       - name: All guards (derived from package.json — nothing can be left out)
         run: node scripts/verify-all.mjs
+      - name: Guard self-tests (overlap metric and ratchet)
+        run: node --test scripts/area-overlap.test.mjs
 
   build:
     name: Typecheck & Build
