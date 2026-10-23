@@ -216,6 +216,16 @@ describe('summary and ordering', () => {
     expect(missingOrder).toEqual([...missingOrder].sort((a, b) => a - b));
   });
 
+  it('ANTHROPIC_API_KEY is important, because both conversational routes answer 503 without it', () => {
+    const item = evaluateConfig({}).items.find((i) => i.key === 'ANTHROPIC_API_KEY');
+    expect(item?.severity).toBe('important');
+    // The severity is only honest while the code really depends on the key.
+    for (const route of ['app/api/chat/route.ts', 'app/api/assistant/chat/route.ts']) {
+      const src = readFileSync(path.join(process.cwd().endsWith('apps/web') ? '.' : 'apps/web', route), 'utf8');
+      expect(src, `${route} must still guard on ANTHROPIC_API_KEY`).toMatch(/!process\.env\.ANTHROPIC_API_KEY/);
+    }
+  });
+
   it('does not throw on a hostile env object', () => {
     expect(() => countMissingCritical(null as never)).not.toThrow();
   });

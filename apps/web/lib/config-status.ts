@@ -178,7 +178,7 @@ export const CONFIG_REGISTRY: readonly ConfigSpec[] = [
   { key: 'NEXT_PUBLIC_SUPABASE_URL', group: 'Storage', severity: 'optional', breaks: 'Supabase Storage (PDF fallback, floor photos, assistant attachments) is unavailable.' },
   { key: 'SUPABASE_SERVICE_ROLE_KEY', group: 'Storage', severity: 'optional', breaks: 'Supabase Storage (PDF fallback, floor photos, assistant attachments) is unavailable.' },
   // ── Integrations ──
-  { key: 'ANTHROPIC_API_KEY', group: 'Integrations', severity: 'optional', breaks: 'The website chat and the assistant answer 503 "not configured".' },
+  { key: 'ANTHROPIC_API_KEY', group: 'Integrations', severity: 'important', breaks: 'The website chat and Ask Francisco answer 503 "not configured", so the site\'s conversational lead capture and booking are unavailable.' },
   { key: 'OPENAI_API_KEY', group: 'Integrations', severity: 'optional', breaks: 'AI-drafted replies to quotes and inquiries are not offered.' },
   { key: 'UNSPLASH_ACCESS_KEY', group: 'Integrations', severity: 'optional', breaks: 'Rotating background photos are not fetched; pages use their default imagery.' },
   { key: 'NEXT_PUBLIC_WHATSAPP_NUMBER', group: 'Integrations', severity: 'optional', breaks: 'The WhatsApp option in the exit-intent prompt is not shown.' },
