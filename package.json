@@ -52,7 +52,7 @@
     "verify:services": "node scripts/verify-services.mjs",
     "verify:cities": "node scripts/verify-cities.mjs",
     "verify:overlap": "node scripts/verify-area-overlap.mjs",
-    "test:scripts": "node --test scripts/area-overlap.test.mjs && node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs --test scripts/area-meta.test.mjs",
+    "test:scripts": "node --test scripts/area-overlap.test.mjs scripts/article-path.test.mjs && node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs --test scripts/area-meta.test.mjs",
     "verify:manifests": "node scripts/verify-manifests.mjs",
     "verify:assets": "node scripts/verify-assets.mjs",
     "verify:entity": "node scripts/verify-entity.mjs",
