@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { formatDate } from '@/lib/content/utils';
 import type { ArticleMetadata } from '@/lib/content/types';
 import type { RelatedContent } from '@/lib/graph/contentLinks';
+import { ArticleNextStep } from '@/app/components/ArticleNextStep';
 
 interface ArticleLayoutProps {
   metadata: ArticleMetadata & { readingTimeMinutes?: number };
@@ -53,6 +54,8 @@ export function ArticleLayout({ metadata, children, relatedContent }: ArticleLay
       <div className="tlx-section">
         <div className="shell">
           {children}
+
+          <ArticleNextStep />
 
           <aside className="tlx-about">
             <h3>About these guides</h3>

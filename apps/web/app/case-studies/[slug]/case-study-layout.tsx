@@ -9,6 +9,7 @@ import Link from 'next/link';
 import type { CaseStudyMetadata } from '@/lib/content/case-study-types';
 import type { RelatedContent } from '@/lib/graph/contentLinks';
 import { formatDate } from '@/lib/content/utils';
+import { ArticleNextStep } from '@/app/components/ArticleNextStep';
 import { ColorMatchFigure } from '@/app/components/ColorMatchFigure';
 
 interface CaseStudyLayoutProps {
@@ -98,6 +99,8 @@ export function CaseStudyLayout({ metadata, children, relatedContent, heroImageI
       <div className="tlx-section">
         <div className="shell">
           {children}
+
+          <ArticleNextStep />
 
           {relatedContent && relatedContent.length > 0 && (
             <section className="tlx-related" aria-label="Related content">
