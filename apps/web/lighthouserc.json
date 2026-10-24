@@ -6,7 +6,8 @@
       "url": [
         "http://localhost:3000/",
         "http://localhost:3000/service-areas",
-        "http://localhost:3000/service-areas/downtown-toronto"
+        "http://localhost:3000/service-areas/downtown-toronto",
+        "http://localhost:3000/estimate"
       ],
       "numberOfRuns": 3,
       "settings": { "preset": "desktop" }
