@@ -1,5 +1,7 @@
 name: Lighthouse CI
 on:
+  # Manual runs measure main without needing a pull request.
+  workflow_dispatch:
   pull_request:
     branches: [main]
     paths:
@@ -32,3 +34,10 @@ jobs:
       - name: Run Lighthouse CI (mobile, warn-only)
         continue-on-error: true
         run: cd apps/web && lhci autorun --config=./lighthouserc.mobile.json
+      # The assertion output names failed thresholds only; this prints the LCP
+      # element, heaviest requests and script time of the median run per URL so
+      # the numbers can be read from the log.
+      - name: Lighthouse measurements (median run per URL)
+        if: always()
+        continue-on-error: true
+        run: node scripts/lhci-summary.mjs apps/web/.lighthouseci
