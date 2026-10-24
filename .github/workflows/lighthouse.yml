@@ -50,6 +50,11 @@ jobs:
           NEXTAUTH_SECRET: lighthouse-ci-only-not-a-real-secret
           NEXTAUTH_URL: http://localhost:3000
         run: cd apps/web && lhci autorun --config=./lighthouserc.mobile.json
+      # Which client modules the heavy chunks named in the summary come from.
+      - name: Heaviest chunks, traced to source
+        if: always()
+        continue-on-error: true
+        run: node scripts/chunk-owners.mjs apps/web/.next 9061 18
       # The assertion output names failed thresholds only; this prints the LCP
       # element, heaviest requests and script time of the median run per URL so
       # the numbers can be read from the log.
