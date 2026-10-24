@@ -58,3 +58,17 @@ export const chapterCard = (project: Project, chapter: 1 | 2): ProjectStill | un
 
 export const filmFor = (project: Project, chapter: 1 | 2): ProjectFilm | undefined =>
   project.films.find((f) => f.chapter === chapter);
+
+/**
+ * `addressLocality` for a project's schema.org PostalAddress, or undefined.
+ *
+ * Some projects are recorded at region resolution on purpose (the owner
+ * has not agreed to a neighbourhood) and carry `neighbourhood: 'GTA'`. That is
+ * a region, not a locality, so emitting it as `addressLocality` is a false
+ * statement to a consumer. The locality is left out; the province still says
+ * where the job is.
+ */
+const REGION_NOT_LOCALITY = new Set(['gta', 'greater toronto area', 'southern ontario', 'ontario']);
+export function projectAddressLocality(location: { neighbourhood: string }): string | undefined {
+  return REGION_NOT_LOCALITY.has(location.neighbourhood.trim().toLowerCase()) ? undefined : location.neighbourhood;
+}
