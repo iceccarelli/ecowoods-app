@@ -10145,6 +10145,10 @@ a.lib-card--photo { cursor: pointer; }
   font-size: 1rem;
   line-height: 1;
   cursor: pointer;
+  /* 24px minimum target (WCAG 2.5.8); negative margin keeps the chip's size. */
+  min-width: 24px;
+  min-height: 24px;
+  margin: -4px;
   padding: 0 0.15rem;
 }
 .ef-design-chip-x:focus-visible { outline: 2px solid var(--copper-bright); outline-offset: 2px; }

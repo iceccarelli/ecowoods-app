@@ -123,6 +123,13 @@ export function EstimateForm({
     if (Object.keys(errors).length === 0) return;
     sectionRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
   }, [errors]);
+  /* The form unmounts on success, so keyboard focus would fall to <body> and a
+     screen reader would hear nothing (the live region mounts already filled).
+     Move focus to the confirmation heading instead. */
+  const doneHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  useEffect(() => {
+    if (state === 'sent') doneHeadingRef.current?.focus();
+  }, [state]);
   const startedRef = useRef(false);
   const viewedRef = useRef(false);
   const [bounced, setBounced] = useState(false);
@@ -385,8 +392,8 @@ export function EstimateForm({
 
   if (state === 'sent') {
     return (
-      <section className={`ef ef--done ${className}`.trim()} aria-live="polite">
-        <h2 className="ef-h">{sentTrack === 'photos' ? 'Photos received.' : 'Request received.'}</h2>
+      <section className={`ef ef--done ${className}`.trim()} id="estimate" aria-live="polite">
+        <h2 className="ef-h" ref={doneHeadingRef} tabIndex={-1}>{sentTrack === 'photos' ? 'Photos received.' : 'Request received.'}</h2>
         <p className="ef-intro">
           {sentTrack === 'photos'
             ? 'A senior estimator will look at the photos and call you back. Remember: this is a triage, not a quote — the fixed price is written after we measure the subfloor.'
