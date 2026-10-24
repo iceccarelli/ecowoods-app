@@ -27,24 +27,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { BANNED } from './lib/public-wording.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const WEB = path.join(ROOT, 'apps/web');
 
-export const BANNED = [
-  [/\bF-\d{2,3}\b/, 'audit finding reference'],
-  [/\bunproven\b/i, '"unproven"'],
-  [/\bwe cannot claim\b/i, '"we cannot claim"'],
-  [/\bnot finished\b/i, '"not finished"'],
-  [/\bpending[ -]verification\b/i, '"pending verification"'],
-  [/\bpending_key\b/, 'engineering status "pending_key"'],
-  [/\bNONE RECORDED\b/, '"NONE RECORDED"'],
-  [/\bNamed but not published\b/i, '"named but not published"'],
-  [/\bfenced (out|to)\b/i, 'engineering term "fenced"'],
-  [/\b(TODO|TBD|WIP|FIXME)\b/, 'to-do marker'],
-  [/\bplaceholder\b(?!\s*[=:'"])/i, '"placeholder"'],
-  [/\bsee audit\//i, 'audit-file reference'],
-];
 
 /**
  * Remove block, JSX and line comments while leaving string and template

@@ -230,7 +230,7 @@ export async function GET() {
   lines.push(`- Municipalities (each with its own page at ${SITE_URL}/service-areas/{slug}): ${CITIES.map((c) => areaDisplayName(c)).join(', ')}.`);
   lines.push(`- Districts and communities within a municipality (pages, not schema.org City nodes): ${DISTRICT_AREAS.map((c) => `${c.name} (${c.partOf})`).join(', ')}.`);
   lines.push(`- Toronto neighbourhoods (pages, not schema.org City nodes): ${NEIGHBOURHOOD_AREAS.map((c) => c.name).join(', ')}.`);
-  lines.push(`- Other locations are not part of the standard service area and are assessed per project through the estimate path: ${DISCOVERY.map((d) => d.name).join(', ')}.`);
+  lines.push(`- Outside the standard service area, assessed per project through the estimate path: ${DISCOVERY.map((d) => d.name).join(', ')}.`);
   lines.push('');
 
   /* ── Evidence ─────────────────────────────────────────────────────────── */

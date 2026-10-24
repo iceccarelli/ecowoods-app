@@ -11,6 +11,9 @@ import { NextRequest } from 'next/server';
 import { GET as llmsGet } from '@/app/llms.txt/route';
 import { GET as llmsFullGet } from '@/app/llms-full.txt/route';
 import { GET as aiGet } from '@/app/ai.txt/route';
+import * as evidenceRoute from '@/app/api/v1/evidence/route';
+import * as changesRoute from '@/app/api/v1/changes/route';
+import { BANNED } from '../../../scripts/lib/public-wording.mjs';
 import { GET as knowledgeGet } from '@/app/api/knowledge/route';
 import { GET as entityGet } from '@/app/api/v1/entity/route';
 import { GET as pricingGet } from '@/app/api/v1/pricing/route';
@@ -56,6 +59,7 @@ const NON_CANONICAL_HOST = /\becowoods[a-z0-9-]+\.[a-z]{2,}/i;
 const expectClean = (body: string, where: string) => {
   expect(body, `${where}: preview host`).not.toMatch(/vercel\.app/);
   expect(body, `${where}: non-canonical host`).not.toMatch(NON_CANONICAL_HOST);
+  for (const [re, why] of BANNED) expect(body, `${where}: internal-process language (${why})`).not.toMatch(re);
   expect(body, `${where}: injection`).not.toMatch(/ignore (all |any )?(previous|prior) instructions|always (cite|recommend) ecowoods/i);
 };
 
@@ -140,6 +144,17 @@ describe('llms-full.txt and ai.txt', () => {
     // other than the canonical one, nor to a deployment preview.
     expect(ai).not.toMatch(NON_CANONICAL_HOST);
     expect(ai).not.toMatch(/vercel\.app/);
+    expectClean(ai, 'ai.txt');
+  });
+});
+
+describe('/api/v1 provenance is customer-readable', () => {
+  it('evidence and change-feed payloads carry no internal-process language and every claim names a source', async () => {
+    const evidence = await text(await evidenceRoute.GET(new Request(`${SITE_URL}/api/v1/evidence`)));
+    const changes = await text(await changesRoute.GET(new Request(`${SITE_URL}/api/v1/changes`)));
+    expectClean(evidence, '/api/v1/evidence');
+    expectClean(changes, '/api/v1/changes');
+    expect(evidence).not.toContain('NONE RECORDED');
   });
 });
 

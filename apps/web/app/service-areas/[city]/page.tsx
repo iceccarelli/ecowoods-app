@@ -73,6 +73,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
   const city = cityBySlug(slug);
   if (!city) notFound();
   const url = `${SITE_URL}/service-areas/${city.slug}`;
+  const coverageTruth = marketBySlug(city.slug)?.operationalTruth;
   /* What this page is about, typed as what it is: a City node for the sixteen
      municipalities, a Place inside Toronto for the sixteen neighbourhoods.
      Rosedale is not a city (F-157), and this page used to say it was — in the
@@ -207,6 +208,11 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
 
           {/* Who, what, where, what it costs and the next step, from the registries. */}
           <p className="area-opening" style={{ maxWidth: '48rem', marginTop: '1rem', lineHeight: 1.7 }}>{areaOpening(city)}</p>
+          {coverageTruth?.verifiedAt && coverageTruth.verifiedBy && (
+            <p style={{ maxWidth: '48rem', marginTop: '0.5rem', fontSize: '0.85rem', opacity: 0.75 }}>
+              Coverage last confirmed by the owner on <time dateTime={coverageTruth.verifiedAt}>{coverageTruth.verifiedAt}</time>.
+            </p>
+          )}
 
           {/* THE FIRST 200 WORDS ARE THIS AREA'S, NOT THE TEMPLATE'S.
               This paragraph used to be one shared sentence pair with the city

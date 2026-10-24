@@ -13,6 +13,7 @@ import {
   type PriceBandKey,
 } from '@/content/constants/pricing';
 import { PRICE_PROMISE } from '@/lib/pricing';
+import { claimById } from '@/content/claims';
 import { SITE_URL, FAQ_ITEMS } from '@/lib/seo-data';
 import { getServicePages, serviceFor, priceLabel } from '@/lib/service-pages';
 import { getGuide } from '@/lib/guides';
@@ -124,6 +125,16 @@ function BandRow({ id, price }: { id: string; price: PricePrimitive }) {
   );
 }
 
+/** The oldest confirmation date across a country's published bands, so the line never claims more than its stalest band. */
+function oldestConfirmation(ids: string[]): string | undefined {
+  const dates = ids.map((id) => claimById(id)?.verifiedAt);
+  return dates.every(Boolean) ? (dates as string[]).sort()[0] : undefined;
+}
+const bandsConfirmed = {
+  ca: oldestConfirmation(['pricing.screenAndRecoat', 'pricing.fullSandAndFinish', 'pricing.newInstall']),
+  us: oldestConfirmation(['pricing.us.screenAndRecoat', 'pricing.us.fullSandAndFinish', 'pricing.us.newInstall']),
+};
+
 export default async function PricingPage() {
   const reg = await getRegistry();
   const priceFor = (key: PriceBandKey, currency: 'CAD' | 'USD' = 'CAD'): PricePrimitive => {
@@ -197,6 +208,12 @@ export default async function PricingPage() {
             crossing already inside them. A band is an informational range, not a quote. The fixed price is
             written after a free in-home measure, and it does not move afterwards.
           </p>
+          {bandsConfirmed.ca && bandsConfirmed.us && (
+            <p className="tlx-note">
+              Bands last confirmed by the owner: Ontario (CAD) <time dateTime={bandsConfirmed.ca}>{bandsConfirmed.ca}</time>
+              ; New York State (USD) <time dateTime={bandsConfirmed.us}>{bandsConfirmed.us}</time>.
+            </p>
+          )}
         </div>
       </header>
 
