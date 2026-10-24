@@ -726,7 +726,7 @@ export const areasHubToMarkdown = (): string => {
     `Homeowners, condominium owners and property managers across ${TERRITORY}: ` +
       `${PUBLISHED_PARTITION.total} published service areas, each with its own page.`,
     '',
-    `Named but not published — assessed per project through the estimate path, and not claimed as covered: ` +
+    `Other locations are not part of the standard service area and are assessed per project through the estimate path: ` +
       `${DISCOVERY.map((d) => d.name).join(', ')}.`,
     '',
     '## What does not change by area',

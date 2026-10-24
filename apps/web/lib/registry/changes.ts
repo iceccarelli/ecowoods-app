@@ -58,6 +58,8 @@ export async function buildChanges(): Promise<ChangeEvent[]> {
   }
 
   for (const c of CLAIMS) {
+    // Only claims published to machines belong in the public change feed.
+    if (!c.allowedContexts.includes('machine') || !c.publicSource) continue;
     const kind: ChangeKind = c.id.startsWith('pricing.')
       ? 'price_verified'
       : c.id === 'business.phone' || c.id === 'business.address'
@@ -74,7 +76,7 @@ export async function buildChanges(): Promise<ChangeEvent[]> {
       subject_id: `evidence:claim:${c.id}`,
       title: c.statement,
       url: kind === 'price_verified' ? abs('/pricing') : abs('/about'),
-      note: c.status === 'unsourced' ? 'Published without a recorded source; fenced out of schema.' : c.source,
+      note: c.publicSource,
     });
   }
 

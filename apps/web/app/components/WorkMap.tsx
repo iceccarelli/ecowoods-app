@@ -127,7 +127,7 @@ export function WorkMap() {
           {totalSqft.toLocaleString('en-CA')} sq ft. Each dot is a{' '}
           <strong>neighbourhood centroid, not an address</strong> — these were people&rsquo;s homes,
           and where someone lives is theirs, not ours to publish.
-          {!COORDS_VERIFIED && ' Centroids are approximate and are deliberately not published as structured data.'}
+          {!COORDS_VERIFIED && ' Locations are approximate.'}
         </figcaption>
       </figure>
 

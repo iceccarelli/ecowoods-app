@@ -15,6 +15,7 @@
     "verify:hygiene": "node scripts/verify-repo-hygiene.mjs",
     "verify:hooks": "node scripts/verify-hooks.mjs",
     "verify:facts": "node scripts/verify-business-facts.mjs",
+    "verify:wording": "node scripts/verify-public-wording.mjs",
     "verify:migrations": "node scripts/verify-migrations.mjs",
     "verify:floorgraph": "node scripts/verify-floor-graph.mjs",
     "verify:a11y": "node scripts/verify-a11y.mjs",

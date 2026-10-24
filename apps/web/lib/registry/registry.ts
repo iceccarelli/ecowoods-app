@@ -548,7 +548,7 @@ export async function buildEvidence(): Promise<EvidencePrimitive[]> {
 
   // Claims the business publishes for machines, each with its own source and date.
   for (const c of CLAIMS) {
-    if (!c.allowedContexts.includes('machine')) continue;
+    if (!c.allowedContexts.includes('machine') || !c.publicSource) continue;
     out.push({
       id: `evidence:claim:${c.id}`,
       type: 'Evidence',
@@ -563,8 +563,8 @@ export async function buildEvidence(): Promise<EvidencePrimitive[]> {
         value: c.value,
       },
       canonical_url: c.id.startsWith('pricing.') ? abs('/pricing') : c.id.startsWith('reviews.') ? abs('/reviews') : abs('/about'),
-      source: { type: c.id === 'reviews.homestars' ? 'review_platform' : 'first_party', url: c.id === 'reviews.homestars' ? HOMESTARS_CANONICAL.reviewsUrl : abs('/about'), name: c.source },
-      provenance: { verified_at: c.verifiedAt, method: c.status === 'derived' ? 'derived' : 'owner_confirmed', claim_ids: [c.id], note: c.note },
+      source: { type: c.id === 'reviews.homestars' ? 'review_platform' : 'first_party', url: c.id === 'reviews.homestars' ? HOMESTARS_CANONICAL.reviewsUrl : abs('/about'), name: c.publicSource },
+      provenance: { verified_at: c.verifiedAt, method: c.status === 'derived' ? 'derived' : 'owner_confirmed', claim_ids: [c.id], note: c.publicNote },
       status: claimStatus(c),
     });
   }

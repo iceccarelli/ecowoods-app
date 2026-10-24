@@ -198,7 +198,7 @@ export async function GET() {
   link(
     `${WORKSPACE_ASSISTANT.name} — home renovation costs and value`,
     '/assistant',
-    'whole-home renovation decision workspace with Francisco Oller: structured conversation updates project state and cards; which work moves value near your house, what it costs, and when hardwood is next Ecowoods can measure and bid. Other trades: sourced ranges or honest pending_key — we do not install them. Separate from the corner EcowoodsGuide chat widget.',
+    'whole-home renovation decision workspace with Francisco Oller: structured conversation updates project state and cards; which work moves value near your house, what it costs, and when hardwood is next Ecowoods can measure and bid. Other trades: shown only where a sourced cost range exists, and Ecowoods does not install them. Separate from the corner EcowoodsGuide chat widget.',
   );
   link(
     'Seasonal movement calculator',
@@ -230,7 +230,7 @@ export async function GET() {
   lines.push(`- Municipalities (each with its own page at ${SITE_URL}/service-areas/{slug}): ${CITIES.map((c) => areaDisplayName(c)).join(', ')}.`);
   lines.push(`- Districts and communities within a municipality (pages, not schema.org City nodes): ${DISTRICT_AREAS.map((c) => `${c.name} (${c.partOf})`).join(', ')}.`);
   lines.push(`- Toronto neighbourhoods (pages, not schema.org City nodes): ${NEIGHBOURHOOD_AREAS.map((c) => c.name).join(', ')}.`);
-  lines.push(`- Named but not published — assessed per project through the estimate path: ${DISCOVERY.map((d) => d.name).join(', ')}.`);
+  lines.push(`- Other locations are not part of the standard service area and are assessed per project through the estimate path: ${DISCOVERY.map((d) => d.name).join(', ')}.`);
   lines.push('');
 
   /* ── Evidence ─────────────────────────────────────────────────────────── */

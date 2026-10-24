@@ -46,8 +46,16 @@ export type Claim = {
   /** ISO date a human last confirmed `source` still says `value`. */
   verifiedAt: string;
   allowedContexts: ClaimContext[];
-  /** Anything the next person needs to know before touching it. */
+  /** Anything the next person needs to know before touching it. Internal: never published. */
   note?: string;
+  /**
+   * Customer-readable provenance, in plain language. Required on every claim
+   * allowed in the `machine` context: /api/v1 and the other machine surfaces
+   * publish this, never `source` or `note`, which are engineering notes.
+   */
+  publicSource?: string;
+  /** Optional customer-readable qualifier published beside `publicSource`. */
+  publicNote?: string;
 };
 
 export const CLAIMS: Claim[] = [
@@ -58,6 +66,7 @@ export const CLAIMS: Claim[] = [
     value: BUSINESS_NAP.foundedYear,
     status: 'verified',
     source: 'Owner-confirmed (Francisco). BUSINESS_NAP.foundedYear.',
+    publicSource: 'Confirmed by the owner.',
     verifiedAt: '2026-08-22',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
     note: 'Every year count derives from this value; verify-business-facts.mjs bans stale literals.',
@@ -67,6 +76,7 @@ export const CLAIMS: Claim[] = [
     statement: 'Years in business, computed from the founding year at render time.',
     status: 'derived',
     source: 'yearsInBusiness() in @ecowoods/shared/constants.',
+    publicSource: 'Calculated from the founding year.',
     verifiedAt: '2026-08-22',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
     note: 'Never write a year count as a literal — it is wrong every January.',
@@ -77,6 +87,7 @@ export const CLAIMS: Claim[] = [
     value: BUSINESS_NAP.legalName,
     status: 'verified',
     source: 'Ontario corporate registration. BUSINESS_NAP.legalName.',
+    publicSource: 'Ontario corporate registration.',
     verifiedAt: '2026-08-22',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
   },
@@ -86,6 +97,7 @@ export const CLAIMS: Claim[] = [
     value: BUSINESS_NAP.phoneDisplay,
     status: 'verified',
     source: 'BUSINESS_NAP.phoneDisplay — the single source for every surface.',
+    publicSource: 'Business contact details published at /contact.',
     verifiedAt: '2026-08-22',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
     note:
@@ -96,6 +108,7 @@ export const CLAIMS: Claim[] = [
     statement: `${BUSINESS_NAP.address.streetAddress}, ${BUSINESS_NAP.address.addressLocality}, ${BUSINESS_NAP.address.addressRegion} ${BUSINESS_NAP.address.postalCode}`,
     status: 'verified',
     source: 'BUSINESS_NAP.address.',
+    publicSource: 'Business contact details published at /contact.',
     verifiedAt: '2026-08-22',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
   },
@@ -107,6 +120,7 @@ export const CLAIMS: Claim[] = [
     value: formatBand(SCREEN_RECOAT),
     status: 'verified',
     source: 'Owner-published service band. content/constants/pricing.ts → SCREEN_RECOAT.',
+    publicSource: 'Service band set by the owner and published at /pricing.',
     verifiedAt: '2026-08-24',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
   },
@@ -116,6 +130,7 @@ export const CLAIMS: Claim[] = [
     value: formatBand(FULL_SAND_FINISH),
     status: 'verified',
     source: 'Owner-published service band. content/constants/pricing.ts → FULL_SAND_FINISH.',
+    publicSource: 'Service band set by the owner and published at /pricing.',
     verifiedAt: '2026-08-24',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
   },
@@ -125,6 +140,7 @@ export const CLAIMS: Claim[] = [
     value: formatBand(NEW_INSTALL),
     status: 'verified',
     source: 'Owner-published service band. content/constants/pricing.ts → NEW_INSTALL.',
+    publicSource: 'Service band set by the owner and published at /pricing.',
     verifiedAt: '2026-08-24',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
   },
@@ -139,6 +155,7 @@ export const CLAIMS: Claim[] = [
     value: formatBand(US_SCREEN_RECOAT),
     status: 'verified',
     source: 'Owner-published service band for New York State, set 2026-09-11 (docs/GEO_SOURCE_MAP.md, decision D6). content/constants/pricing.ts → US_SCREEN_RECOAT.',
+    publicSource: 'Service band for New York State set by the owner on 2026-09-11 and published at /pricing.',
     verifiedAt: '2026-09-11',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
   },
@@ -148,6 +165,7 @@ export const CLAIMS: Claim[] = [
     value: formatBand(US_FULL_SAND_FINISH),
     status: 'verified',
     source: 'Owner-published service band for New York State, set 2026-09-11 (docs/GEO_SOURCE_MAP.md, decision D6). content/constants/pricing.ts → US_FULL_SAND_FINISH.',
+    publicSource: 'Service band for New York State set by the owner on 2026-09-11 and published at /pricing.',
     verifiedAt: '2026-09-11',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
   },
@@ -157,6 +175,7 @@ export const CLAIMS: Claim[] = [
     value: formatBand(US_NEW_INSTALL),
     status: 'verified',
     source: 'Owner-published service band for New York State, set 2026-09-11 (docs/GEO_SOURCE_MAP.md, decision D6). content/constants/pricing.ts → US_NEW_INSTALL.',
+    publicSource: 'Service band for New York State set by the owner on 2026-09-11 and published at /pricing.',
     verifiedAt: '2026-09-11',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
   },
@@ -166,6 +185,7 @@ export const CLAIMS: Claim[] = [
       'The price is fixed in writing after the free in-home estimate and does not move afterwards.',
     status: 'verified',
     source: 'Contract terms. Enforced in the quote and contract PDF templates.',
+    publicSource: 'Contract terms in the written quote.',
     verifiedAt: '2026-08-24',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
   },
@@ -177,6 +197,7 @@ export const CLAIMS: Claim[] = [
       `The crews are salaried employees of ${BUSINESS_NAP.legalName}. No subcontractors.`,
     status: 'verified',
     source: 'Owner-confirmed employment structure. Published at /team.',
+    publicSource: 'Confirmed by the owner and published at /team.',
     verifiedAt: '2026-08-22',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
   },
@@ -194,6 +215,8 @@ export const CLAIMS: Claim[] = [
       'Owner-confirmed (Francisco), authorised for publication 2026-09-18. Same attribution already used ' +
       'at claims.ts business.founded. The ownership fact itself was confirmed directly, in writing, by the ' +
       'account directing this repository on 2026-09-18.',
+    publicSource: 'Confirmed in writing by the owner and authorised for publication on 2026-09-18.',
+    publicNote: 'Ownership and trade scope only. See /team.',
     verifiedAt: '2026-09-18',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
     note:
@@ -212,6 +235,8 @@ export const CLAIMS: Claim[] = [
     value: PRIMARY_REVIEW_EVIDENCE.count,
     status: 'verified',
     source: `${PRIMARY_REVIEW_EVIDENCE.href} — read by a person on ${PRIMARY_REVIEW_EVIDENCE.asOf}.`,
+    publicSource: `${PRIMARY_REVIEW_EVIDENCE.platform} reviews page for Ecowoods (${PRIMARY_REVIEW_EVIDENCE.href}), read by a person on ${PRIMARY_REVIEW_EVIDENCE.asOf}.`,
+    publicNote: 'A third-party rating, shown at /reviews with its source and date.',
     verifiedAt: PRIMARY_REVIEW_EVIDENCE.asOf,
     allowedContexts: ['editorial', 'marketing', 'faq', 'machine'],
     note:
@@ -227,6 +252,8 @@ export const CLAIMS: Claim[] = [
     value: SERVICE_AREAS.length,
     status: 'derived',
     source: 'SERVICE_AREAS.length in lib/seo-data.ts.',
+    publicSource: 'Service area list published at /service-areas.',
+    publicNote: `${CITIES.length} municipalities, ${DISTRICT_AREAS.length} districts and communities within a municipality, and ${NEIGHBOURHOOD_AREAS.length} Toronto neighbourhoods, each with its own page.`,
     verifiedAt: '2026-08-24',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine'],
     note: `${CITIES.length} municipalities + ${DISTRICT_AREAS.length} districts and communities within a municipality + ${NEIGHBOURHOOD_AREAS.length} Toronto neighbourhoods. Only the municipalities become schema City nodes (F-157).`,
@@ -242,6 +269,8 @@ export const CLAIMS: Claim[] = [
     source:
       'Equipment specification (HEPA-sealed Festool / Bona extraction) and the ' +
       'stay-at-home outcome recorded in every published case study.',
+    publicSource: 'Equipment specification (HEPA-sealed Festool and Bona extraction) and the stay-at-home outcome recorded in the published case studies.',
+    publicNote: 'Based on the equipment used and the outcome recorded in each case study.',
     verifiedAt: '2026-08-24',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
     note:
@@ -291,6 +320,8 @@ export const CLAIMS: Claim[] = [
     source:
       'Particle counts recorded in the published case studies: Forest Hill (600/cm³), ' +
       'Distillery District (680/cm³), Yorkville (650/cm³), Midtown (620/cm³).',
+    publicSource: 'Particle counts recorded in the published case studies: Forest Hill (600/cm³), Distillery District (680/cm³), Yorkville (650/cm³), Midtown (620/cm³).',
+    publicNote: 'Measured end-of-job particle counts from the published case studies.',
     verifiedAt: '2026-08-24',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
     note: 'This is the figure the evidence supports. Prefer it over method.dustCapturePct everywhere.',
@@ -375,6 +406,7 @@ export const CLAIMS: Claim[] = [
       'apply to any contractor in the GTA including Ecowoods.',
     status: 'derived',
     source: 'lib/framework.ts — FRAMEWORK_VERSION, PILLARS, criterionCount().',
+    publicSource: 'Published at /standards. Version and criterion counts are calculated from the framework itself.',
     verifiedAt: '2026-08-24',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
     note: 'Pillar and criterion counts are computed. Never write either as a literal.',
@@ -386,6 +418,8 @@ export const CLAIMS: Claim[] = [
     source:
       'Deliberate absence. An NWFA/IHSCA claim was published in a static llms.txt ' +
       'and removed as unsupported (F-23). /about.md publishes what is NOT claimed.',
+    publicSource: 'Ecowoods holds and publishes no trade-body certification.',
+    publicNote: 'No certification is claimed.',
     verifiedAt: '2026-08-24',
     allowedContexts: ['editorial', 'marketing', 'faq', 'schema', 'machine', 'document'],
     note: 'Do not add a certification here without the certificate number and issuer.',
