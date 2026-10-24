@@ -19,7 +19,10 @@ export function summarise(lhr) {
   const items = (id) => a[id]?.details?.items ?? [];
   const kb = (n) => `${Math.round((n ?? 0) / 1024)} kB`;
   const short = (u) => String(u).replace(/^https?:\/\/[^/]+/, '').slice(0, 90);
-  const lcpNode = items('largest-contentful-paint-element')[0]?.items?.[0]?.node;
+  const lcpNode =
+    items('largest-contentful-paint-element')[0]?.items?.[0]?.node ??
+    findNode(a['lcp-breakdown-insight']?.details) ??
+    findNode(a['lcp-discovery-insight']?.details);
   return {
     url: lhr.finalDisplayedUrl ?? lhr.requestedUrl,
     performance: lhr.categories?.performance?.score ?? null,
@@ -41,8 +44,46 @@ export function summarise(lhr) {
         .filter((r) => r.statusCode >= 400)
         .map((r) => `${r.statusCode}  ${short(r.url)}`),
     ),
+    lcp_phases: lcpPhases(a['lcp-breakdown-insight']?.details),
+    failing_audits: failingAudits(lhr),
     render_blocking: items('render-blocking-resources').map((r) => `${kb(r.totalBytes)}  ${short(r.url)}`),
   };
+}
+
+/** First DOM node described anywhere inside an audit's details (the report layout differs by Lighthouse version). */
+function findNode(v) {
+  if (!v || typeof v !== 'object') return undefined;
+  if (v.type === 'node' && (v.nodeLabel || v.snippet)) return v;
+  for (const child of Array.isArray(v) ? v : Object.values(v)) {
+    const hit = findNode(child);
+    if (hit) return hit;
+  }
+  return undefined;
+}
+
+/** The LCP time split into its phases, where the report carries it. */
+function lcpPhases(details) {
+  const rows = (details?.items ?? []).flatMap((i) => (i?.type === 'table' ? i.items ?? [] : [i]));
+  const parts = rows
+    .filter((r) => r && typeof r === 'object' && r.label && typeof r.duration === 'number')
+    .map((r) => `${r.label}: ${Math.round(r.duration)} ms`);
+  return parts.length ? parts : null;
+}
+
+/** Performance audits that did not pass, worst first, with Lighthouse's own estimate of what fixing each saves. */
+function failingAudits(lhr) {
+  const refs = lhr.categories?.performance?.auditRefs ?? [];
+  return refs
+    .map((ref) => ({ id: ref.id, audit: lhr.audits?.[ref.id] }))
+    .filter(({ audit }) => audit && audit.score !== null && audit.score !== undefined && audit.score < 0.9 && audit.scoreDisplayMode !== 'informative')
+    .map(({ id, audit }) => {
+      const sav = audit.metricSavings ?? {};
+      const saved = ['LCP', 'TBT'].filter((k) => sav[k]).map((k) => `${k} -${Math.round(sav[k])}`).join(', ');
+      return { id, weight: (sav.LCP ?? 0) + (sav.TBT ?? 0), line: `${id}${audit.displayValue ? ` (${audit.displayValue})` : ''}${saved ? `  saves ${saved}` : ''}` };
+    })
+    .sort((x, y) => y.weight - x.weight)
+    .slice(0, 10)
+    .map((x) => x.line);
 }
 
 /** One line per distinct failure, with a count when it repeats ("429  /x  ×94"). */
