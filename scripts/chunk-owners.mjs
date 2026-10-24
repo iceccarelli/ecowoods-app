@@ -28,12 +28,14 @@ const owners = new Map(ids.map((id) => [id, new Set()]));
 let read = 0;
 for (const file of manifests(root)) {
   const src = fs.readFileSync(file, 'utf8');
-  const start = src.indexOf('= {');
-  if (start < 0) continue;
+  // globalThis.__RSC_MANIFEST["/page"]={...} — the object runs to the end of the file.
+  const head = /__RSC_MANIFEST\["[^"]*"\]\s*=\s*/.exec(src);
+  if (!head) continue;
   let manifest;
   try {
-    manifest = JSON.parse(src.slice(start + 2).replace(/;\s*$/, ''));
-  } catch {
+    manifest = JSON.parse(src.slice(head.index + head[0].length).replace(/;\s*$/, ''));
+  } catch (e) {
+    console.log(`could not parse ${path.relative(dir, file)}: ${e.message}`);
     continue;
   }
   read++;
