@@ -6,6 +6,8 @@ on:
     branches: [main]
     paths:
       - "apps/web/**"
+      - "public/**"
+      - "vercel.json"
 jobs:
   lighthouse:
     runs-on: ubuntu-latest
@@ -23,7 +25,18 @@ jobs:
         env:
           # Build needs a DB URL for prisma generate; a dummy is fine for static build.
           DATABASE_URL: "postgresql://user:pass@localhost:5432/db"
+      # Production serves the repo-root public/ (vercel.json copies
+      # apps/web/public into it at build); `next start` serves only
+      # apps/web/public. Without this, /brand/*, /qr-app.jpg and
+      # /review-card.svg are 404s here and every page downloads the 404 page
+      # instead, which distorted transfer size and LCP.
+      - name: Mirror production static files
+        run: cp -Rn public/. apps/web/public/  # -n: apps/web/public wins a name clash, as in vercel.json
       - name: Run Lighthouse CI
+        env:
+          # Auth.js answers /api/auth/session with 500 when it has no secret.
+          NEXTAUTH_SECRET: lighthouse-ci-only-not-a-real-secret
+          NEXTAUTH_URL: http://localhost:3000
         run: |
           pnpm add -g @lhci/cli@0.14.x
           cd apps/web && lhci autorun
@@ -33,6 +46,9 @@ jobs:
       # warns, so it measures without blocking.
       - name: Run Lighthouse CI (mobile, warn-only)
         continue-on-error: true
+        env:
+          NEXTAUTH_SECRET: lighthouse-ci-only-not-a-real-secret
+          NEXTAUTH_URL: http://localhost:3000
         run: cd apps/web && lhci autorun --config=./lighthouserc.mobile.json
       # The assertion output names failed thresholds only; this prints the LCP
       # element, heaviest requests and script time of the median run per URL so

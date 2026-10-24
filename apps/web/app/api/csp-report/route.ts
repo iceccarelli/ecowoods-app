@@ -33,7 +33,10 @@ export async function POST(request: Request) {
   // Generous enough for a page that genuinely violates several directives at
   // once, tight enough that this cannot be used as a log-flooding tool.
   const rl = checkRateLimit(`csp:${getClientIp(request)}`, { windowMs: 60_000, maxRequests: 30 });
-  if (!rl.allowed) return new NextResponse(null, { status: 429 });
+  // Over the limit the report is dropped, not refused: a 429 is a failed
+  // request the browser logs against the page (and Lighthouse counts), and
+  // the browser would not retry it anyway. 204 sheds the load identically.
+  if (!rl.allowed) return new NextResponse(null, { status: 204 });
 
   try {
     const raw = await request.text();
