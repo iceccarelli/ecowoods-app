@@ -1146,10 +1146,12 @@ p {
      stays legible over pale floorboards. */
   background-image:
     linear-gradient(180deg, rgba(26, 15, 8, 0.15) 0%, transparent 30%, rgba(26, 15, 8, 0.45) 100%),
-    linear-gradient(90deg, rgba(26, 15, 8, 0.84) 0%, rgba(26, 15, 8, 0.66) 38%, rgba(26, 15, 8, 0.32) 72%, rgba(26, 15, 8, 0.5) 100%),
-    url('https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?auto=format&fit=crop&w=2400&q=80');
-  background-size: cover;
-  background-position: center;
+    linear-gradient(90deg, rgba(26, 15, 8, 0.84) 0%, rgba(26, 15, 8, 0.66) 38%, rgba(26, 15, 8, 0.32) 72%, rgba(26, 15, 8, 0.5) 100%);
+  /* No photograph here. This layer used to load a 2400px Unsplash stock photo
+     (252 kB, third-party) on every homepage view; TrilogyHero's real job
+     photographs sit above it, so it was invisible except as a faint ghost of
+     stock imagery during the 1.8s crossfade between frames. The section's
+     --walnut-950 background now shows through instead. */
 }
 
 .hero-bg::after {

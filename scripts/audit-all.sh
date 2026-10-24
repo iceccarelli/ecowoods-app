@@ -92,7 +92,7 @@ expect "untracked leftovers"       "$(git clean -nd | wc -l | tr -d ' ')" "0"
 # ─────────────────────────────────────────────────────────────────────────────
 section "2 · non-negotiables"
 expect "RotatingBackground mounts"  "$(count '<RotatingBackground' apps/web/app/home-client.tsx)" "2"
-expect "unsplash hero in globals"   "$(count 'images.unsplash.com' apps/web/app/globals.css)" "1"
+expect "no unsplash hero in globals" "$(count 'images.unsplash.com' apps/web/app/globals.css)" "0"
 expect "one <main> in the app"      "$(grep -rho '<main' apps/web/app --include=*.tsx | wc -l | tr -d ' ')" "1"
 
 # ─────────────────────────────────────────────────────────────────────────────

@@ -36,6 +36,9 @@ export function summarise(lhr) {
     script_time: items('bootup-time')
       .slice(0, 8)
       .map((r) => `${Math.round(r.total)} ms (script ${Math.round(r.scripting ?? 0)})  ${short(r.url)}`),
+    failed_requests: items('network-requests')
+      .filter((r) => r.statusCode >= 400)
+      .map((r) => `${r.statusCode}  ${short(r.url)}`),
     render_blocking: items('render-blocking-resources').map((r) => `${kb(r.totalBytes)}  ${short(r.url)}`),
   };
 }

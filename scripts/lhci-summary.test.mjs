@@ -9,7 +9,7 @@ const lhr = (score, lcp) => ({
     'largest-contentful-paint': { numericValue: lcp },
     'largest-contentful-paint-element': { details: { items: [{ items: [{ node: { nodeLabel: 'Hero', snippet: '<img class="hero">' } }] }] } },
     'total-byte-weight': { numericValue: 2048 * 1024 },
-    'network-requests': { details: { items: [{ url: 'https://x.test/a.js', transferSize: 1024 }, { url: 'https://x.test/b.jpg', transferSize: 900000 }] } },
+    'network-requests': { details: { items: [{ url: 'https://x.test/a.js', transferSize: 1024 }, { url: 'https://x.test/b.jpg', transferSize: 900000 }, { url: 'https://x.test/missing.png', transferSize: 300000, statusCode: 404 }] } },
     'bootup-time': { details: { items: [{ url: 'https://x.test/a.js', total: 812.4, scripting: 700 }] } },
   },
 });
@@ -21,6 +21,7 @@ test('summary names the LCP element, heaviest request first, and script time', (
   assert.match(s.heaviest_requests[0], /b\.jpg/);
   assert.match(s.script_time[0], /812 ms/);
   assert.equal(s.total_transfer, '2048 kB');
+  assert.deepEqual(s.failed_requests, ['404  /missing.png']);
 });
 
 test('the median run by performance score is chosen', () => {
