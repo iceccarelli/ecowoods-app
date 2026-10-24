@@ -27,6 +27,7 @@ import { FigureRotator } from '../components/FigureRotator';
 import { TRILOGIES } from '@/lib/trilogies';
 import { trilogySlides } from '@/lib/trilogy-slides';
 import { getProject, stillById } from '@/lib/projects';
+import { getGuide } from '@/lib/guides';
 import KenBurnsStill from '../components/project/KenBurnsStill';
 import DetailPlate from '../components/project/DetailPlate';
 
@@ -37,6 +38,18 @@ import DetailPlate from '../components/project/DetailPlate';
  * own comment for why.
  */
 const INSTALL_PROJECT = getProject('maple-glass-residence');
+
+/** The five species dossiers, in the order a buyer meets them. Resolved from
+ *  the guides registry so a slug that stops resolving drops out instead of 404ing. */
+const SPECIES_GUIDES = [
+  'red-oak-flooring-toronto',
+  'hard-maple-flooring-toronto',
+  'white-ash-flooring-toronto',
+  'hickory-flooring-toronto',
+  'black-walnut-flooring-toronto',
+]
+  .map((slug) => getGuide(slug))
+  .filter((g): g is NonNullable<ReturnType<typeof getGuide>> => Boolean(g));
 const INSTALL_STILL_IDS = ['ch1-04', 'ch1-13', 'ch1-18', 'ch1-20'] as const;
 const INSTALL_DETAIL_IDS = ['detail-13', 'detail-20'];
 
@@ -470,6 +483,19 @@ export default function HardwoodFlooringTorontoPage() {
             <Link href="/hardwood-floor-problems-toronto">what your floor is telling you</Link>{' '}
             instead — that is a diagnosis, not a purchase.
           </p>
+          {SPECIES_GUIDES.length > 0 && (
+            <p className="tlx-note">
+              Weighing a species? Each has its own dossier on supply, hardness and the grades it is
+              sold in:{' '}
+              {SPECIES_GUIDES.map((g, i) => (
+                <span key={g.slug}>
+                  {i > 0 && (i === SPECIES_GUIDES.length - 1 ? ' and ' : ', ')}
+                  <Link href={`/guides/${g.slug}`}>{g.title.toLowerCase()}</Link>
+                </span>
+              ))}
+              .
+            </p>
+          )}
         </div>
       </section>
 
