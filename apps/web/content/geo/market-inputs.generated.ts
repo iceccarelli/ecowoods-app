@@ -3,6 +3,6396 @@
 import type { GeneratedInput } from './market-inputs';
 
 export const GENERATED_METHOD_VERSION = 1;
-export const GENERATED_FACTS_SHA256 = '4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945';
+export const GENERATED_FACTS_SHA256 = '0edc0b371623ed4a06d4aa19d62b2bee1c306f59580046aad35192d52352b021';
 
-export const GENERATED_INPUTS: Record<string, Record<string, GeneratedInput>> = {};
+export const GENERATED_INPUTS: Record<string, Record<string, GeneratedInput>> = {
+  "ajax": {
+    "purchasingPower": {
+      "score": 74,
+      "basis": "measured",
+      "note": "median household income CAD 119,000; percentile 74 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 119000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "ajax.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 119000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3518005",
+        "name": "Ajax"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 44,
+      "basis": "measured",
+      "note": "median dwelling value CAD 850,000; percentile 44 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 850000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "ajax.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 850000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3518005",
+        "name": "Ajax"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 78,
+      "basis": "measured",
+      "note": "64.7% of occupied dwellings are single-detached; percentile 78 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 64.7334,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "ajax.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 25560,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "ajax.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 39485,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3518005",
+        "name": "Ajax"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "ancaster": {
+    "purchasingPower": {
+      "score": 20,
+      "basis": "measured",
+      "note": "median household income CAD 86,000; percentile 20 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 86000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "hamilton.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 86000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton",
+        "parentSlug": "hamilton"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 32,
+      "basis": "measured",
+      "note": "median dwelling value CAD 700,000; percentile 32 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 700000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "hamilton.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 700000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton",
+        "parentSlug": "hamilton"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 34,
+      "basis": "measured",
+      "note": "56.1% of occupied dwellings are single-detached; percentile 34 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 56.1465,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "hamilton.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 125100,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "hamilton.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 222810,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton",
+        "parentSlug": "hamilton"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "angus-glen": {
+    "purchasingPower": {
+      "score": 50,
+      "basis": "measured",
+      "note": "median household income CAD 104,000; percentile 50 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 104000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "markham.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 104000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519036",
+        "name": "Markham",
+        "parentSlug": "markham"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 82,
+      "basis": "measured",
+      "note": "median dwelling value CAD 1,100,000; percentile 82 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 1100000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "markham.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 1100000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519036",
+        "name": "Markham",
+        "parentSlug": "markham"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 38,
+      "basis": "measured",
+      "note": "56.2% of occupied dwellings are single-detached; percentile 38 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 56.1604,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "markham.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 62265,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "markham.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 110870,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519036",
+        "name": "Markham",
+        "parentSlug": "markham"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "barrie": {
+    "purchasingPower": {
+      "score": 34,
+      "basis": "measured",
+      "note": "median household income CAD 93,000; percentile 34 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 93000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "barrie.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 93000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3543042",
+        "name": "Barrie"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 24,
+      "basis": "measured",
+      "note": "median dwelling value CAD 695,000; percentile 24 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 695000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "barrie.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 695000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3543042",
+        "name": "Barrie"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 54,
+      "basis": "measured",
+      "note": "58.2% of occupied dwellings are single-detached; percentile 54 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 58.2301,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "barrie.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 32210,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "barrie.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 55315,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3543042",
+        "name": "Barrie"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "bayview-glen": {
+    "purchasingPower": {
+      "score": 50,
+      "basis": "measured",
+      "note": "median household income CAD 104,000; percentile 50 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 104000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "markham.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 104000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519036",
+        "name": "Markham",
+        "parentSlug": "markham"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 82,
+      "basis": "measured",
+      "note": "median dwelling value CAD 1,100,000; percentile 82 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 1100000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "markham.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 1100000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519036",
+        "name": "Markham",
+        "parentSlug": "markham"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 38,
+      "basis": "measured",
+      "note": "56.2% of occupied dwellings are single-detached; percentile 38 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 56.1604,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "markham.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 62265,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "markham.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 110870,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519036",
+        "name": "Markham",
+        "parentSlug": "markham"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "brampton": {
+    "purchasingPower": {
+      "score": 62,
+      "basis": "measured",
+      "note": "median household income CAD 111,000; percentile 62 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 111000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "brampton.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 111000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3521010",
+        "name": "Brampton"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "brampton.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3521010",
+        "name": "Brampton"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 22,
+      "basis": "measured",
+      "note": "52.6% of occupied dwellings are single-detached; percentile 22 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 52.6169,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "brampton.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 96010,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "brampton.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 182470,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3521010",
+        "name": "Brampton"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "burlington": {
+    "purchasingPower": {
+      "score": 56,
+      "basis": "measured",
+      "note": "median household income CAD 110,000; percentile 56 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 110000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "burlington.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 110000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3524002",
+        "name": "Burlington"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "burlington.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3524002",
+        "name": "Burlington"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 18,
+      "basis": "measured",
+      "note": "50.2% of occupied dwellings are single-detached; percentile 18 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 50.2323,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "burlington.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 36760,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "burlington.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 73180,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3524002",
+        "name": "Burlington"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "cabbagetown": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "cachet": {
+    "purchasingPower": {
+      "score": 50,
+      "basis": "measured",
+      "note": "median household income CAD 104,000; percentile 50 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 104000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "markham.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 104000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519036",
+        "name": "Markham",
+        "parentSlug": "markham"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 82,
+      "basis": "measured",
+      "note": "median dwelling value CAD 1,100,000; percentile 82 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 1100000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "markham.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 1100000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519036",
+        "name": "Markham",
+        "parentSlug": "markham"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 38,
+      "basis": "measured",
+      "note": "56.2% of occupied dwellings are single-detached; percentile 38 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 56.1604,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "markham.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 62265,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "markham.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 110870,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519036",
+        "name": "Markham",
+        "parentSlug": "markham"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "caledon": {
+    "purchasingPower": {
+      "score": 94,
+      "basis": "measured",
+      "note": "median household income CAD 133,000; percentile 94 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 133000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "caledon.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 133000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3521024",
+        "name": "Caledon"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 78,
+      "basis": "measured",
+      "note": "median dwelling value CAD 1,000,000; percentile 78 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 1000000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "caledon.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 1000000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3521024",
+        "name": "Caledon"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 94,
+      "basis": "measured",
+      "note": "80.8% of occupied dwellings are single-detached; percentile 94 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 80.8017,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "caledon.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 19150,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "caledon.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 23700,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3521024",
+        "name": "Caledon"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "cambridge": {
+    "purchasingPower": {
+      "score": 34,
+      "basis": "measured",
+      "note": "median household income CAD 93,000; percentile 34 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 93000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "cambridge.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 93000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3530010",
+        "name": "Cambridge"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median dwelling value CAD 650,000; percentile 14 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 650000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "cambridge.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 650000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3530010",
+        "name": "Cambridge"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 50,
+      "basis": "measured",
+      "note": "56.8% of occupied dwellings are single-detached; percentile 50 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 56.7681,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "cambridge.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 29105,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "cambridge.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 51270,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3530010",
+        "name": "Cambridge"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "clarington": {
+    "purchasingPower": {
+      "score": 66,
+      "basis": "measured",
+      "note": "median household income CAD 112,000; percentile 66 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 112000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "clarington.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 112000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3518017",
+        "name": "Clarington"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 38,
+      "basis": "measured",
+      "note": "median dwelling value CAD 750,000; percentile 38 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 750000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "clarington.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 750000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3518017",
+        "name": "Clarington"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 90,
+      "basis": "measured",
+      "note": "77.7% of occupied dwellings are single-detached; percentile 90 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 77.6526,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "clarington.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 27920,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "clarington.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 35955,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3518017",
+        "name": "Clarington"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "clarkson": {
+    "purchasingPower": {
+      "score": 44,
+      "basis": "measured",
+      "note": "median household income CAD 102,000; percentile 44 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 102000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "mississauga.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 102000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga",
+        "parentSlug": "mississauga"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "mississauga.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga",
+        "parentSlug": "mississauga"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 6,
+      "basis": "measured",
+      "note": "37.1% of occupied dwellings are single-detached; percentile 6 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 37.0623,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "mississauga.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 90645,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "mississauga.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 244575,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga",
+        "parentSlug": "mississauga"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "davisville-village": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "downtown-toronto": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "dundas": {
+    "purchasingPower": {
+      "score": 20,
+      "basis": "measured",
+      "note": "median household income CAD 86,000; percentile 20 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 86000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "hamilton.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 86000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton",
+        "parentSlug": "hamilton"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 32,
+      "basis": "measured",
+      "note": "median dwelling value CAD 700,000; percentile 32 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 700000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "hamilton.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 700000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton",
+        "parentSlug": "hamilton"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 34,
+      "basis": "measured",
+      "note": "56.1% of occupied dwellings are single-detached; percentile 34 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 56.1465,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "hamilton.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 125100,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "hamilton.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 222810,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton",
+        "parentSlug": "hamilton"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "east-york": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "etobicoke": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "forest-hill": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "guelph": {
+    "purchasingPower": {
+      "score": 34,
+      "basis": "measured",
+      "note": "median household income CAD 93,000; percentile 34 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 93000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "guelph.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 93000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3523008",
+        "name": "Guelph"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 32,
+      "basis": "measured",
+      "note": "median dwelling value CAD 700,000; percentile 32 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 700000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "guelph.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 700000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3523008",
+        "name": "Guelph"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 14,
+      "basis": "measured",
+      "note": "48.6% of occupied dwellings are single-detached; percentile 14 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 48.6013,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "guelph.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 27450,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "guelph.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 56480,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3523008",
+        "name": "Guelph"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "hamilton": {
+    "purchasingPower": {
+      "score": 20,
+      "basis": "measured",
+      "note": "median household income CAD 86,000; percentile 20 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 86000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "hamilton.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 86000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 32,
+      "basis": "measured",
+      "note": "median dwelling value CAD 700,000; percentile 32 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 700000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "hamilton.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 700000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 34,
+      "basis": "measured",
+      "note": "56.1% of occupied dwellings are single-detached; percentile 34 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 56.1465,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "hamilton.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 125100,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "hamilton.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 222810,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "high-park": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "king": {
+    "purchasingPower": {
+      "score": 98,
+      "basis": "measured",
+      "note": "median household income CAD 141,000; percentile 98 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 141000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "king.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 141000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3519049",
+        "name": "King"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 98,
+      "basis": "measured",
+      "note": "median dwelling value CAD 1,600,000; percentile 98 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 1600000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "king.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 1600000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3519049",
+        "name": "King"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 98,
+      "basis": "measured",
+      "note": "87.1% of occupied dwellings are single-detached; percentile 98 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 87.1237,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "king.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 7815,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "king.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 8970,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3519049",
+        "name": "King"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "king-city": {
+    "purchasingPower": {
+      "score": 98,
+      "basis": "measured",
+      "note": "median household income CAD 141,000; percentile 98 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 141000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "king.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 141000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519049",
+        "name": "King",
+        "parentSlug": "king"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 98,
+      "basis": "measured",
+      "note": "median dwelling value CAD 1,600,000; percentile 98 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 1600000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "king.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 1600000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519049",
+        "name": "King",
+        "parentSlug": "king"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 98,
+      "basis": "measured",
+      "note": "87.1% of occupied dwellings are single-detached; percentile 98 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 87.1237,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "king.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 7815,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "king.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 8970,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519049",
+        "name": "King",
+        "parentSlug": "king"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "king-west": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "kitchener": {
+    "purchasingPower": {
+      "score": 26,
+      "basis": "measured",
+      "note": "median household income CAD 87,000; percentile 26 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 87000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "kitchener.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 87000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3530013",
+        "name": "Kitchener"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 18,
+      "basis": "measured",
+      "note": "median dwelling value CAD 680,000; percentile 18 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 680000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "kitchener.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 680000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3530013",
+        "name": "Kitchener"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 10,
+      "basis": "measured",
+      "note": "47.5% of occupied dwellings are single-detached; percentile 10 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 47.5003,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "kitchener.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 47410,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "kitchener.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 99810,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3530013",
+        "name": "Kitchener"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "kleinburg": {
+    "purchasingPower": {
+      "score": 82,
+      "basis": "measured",
+      "note": "median household income CAD 124,000; percentile 82 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 124000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "vaughan.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 124000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519028",
+        "name": "Vaughan",
+        "parentSlug": "vaughan"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 90,
+      "basis": "measured",
+      "note": "median dwelling value CAD 1,200,000; percentile 90 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 1200000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "vaughan.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 1200000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519028",
+        "name": "Vaughan",
+        "parentSlug": "vaughan"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 70,
+      "basis": "measured",
+      "note": "62.6% of occupied dwellings are single-detached; percentile 70 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 62.5896,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "vaughan.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 65040,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "vaughan.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 103915,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519028",
+        "name": "Vaughan",
+        "parentSlug": "vaughan"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "lawrence-park": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "leaside": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "leslieville": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "liberty-village": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "lorne-park": {
+    "purchasingPower": {
+      "score": 44,
+      "basis": "measured",
+      "note": "median household income CAD 102,000; percentile 44 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 102000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "mississauga.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 102000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga",
+        "parentSlug": "mississauga"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "mississauga.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga",
+        "parentSlug": "mississauga"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 6,
+      "basis": "measured",
+      "note": "37.1% of occupied dwellings are single-detached; percentile 6 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 37.0623,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "mississauga.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 90645,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "mississauga.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 244575,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga",
+        "parentSlug": "mississauga"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "markham": {
+    "purchasingPower": {
+      "score": 50,
+      "basis": "measured",
+      "note": "median household income CAD 104,000; percentile 50 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 104000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "markham.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 104000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3519036",
+        "name": "Markham"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 82,
+      "basis": "measured",
+      "note": "median dwelling value CAD 1,100,000; percentile 82 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 1100000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "markham.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 1100000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3519036",
+        "name": "Markham"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 38,
+      "basis": "measured",
+      "note": "56.2% of occupied dwellings are single-detached; percentile 38 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 56.1604,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "markham.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 62265,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "markham.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 110870,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3519036",
+        "name": "Markham"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "midtown-toronto": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "milton": {
+    "purchasingPower": {
+      "score": 86,
+      "basis": "measured",
+      "note": "median household income CAD 126,000; percentile 86 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 126000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "milton.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 126000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3524009",
+        "name": "Milton"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 72,
+      "basis": "measured",
+      "note": "median dwelling value CAD 950,000; percentile 72 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 950000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "milton.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 950000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3524009",
+        "name": "Milton"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 46,
+      "basis": "measured",
+      "note": "56.7% of occupied dwellings are single-detached; percentile 46 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 56.7308,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "milton.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 22715,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "milton.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 40040,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3524009",
+        "name": "Milton"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "mineola": {
+    "purchasingPower": {
+      "score": 44,
+      "basis": "measured",
+      "note": "median household income CAD 102,000; percentile 44 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 102000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "mississauga.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 102000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga",
+        "parentSlug": "mississauga"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "mississauga.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga",
+        "parentSlug": "mississauga"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 6,
+      "basis": "measured",
+      "note": "37.1% of occupied dwellings are single-detached; percentile 6 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 37.0623,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "mississauga.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 90645,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "mississauga.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 244575,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga",
+        "parentSlug": "mississauga"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "mississauga": {
+    "purchasingPower": {
+      "score": 44,
+      "basis": "measured",
+      "note": "median household income CAD 102,000; percentile 44 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 102000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "mississauga.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 102000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "mississauga.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 6,
+      "basis": "measured",
+      "note": "37.1% of occupied dwellings are single-detached; percentile 6 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 37.0623,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "mississauga.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 90645,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "mississauga.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 244575,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "newmarket": {
+    "purchasingPower": {
+      "score": 56,
+      "basis": "measured",
+      "note": "median household income CAD 110,000; percentile 56 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 110000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "newmarket.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 110000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3519048",
+        "name": "Newmarket"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 72,
+      "basis": "measured",
+      "note": "median dwelling value CAD 950,000; percentile 72 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 950000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "newmarket.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 950000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3519048",
+        "name": "Newmarket"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 66,
+      "basis": "measured",
+      "note": "59.8% of occupied dwellings are single-detached; percentile 66 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 59.7756,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "newmarket.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 18115,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "newmarket.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 30305,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3519048",
+        "name": "Newmarket"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "niagara-falls-on": {
+    "purchasingPower": {
+      "score": 10,
+      "basis": "measured",
+      "note": "median household income CAD 74,500; percentile 10 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 74500,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "niagara-falls-on.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 74500,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3526043",
+        "name": "Niagara Falls"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 10,
+      "basis": "measured",
+      "note": "median dwelling value CAD 552,000; percentile 10 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 552000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "niagara-falls-on.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 552000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3526043",
+        "name": "Niagara Falls"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 82,
+      "basis": "measured",
+      "note": "66.1% of occupied dwellings are single-detached; percentile 82 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 66.1199,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "niagara-falls-on.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 24990,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "niagara-falls-on.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 37795,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3526043",
+        "name": "Niagara Falls"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "nobleton": {
+    "purchasingPower": {
+      "score": 98,
+      "basis": "measured",
+      "note": "median household income CAD 141,000; percentile 98 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 141000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "king.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 141000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519049",
+        "name": "King",
+        "parentSlug": "king"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 98,
+      "basis": "measured",
+      "note": "median dwelling value CAD 1,600,000; percentile 98 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 1600000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "king.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 1600000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519049",
+        "name": "King",
+        "parentSlug": "king"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 98,
+      "basis": "measured",
+      "note": "87.1% of occupied dwellings are single-detached; percentile 98 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 87.1237,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "king.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 7815,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "king.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 8970,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519049",
+        "name": "King",
+        "parentSlug": "king"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "north-york": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "oakville": {
+    "purchasingPower": {
+      "score": 90,
+      "basis": "measured",
+      "note": "median household income CAD 128,000; percentile 90 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 128000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "oakville.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 128000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3524001",
+        "name": "Oakville"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 90,
+      "basis": "measured",
+      "note": "median dwelling value CAD 1,200,000; percentile 90 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 1200000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "oakville.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 1200000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3524001",
+        "name": "Oakville"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 58,
+      "basis": "measured",
+      "note": "58.6% of occupied dwellings are single-detached; percentile 58 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 58.6432,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "oakville.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 43135,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "oakville.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 73555,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3524001",
+        "name": "Oakville"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "oshawa": {
+    "purchasingPower": {
+      "score": 20,
+      "basis": "measured",
+      "note": "median household income CAD 86,000; percentile 20 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 86000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "oshawa.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 86000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3518013",
+        "name": "Oshawa"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 24,
+      "basis": "measured",
+      "note": "median dwelling value CAD 695,000; percentile 24 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 695000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "oshawa.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 695000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3518013",
+        "name": "Oshawa"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 26,
+      "basis": "measured",
+      "note": "55.5% of occupied dwellings are single-detached; percentile 26 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 55.5264,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "oshawa.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 37000,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "oshawa.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 66635,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3518013",
+        "name": "Oshawa"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "pickering": {
+    "purchasingPower": {
+      "score": 70,
+      "basis": "measured",
+      "note": "median household income CAD 118,000; percentile 70 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 118000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "pickering.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 118000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3518001",
+        "name": "Pickering"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 50,
+      "basis": "measured",
+      "note": "median dwelling value CAD 880,000; percentile 50 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 880000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "pickering.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 880000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3518001",
+        "name": "Pickering"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 62,
+      "basis": "measured",
+      "note": "59.6% of occupied dwellings are single-detached; percentile 62 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 59.5812,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "pickering.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 19915,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "pickering.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 33425,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3518001",
+        "name": "Pickering"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "port-credit": {
+    "purchasingPower": {
+      "score": 44,
+      "basis": "measured",
+      "note": "median household income CAD 102,000; percentile 44 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 102000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "mississauga.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 102000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga",
+        "parentSlug": "mississauga"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "mississauga.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga",
+        "parentSlug": "mississauga"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 6,
+      "basis": "measured",
+      "note": "37.1% of occupied dwellings are single-detached; percentile 6 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 37.0623,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "mississauga.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 90645,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "mississauga.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 244575,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga",
+        "parentSlug": "mississauga"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "richmond-hill": {
+    "purchasingPower": {
+      "score": 44,
+      "basis": "measured",
+      "note": "median household income CAD 102,000; percentile 44 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 102000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "richmond-hill.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 102000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3519038",
+        "name": "Richmond Hill"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 90,
+      "basis": "measured",
+      "note": "median dwelling value CAD 1,200,000; percentile 90 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 1200000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "richmond-hill.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 1200000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3519038",
+        "name": "Richmond Hill"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 42,
+      "basis": "measured",
+      "note": "56.6% of occupied dwellings are single-detached; percentile 42 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 56.6472,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "richmond-hill.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 39265,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "richmond-hill.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 69315,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3519038",
+        "name": "Richmond Hill"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "riverdale": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "rosedale": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "scarborough": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "sheridan": {
+    "purchasingPower": {
+      "score": 44,
+      "basis": "measured",
+      "note": "median household income CAD 102,000; percentile 44 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 102000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "mississauga.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 102000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga",
+        "parentSlug": "mississauga"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "mississauga.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga",
+        "parentSlug": "mississauga"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 6,
+      "basis": "measured",
+      "note": "37.1% of occupied dwellings are single-detached; percentile 6 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 37.0623,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "mississauga.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 90645,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "mississauga.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 244575,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga",
+        "parentSlug": "mississauga"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "st-catharines": {
+    "purchasingPower": {
+      "score": 6,
+      "basis": "measured",
+      "note": "median household income CAD 72,500; percentile 6 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 72500,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "st-catharines.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 72500,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3526053",
+        "name": "St. Catharines"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 6,
+      "basis": "measured",
+      "note": "median dwelling value CAD 548,000; percentile 6 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 548000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "st-catharines.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 548000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3526053",
+        "name": "St. Catharines"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 30,
+      "basis": "measured",
+      "note": "55.6% of occupied dwellings are single-detached; percentile 30 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 55.5603,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "st-catharines.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 32725,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "st-catharines.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 58900,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3526053",
+        "name": "St. Catharines"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "stoney-creek": {
+    "purchasingPower": {
+      "score": 20,
+      "basis": "measured",
+      "note": "median household income CAD 86,000; percentile 20 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 86000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "hamilton.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 86000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton",
+        "parentSlug": "hamilton"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 32,
+      "basis": "measured",
+      "note": "median dwelling value CAD 700,000; percentile 32 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 700000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "hamilton.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 700000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton",
+        "parentSlug": "hamilton"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 34,
+      "basis": "measured",
+      "note": "56.1% of occupied dwellings are single-detached; percentile 34 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 56.1465,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "hamilton.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 125100,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "hamilton.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 222810,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton",
+        "parentSlug": "hamilton"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "swansea": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "the-annex": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "the-beaches": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "the-kingsway": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "toronto": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "vaughan": {
+    "purchasingPower": {
+      "score": 82,
+      "basis": "measured",
+      "note": "median household income CAD 124,000; percentile 82 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 124000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "vaughan.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 124000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3519028",
+        "name": "Vaughan"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 90,
+      "basis": "measured",
+      "note": "median dwelling value CAD 1,200,000; percentile 90 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 1200000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "vaughan.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 1200000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3519028",
+        "name": "Vaughan"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 70,
+      "basis": "measured",
+      "note": "62.6% of occupied dwellings are single-detached; percentile 70 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 62.5896,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "vaughan.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 65040,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "vaughan.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 103915,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3519028",
+        "name": "Vaughan"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "waterdown": {
+    "purchasingPower": {
+      "score": 20,
+      "basis": "measured",
+      "note": "median household income CAD 86,000; percentile 20 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 86000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "hamilton.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 86000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton",
+        "parentSlug": "hamilton"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 32,
+      "basis": "measured",
+      "note": "median dwelling value CAD 700,000; percentile 32 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 700000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "hamilton.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 700000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton",
+        "parentSlug": "hamilton"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 34,
+      "basis": "measured",
+      "note": "56.1% of occupied dwellings are single-detached; percentile 34 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 56.1465,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "hamilton.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 125100,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "hamilton.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 222810,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton",
+        "parentSlug": "hamilton"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "welland": {
+    "purchasingPower": {
+      "score": 2,
+      "basis": "measured",
+      "note": "median household income CAD 71,500; percentile 2 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 71500,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "welland.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 71500,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3526032",
+        "name": "Welland"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 2,
+      "basis": "measured",
+      "note": "median dwelling value CAD 500,000; percentile 2 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 500000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "welland.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 500000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3526032",
+        "name": "Welland"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 74,
+      "basis": "measured",
+      "note": "64.5% of occupied dwellings are single-detached; percentile 74 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 64.5318,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "welland.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 15265,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "welland.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 23655,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3526032",
+        "name": "Welland"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "whitby": {
+    "purchasingPower": {
+      "score": 78,
+      "basis": "measured",
+      "note": "median household income CAD 123,000; percentile 78 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 123000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "whitby.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 123000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3518009",
+        "name": "Whitby"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 44,
+      "basis": "measured",
+      "note": "median dwelling value CAD 850,000; percentile 44 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 850000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "whitby.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 850000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3518009",
+        "name": "Whitby"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 86,
+      "basis": "measured",
+      "note": "69.5% of occupied dwellings are single-detached; percentile 86 among 25 Canadian markets with their own census geography",
+      "raw": {
+        "value": 69.5114,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "whitby.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 32295,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "whitby.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 46460,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "direct",
+        "system": "statcan-csd",
+        "id": "3518009",
+        "name": "Whitby"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "woodbridge": {
+    "purchasingPower": {
+      "score": 82,
+      "basis": "measured",
+      "note": "median household income CAD 124,000; percentile 82 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 124000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "vaughan.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 124000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519028",
+        "name": "Vaughan",
+        "parentSlug": "vaughan"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 90,
+      "basis": "measured",
+      "note": "median dwelling value CAD 1,200,000; percentile 90 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 1200000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "vaughan.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 1200000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519028",
+        "name": "Vaughan",
+        "parentSlug": "vaughan"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 70,
+      "basis": "measured",
+      "note": "62.6% of occupied dwellings are single-detached; percentile 70 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 62.5896,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "vaughan.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 65040,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "vaughan.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 103915,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3519028",
+        "name": "Vaughan",
+        "parentSlug": "vaughan"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "york": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  },
+  "yorkville": {
+    "purchasingPower": {
+      "score": 14,
+      "basis": "measured",
+      "note": "median household income CAD 84,000; percentile 14 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 84000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_household_income.98-10-0060-01",
+            "metric": "median_household_income",
+            "value": 84000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census (income year 2020)",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "housingValues": {
+      "score": 60,
+      "basis": "measured",
+      "note": "median dwelling value CAD 900,000; percentile 60 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 900000,
+        "unit": "CAD",
+        "components": [
+          {
+            "factId": "toronto.median_dwelling_value.98-10-0257-01",
+            "metric": "median_dwelling_value",
+            "value": 900000,
+            "unit": "CAD"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    },
+    "detachedPrevalence": {
+      "score": 2,
+      "basis": "measured",
+      "note": "23.3% of occupied dwellings are single-detached; percentile 2 among 25 Canadian markets with their own census geography — parent geography (undefined); undefined has no census geography of its own in this dataset",
+      "raw": {
+        "value": 23.2882,
+        "unit": "percent",
+        "components": [
+          {
+            "factId": "toronto.single_detached.98-10-0240-01",
+            "metric": "single_detached",
+            "value": 270350,
+            "unit": "dwellings"
+          },
+          {
+            "factId": "toronto.structural_total.98-10-0240-01",
+            "metric": "structural_total",
+            "value": 1160890,
+            "unit": "dwellings"
+          }
+        ]
+      },
+      "geography": {
+        "kind": "parent",
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto",
+        "parentSlug": "toronto"
+      },
+      "vintage": "2021 Census",
+      "source": {
+        "title": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001",
+        "retrievedAt": "2026-10-25"
+      },
+      "method": "v1: mid-rank percentile within CA"
+    }
+  }
+};
