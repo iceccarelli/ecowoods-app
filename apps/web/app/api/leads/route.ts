@@ -15,6 +15,8 @@ import { leadBackTo } from '@/lib/lead-redirect';
 import { findRecentDuplicate } from '@/lib/lead-dedupe';
 import { runAfterResponse } from '@/lib/background';
 import { withinMs } from '@/lib/with-timeout';
+import { acquisitionNote, parseAcquisition, type Acquisition } from '@/lib/acquisition';
+import { recordLeadAcquisition } from '@/lib/lead-acquisition';
 
 /**
  * POST /api/leads — THE conversion surface.
@@ -76,11 +78,11 @@ function backTo(request: Request, ok: boolean, source?: unknown): string {
  * same floor differently. The desk pastes it into /floor-studio and sees the
  * floor itself.
  */
-function leadNotes(lead: { message?: unknown; design?: unknown; acquisition?: unknown }): string | null {
+function leadNotes(lead: { message?: unknown; design?: unknown }, acquisition: Acquisition | null): string | null {
   const parts = [
     lead.message ? String(lead.message) : null,
     lead.design ? `Floor Studio design code: ${String(lead.design)}` : null,
-    lead.acquisition ? `Found us via: ${String(lead.acquisition).replace(/\s+/g, ' ').slice(0, 120)}` : null,
+    acquisitionNote(acquisition),
   ].filter(Boolean);
   return parts.length ? parts.join('\n\n') : null;
 }
@@ -132,10 +134,12 @@ export async function POST(request: Request) {
   }
 
   const lead = parsed.data as Record<string, unknown>;
+  /* Validated against the closed channel set; anything else is null, never a rejection. */
+  const acquisition: Acquisition | null = parseAcquisition(lead.acquisitionChannel, lead.acquisitionLanding);
   const leadId = generateLeadId();
 
   // 1. DURABLE CAPTURE — guaranteed, synchronous, dependency-free. The lead now exists.
-  console.log(JSON.stringify({ event: 'lead.captured', leadId, receivedAt: new Date().toISOString(), lead }));
+  console.log(JSON.stringify({ event: 'lead.captured', leadId, receivedAt: new Date().toISOString(), lead: { ...lead, acquisitionChannel: acquisition?.channel, acquisitionLanding: acquisition?.landing } }));
 
   /**
    * RATE LIMIT — AFTER VALIDATION, AND AFTER THE DURABLE LOG.
@@ -219,7 +223,7 @@ export async function POST(request: Request) {
         service: lead.service ? String(lead.service) : null,
         squareFeet: lead.sqft ? Math.round(Number(lead.sqft)) : null,
         timeline: lead.timeline ? String(lead.timeline) : null,
-        notes: leadNotes(lead),
+        notes: leadNotes(lead, acquisition),
         /* MEAS-01. Validated by leadSchema before it reaches here, and
            validated AGAIN on the way in, because this is the field the whole
            attribution chain hangs on and a wrong value is worse than a null
@@ -262,6 +266,8 @@ export async function POST(request: Request) {
         source: lead.source as string | undefined,
         quoteId: quote.id,
       }));
+      /* First touch, in its own table and best-effort: see lib/lead-acquisition.ts. */
+      runAfterResponse(recordLeadAcquisition(quote.id, acquisition));
       /* SALE-04 — the alert that reaches a phone. Not awaited, for the same
          reason the ledger row is not: a homeowner's request must not wait on a
          carrier. Inert and silent when no credentials are set. */

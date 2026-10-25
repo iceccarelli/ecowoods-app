@@ -150,3 +150,71 @@ describe('buildFunnelReport', () => {
     expect(r.assistant.handoffRate).toBe(25);
   });
 });
+
+describe('acquisition cohort', () => {
+  const q1 = '00000000-0000-4000-8000-000000000001';
+  const q2 = '00000000-0000-4000-8000-000000000002';
+  const q3 = '00000000-0000-4000-8000-000000000003';
+  const q4 = '00000000-0000-4000-8000-000000000004';
+
+  it('splits leads by how the visit began and follows each to the stages it reached', () => {
+    const r = buildFunnelReport(base([
+      row({ stage: 'LEAD_CAPTURED', quoteId: q1, acquisition: 'google_search' }),
+      row({ stage: 'LEAD_CAPTURED', quoteId: q2, acquisition: 'google_search' }),
+      row({ stage: 'LEAD_CAPTURED', quoteId: q3, acquisition: 'chatgpt' }),
+      row({ stage: 'QUOTE_ISSUED', quoteId: q1 }),
+      row({ stage: 'QUOTE_ACCEPTED', quoteId: q1 }),
+      row({ stage: 'QUOTE_ISSUED', quoteId: q3 }),
+    ]));
+    const g = r.acquisition.rows.find((x) => x.key === 'google_search')!;
+    expect(g.counts).toMatchObject({ LEAD_CAPTURED: 2, QUOTE_ISSUED: 1, QUOTE_ACCEPTED: 1 });
+    expect(g.stepRates.APPOINTMENT_BOOKED).toBe(50); // one of the two leads went on, whatever it went on to
+    expect(r.acquisition.rows.find((x) => x.key === 'chatgpt')!.counts).toMatchObject({ LEAD_CAPTURED: 1, QUOTE_ISSUED: 1, QUOTE_ACCEPTED: 0 });
+    expect(r.acquisition.rows.map((x) => x.key)).toEqual(['google_search', 'chatgpt']);
+  });
+
+  it('keeps "not captured" apart from "no referrer", and sends an unrecognised slug to "not captured"', () => {
+    const r = buildFunnelReport(base([
+      row({ stage: 'LEAD_CAPTURED', quoteId: q1, acquisition: 'no_referrer' }),
+      row({ stage: 'LEAD_CAPTURED', quoteId: q2, acquisition: null }),
+      row({ stage: 'LEAD_CAPTURED', quoteId: q3 }),
+      row({ stage: 'LEAD_CAPTURED', quoteId: q4, acquisition: 'jane@example.com' }),
+    ]));
+    const byKey = Object.fromEntries(r.acquisition.rows.map((x) => [x.key, x.counts.LEAD_CAPTURED]));
+    expect(byKey).toEqual({ no_referrer: 1, NOT_CAPTURED: 3 });
+    expect(JSON.stringify(r.acquisition)).not.toContain('jane@example.com');
+  });
+
+  it('counts a lead once even when its ledger row is written twice, and totals match the channel cohort', () => {
+    const r = buildFunnelReport(base([
+      row({ stage: 'LEAD_CAPTURED', quoteId: q1, acquisition: 'claude' }),
+      row({ stage: 'LEAD_CAPTURED', quoteId: q1, acquisition: 'google_search' }),
+      row({ stage: 'LEAD_CAPTURED', quoteId: null, acquisition: 'bing_search' }),
+    ]));
+    expect(r.acquisition.rows.find((x) => x.key === 'claude')!.counts.LEAD_CAPTURED).toBe(1);
+    expect(r.acquisition.rows.find((x) => x.key === 'google_search')).toBeUndefined();
+    const acqTotal = r.acquisition.rows.reduce((n, x) => n + x.counts.LEAD_CAPTURED, 0);
+    expect(acqTotal).toBe(r.cohort.rows.find((x) => x.channel === 'ALL')!.counts.LEAD_CAPTURED);
+  });
+
+  it('is empty, not an error, when there are no leads', () => {
+    expect(buildFunnelReport(base([])).acquisition.rows).toEqual([]);
+  });
+
+  it('shows the unfollowable leads per acquisition row, like the channel table does', () => {
+    const r = buildFunnelReport(base([
+      row({ stage: 'LEAD_CAPTURED', quoteId: null, acquisition: 'google_search' }),
+      row({ stage: 'LEAD_CAPTURED', quoteId: q1, acquisition: 'google_search' }),
+    ]));
+    const g = r.acquisition.rows.find((x) => x.key === 'google_search')!;
+    expect(g.counts.LEAD_CAPTURED).toBe(2);
+    expect(g.unlinkedLeads).toBe(1);
+  });
+
+  it('says plainly that acquisition could not be read, instead of calling every lead "not captured"', () => {
+    const r = buildFunnelReport({ ...base([row({ stage: 'LEAD_CAPTURED', quoteId: q1 })]), acquisitionAvailable: false });
+    expect(r.acquisition.rows).toEqual([]);
+    expect(r.acquisition.note).toMatch(/could not be read/);
+    expect(r.cohort.rows.find((x) => x.channel === 'ALL')!.counts.LEAD_CAPTURED).toBe(1); // the rest of the report is unaffected
+  });
+});

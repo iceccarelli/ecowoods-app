@@ -5,6 +5,8 @@ import { format } from 'date-fns';
 import EstimateBuilder from './EstimateBuilder';
 import ConvertToProjectForm from './ConvertToProjectForm';
 import { StudioDesignCard } from './StudioDesignCard';
+import { acquisitionLabel } from '@/lib/acquisition';
+import { acquisitionForQuote } from '@/lib/lead-acquisition';
 
 export default async function AdminQuoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -16,6 +18,7 @@ export default async function AdminQuoteDetailPage({ params }: { params: Promise
     },
   });
   if (!quote) notFound();
+  const acquisition = await acquisitionForQuote(quote.id); // null when not captured; never throws
 
   const customers = await db.user.findMany({
     where: { role: 'USER' },
@@ -90,6 +93,9 @@ export default async function AdminQuoteDetailPage({ params }: { params: Promise
               </div>
               {quote.address && <div className="detail-row"><dt>Address</dt><dd>{quote.address}</dd></div>}
               {quote.service && <div className="detail-row"><dt>Service</dt><dd>{quote.service}</dd></div>}
+              {acquisition && (
+                <div className="detail-row"><dt>Found us via</dt><dd>{acquisitionLabel(acquisition.channel)} → {acquisition.landing}</dd></div>
+              )}
               {quote.projectType && <div className="detail-row"><dt>Type</dt><dd>{quote.projectType.replace('_', ' ')}</dd></div>}
               {Array.isArray(quote.species) && (quote.species as string[]).length > 0 && <div className="detail-row"><dt>Species</dt><dd>{(quote.species as string[]).join(', ')}</dd></div>}
               {quote.squareFeet && <div className="detail-row"><dt>Sq Ft</dt><dd>{quote.squareFeet.toLocaleString()} sq ft</dd></div>}

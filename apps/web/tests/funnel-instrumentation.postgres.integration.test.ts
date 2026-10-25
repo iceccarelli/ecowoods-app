@@ -108,4 +108,30 @@ describe.skipIf(!enabled)('funnel ledger completeness against real PostgreSQL', 
     await updateProjectStatus(project.id, 'COMPLETED');
     expect(await rows('JOB_COMPLETED', { projectId: project.id })).toHaveLength(1);
   });
+  it('acquisition: a captured first touch is stored once, reported by channel, and an unknown value is never stored', async () => {
+    const { db } = await setup();
+    const { recordFunnelEvent } = await import('@/lib/funnel-ledger');
+    const { recordLeadAcquisition, acquisitionForQuote } = await import('@/lib/lead-acquisition');
+    const { parseAcquisition } = await import('@/lib/acquisition');
+    const { loadFunnelReport } = await import('@/lib/funnel-report');
+
+    const q = await db.quoteRequest.create({ data: { name: 'Acq One', email: `acq-${randomUUID()}@example.test` } });
+    const legacy = await db.quoteRequest.create({ data: { name: 'Acq Legacy', email: `acq-${randomUUID()}@example.test` } });
+    quotes.push(q.id, legacy.id);
+
+    await recordLeadAcquisition(q.id, parseAcquisition('chatgpt', '/service-areas/oakville'));
+    await recordLeadAcquisition(q.id, parseAcquisition('google_search', '/estimate')); // a repeat never rewrites the first touch
+    await recordLeadAcquisition(legacy.id, parseAcquisition('not a channel; drop table', '/x')); // dropped, not stored
+    expect(await acquisitionForQuote(q.id)).toEqual({ channel: 'chatgpt', landing: '/service-areas/oakville' });
+    expect(await acquisitionForQuote(legacy.id)).toBeNull(); // not captured is NULL, which is not 'no_referrer'
+
+    await recordFunnelEvent({ stage: 'LEAD_CAPTURED', quoteId: q.id, source: 'acq-test' });
+    await recordFunnelEvent({ stage: 'LEAD_CAPTURED', quoteId: legacy.id, source: 'acq-test' });
+    await new Promise((r) => setTimeout(r, 400));
+
+    const out = await loadFunnelReport(7);
+    expect(out.report.acquisition.rows.find((r) => r.key === 'chatgpt')!.counts.LEAD_CAPTURED).toBeGreaterThanOrEqual(1);
+    expect(out.report.acquisition.rows.find((r) => r.key === 'NOT_CAPTURED')!.counts.LEAD_CAPTURED).toBeGreaterThanOrEqual(1);
+    await db.leadAcquisition.deleteMany({ where: { quoteId: { in: [q.id, legacy.id] } } });
+  });
 });

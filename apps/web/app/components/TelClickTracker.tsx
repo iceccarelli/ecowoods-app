@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { track } from '@/lib/analytics';
+import { captureAcquisition } from '@/lib/acquisition';
 
 /**
  * TelClickTracker — one delegated listener instead of an onClick on every
@@ -16,7 +17,7 @@ export default function TelClickTracker() {
       const target = e.target as Element | null;
       const link = target?.closest?.('a[href^="tel:"]');
       if (link) {
-        track('tel_click', { page: window.location.pathname });
+        track('tel_click', { page: window.location.pathname, acquisition: captureAcquisition()?.channel });
       }
     };
     document.addEventListener('click', onClick, { capture: true, passive: true });

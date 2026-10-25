@@ -37,8 +37,12 @@ export const leadSchema = z.object({
   timeline: z.string().max(80).optional(),
   message: z.string().max(2000).optional(),
   source: z.string().max(120).optional(),
-  /** How the visitor first reached the site (lib/acquisition.ts): referrer host and landing path only. */
-  acquisition: z.string().max(120).optional(),
+  /**
+   * First-touch acquisition (lib/acquisition.ts). Free strings here ON PURPOSE: the route validates
+   * them against the closed channel set and drops anything else, so a bad value can never reject a lead.
+   */
+  acquisitionChannel: z.string().max(40).optional(),
+  acquisitionLanding: z.string().max(200).optional(),
   /**
    * Floor Studio state, as the readable share code
    * (`c=white-oak.satin.herringbone.5&a=900&…`). Structured, not prose: the
@@ -98,8 +102,8 @@ export const photoTriageSchema = z.object({
   }),
   company: z.string().optional(), // honeypot
   source: z.string().optional(),
-  /** How the visitor first reached the site (lib/acquisition.ts): referrer host and landing path only. */
-  acquisition: z.string().max(120).optional(),
+  acquisitionChannel: z.string().max(40).optional(),
+  acquisitionLanding: z.string().max(200).optional(),
   designSummary: z.string().max(300).optional(),
   sqft: z.preprocess(
     (v) => (v === '' || v == null || (typeof v === 'number' && Number.isNaN(v)) ? undefined : Number(v)),

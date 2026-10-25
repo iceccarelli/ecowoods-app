@@ -9,7 +9,7 @@ import { SERVICE_AREAS } from '@/lib/seo-data';
 import { track } from '@/lib/analytics';
 import { leadRedirectOutcome, leadRedirectTrack } from '@/lib/lead-redirect';
 import { compressPhoto, MAX_PHOTO_BYTES } from '@/lib/image-compress';
-import { captureAcquisition, formatAcquisition } from '@/lib/acquisition';
+import { captureAcquisition } from '@/lib/acquisition';
 import {
   readDesignConfig,
   clearDesignConfig,
@@ -312,8 +312,11 @@ export function EstimateForm({
       if (typeof v === 'string' && v !== '') body[k] = v;
     });
     if (typeof body.sqft === 'string') body.sqft = Number(body.sqft);
-    const acquisition = formatAcquisition(captureAcquisition());
-    if (acquisition) body.acquisition = acquisition;
+    const acquisition = captureAcquisition();
+    if (acquisition) {
+      body.acquisitionChannel = acquisition.channel;
+      body.acquisitionLanding = acquisition.landing;
+    }
 
     setState('sending');
     setBounced(false);
@@ -335,6 +338,7 @@ export function EstimateForm({
           source,
           form_track: 'measure',
           design_id: studio?.designId ?? designId,
+          acquisition: acquisition?.channel,
           event_id: typeof json?.leadId === 'string' ? json.leadId : undefined,
         });
         setSentTrack('measure');
@@ -360,8 +364,11 @@ export function EstimateForm({
     // Replace the raw file input's contents with the compressed set.
     fd.delete('photos');
     for (const f of photos) fd.append('photos', f, f.name);
-    const acquisition = formatAcquisition(captureAcquisition());
-    if (acquisition) fd.append('acquisition', acquisition);
+    const acquisition = captureAcquisition();
+    if (acquisition) {
+      fd.append('acquisitionChannel', acquisition.channel);
+      fd.append('acquisitionLanding', acquisition.landing);
+    }
 
     setState('sending');
     setErrors({});

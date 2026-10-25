@@ -14,6 +14,8 @@ import { markRecoveryConverted } from '@/lib/quote-recovery';
 import { recordFunnelEvent, sanitiseSource } from '@/lib/funnel-ledger';
 import { acknowledgeLead } from '@/lib/lead-acknowledgement';
 import { leadBackTo } from '@/lib/lead-redirect';
+import { acquisitionNote, parseAcquisition } from '@/lib/acquisition';
+import { recordLeadAcquisition } from '@/lib/lead-acquisition';
 
 /**
  * POST /api/photo-triage — track B of the two-track quote form.
@@ -137,6 +139,7 @@ export async function POST(request: Request) {
   }
 
   const lead = parsed.data;
+  const acquisition = parseAcquisition(lead.acquisitionChannel, lead.acquisitionLanding);
   const leadId = triageId();
 
   /* Unticked is the default and is sent as ABSENT by every browser, so this
@@ -180,7 +183,7 @@ export async function POST(request: Request) {
             ? 'PHOTO TRIAGE — photos emailed; retained in the Floor Graph with consent.'
             : 'PHOTO TRIAGE — photos emailed, not retained.',
           lead.designSummary ? `Design config: ${lead.designSummary}` : null,
-          lead.acquisition ? `Found us via: ${lead.acquisition.replace(/\s+/g, ' ').slice(0, 120)}` : null,
+          acquisitionNote(acquisition),
           `Photos: ${files.map((f) => f.name).join(', ')}`,
         ]
           .filter(Boolean)
@@ -213,6 +216,7 @@ export async function POST(request: Request) {
       source: sanitiseSource(lead.source ? `photo-triage:${lead.source.trim()}` : 'photo-triage'),
       quoteId,
     }));
+    runAfterResponse(recordLeadAcquisition(quoteId, acquisition));
   }
 
   // They finished: cancel any pending reminder (best-effort; the cron also checks QuoteRequest).

@@ -1342,6 +1342,31 @@ model FunnelEvent {
   @@schema("ecowoods")
 }
 
+/// How a lead first reached the site (lib/acquisition.ts): one row per lead,
+/// keyed by the QuoteRequest id.
+///
+/// A SEPARATE TABLE ON PURPOSE. Adding columns to QuoteRequest would make every
+/// read of it name those columns, and a deploy that reaches production before
+/// the migration does would then fail every lead and every admin quote page.
+/// This table is read and written only by best-effort code that catches its own
+/// failure, so the application behaves the same with or without it: no row =
+/// "not captured", never an error, never a lost lead.
+///
+/// Bare uuid, no foreign key, for the reason FunnelEvent gives: erasing a
+/// customer's request must not cascade into how the business measured itself.
+/// Holds no personal data: a slug from a closed set and a plain public page path.
+model LeadAcquisition {
+  quoteId   String   @id @db.Uuid
+  /// Closed set in lib/acquisition.ts (google_search, chatgpt, no_referrer, ...).
+  channel   String   @db.VarChar(24)
+  /// "/service-areas/oakville". Never a query string, token or signed-in route.
+  landing   String   @db.VarChar(80)
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([createdAt])
+  @@schema("ecowoods")
+}
+
 // ─────────────────────────────────────────────
 // RENOVATION CREDITS — Ask Francisco's paid analysis
 // ─────────────────────────────────────────────

@@ -23,6 +23,8 @@ import { db } from '@/lib/db';
 import { CRON_EMAIL_MAX_ATTEMPTS } from '@/lib/email/cron-email-policy';
 import { BUSINESS_TIMEZONE, addDaysToKey, localDateKey } from '@/lib/booking/availability';
 import { FUNNEL_ORDER, type FunnelStage } from '@/lib/funnel-ledger';
+import { acquisitionByQuote } from '@/lib/lead-acquisition';
+import { ACQUISITION_CHANNELS, ACQUISITION_LABEL, isAcquisitionChannel, type AcquisitionChannel } from '@/lib/acquisition';
 
 /* ── window ───────────────────────────────────────────────────────────────── */
 
@@ -110,6 +112,8 @@ export function channelOf(source: string | null | undefined, hasDesign: boolean)
 export type LedgerRow = {
   stage: FunnelStage;
   source: string | null;
+  /** Acquisition channel slug on LEAD_CAPTURED rows; null/absent = not captured. */
+  acquisition?: string | null;
   hasDesign: boolean;
   quoteId: string | null;
   projectId: string | null;
@@ -117,6 +121,8 @@ export type LedgerRow = {
 
 export type ReportInput = {
   ledger: LedgerRow[];
+  /** False when the acquisition table could not be read at all (migration not applied yet). Defaults to true. */
+  acquisitionAvailable?: boolean;
   quoteRequestsCreated: number;
   appointmentsCreated: number;
   recovery: {
@@ -160,6 +166,24 @@ export type CohortRow = {
   unlinkedLeads: number;
 };
 
+export type AcquisitionKey = AcquisitionChannel | 'NOT_CAPTURED';
+
+export type AcquisitionRow = {
+  key: AcquisitionKey;
+  label: string;
+  counts: CohortCounts;
+  stepRates: Record<FunnelStage, number | null>;
+  /** Leads whose ledger row carries no quote id, so they cannot be followed to later stages. */
+  unlinkedLeads: number;
+};
+
+export const ACQUISITION_UNAVAILABLE_NOTE =
+  'Acquisition could not be read, so no split is shown. This is expected until the lead-acquisition database migration has been applied; leads are unaffected.';
+
+export const ACQUISITION_NOTE =
+  'Leads by how the visit began. "Not captured" is a lead with no recorded acquisition (no JavaScript, a call, an assistant handoff, or before this was recorded). ' +
+  '"No referrer" is not confirmed direct traffic, and an AI assistant that sends no referrer cannot be told apart from it, so AI rows understate AI-driven visits.';
+
 export type FunnelReport = {
   /** Stage-by-stage totals for events that happened in the window. */
   period: {
@@ -168,6 +192,8 @@ export type FunnelReport = {
   };
   /** Leads captured in the window, followed to the stages they reached. */
   cohort: { rows: CohortRow[] };
+  /** The same cohort, split by how the visit began (lib/acquisition.ts), not by which form was used. */
+  acquisition: { rows: AcquisitionRow[]; note: string };
   /** Database rows against ledger rows, so a gap in instrumentation is visible rather than hidden. */
   reconciliation: {
     quoteRequests: { databaseRows: number; ledgerLeads: number };
@@ -254,6 +280,42 @@ export function buildFunnelReport(input: ReportInput): FunnelReport {
   for (const ch of CHANNELS) for (const s of FUNNEL_ORDER) total[s] += perChannel[ch][s];
   const totalUnlinked = CHANNELS.reduce((n, c) => n + unlinked[c], 0);
 
+  /* The same "reached this stage or later" cohort, keyed by acquisition. The
+     first LEAD_CAPTURED row for a quote fixes its key, exactly as for channel. */
+  const acqKey = new Map<string, AcquisitionKey>();
+  const acqUnlinked = new Map<AcquisitionKey, number>();
+  const asKey = (v: string | null | undefined): AcquisitionKey => (isAcquisitionChannel(v) ? v : 'NOT_CAPTURED');
+  for (const r of ledger) {
+    if (r.stage !== 'LEAD_CAPTURED') continue;
+    const k = asKey(r.acquisition);
+    if (r.quoteId === null) acqUnlinked.set(k, (acqUnlinked.get(k) ?? 0) + 1);
+    else if (!acqKey.has(r.quoteId)) acqKey.set(r.quoteId, k);
+  }
+  const perAcq = new Map<AcquisitionKey, CohortCounts>();
+  const countsFor = (k: AcquisitionKey): CohortCounts => {
+    if (!perAcq.has(k)) perAcq.set(k, emptyCounts());
+    return perAcq.get(k)!;
+  };
+  for (const [quoteId, k] of acqKey) {
+    const seen = new Set<FunnelStage>(byQuote.get(quoteId) ?? []);
+    for (const p of projectsOfQuote.get(quoteId) ?? []) for (const s of stagesOfProject.get(p) ?? []) seen.add(s);
+    let deepest = 0;
+    FUNNEL_ORDER.forEach((s, i) => { if (seen.has(s)) deepest = Math.max(deepest, i); });
+    const c = countsFor(k);
+    c.LEAD_CAPTURED += 1;
+    for (let i = 1; i <= deepest; i += 1) c[FUNNEL_ORDER[i]!] += 1;
+  }
+  for (const [k, n] of acqUnlinked) countsFor(k).LEAD_CAPTURED += n;
+  const ACQ_ORDER: AcquisitionKey[] = [...ACQUISITION_CHANNELS, 'NOT_CAPTURED'];
+  const acquisitionRows: AcquisitionRow[] = ACQ_ORDER.filter((k) => (perAcq.get(k)?.LEAD_CAPTURED ?? 0) > 0).map((k) => ({
+    key: k,
+    label: k === 'NOT_CAPTURED' ? 'Not captured' : ACQUISITION_LABEL[k],
+    counts: perAcq.get(k)!,
+    stepRates: stepRates(perAcq.get(k)!),
+    unlinkedLeads: acqUnlinked.get(k) ?? 0,
+  }));
+  const acquisitionAvailable = input.acquisitionAvailable !== false;
+
   const rows: CohortRow[] = [
     { channel: 'ALL', label: 'All channels', counts: total, stepRates: stepRates(total), unlinkedLeads: totalUnlinked },
     ...CHANNELS.filter((c) => perChannel[c].LEAD_CAPTURED > 0).map((c) => ({
@@ -280,6 +342,9 @@ export function buildFunnelReport(input: ReportInput): FunnelReport {
       stages: FUNNEL_ORDER.map((stage) => ({ stage, label: STAGE_LABEL[stage], count: periodCounts[stage] })),
     },
     cohort: { rows },
+    acquisition: acquisitionAvailable
+      ? { rows: acquisitionRows, note: ACQUISITION_NOTE }
+      : { rows: [], note: ACQUISITION_UNAVAILABLE_NOTE },
     reconciliation: {
       quoteRequests: { databaseRows: input.quoteRequestsCreated, ledgerLeads: ledgerLeadQuotes.size + ledgerLeadsNoQuote },
       appointments: { databaseRows: input.appointmentsCreated, ledgerAppointments: periodCounts.APPOINTMENT_BOOKED },
@@ -354,10 +419,17 @@ export async function loadFunnelReport(
           )`),
     ]);
 
+  /* First touch lives in its own table (lib/lead-acquisition.ts); a failure to read it must never fail the report. */
+  const acq = await acquisitionByQuote(
+    [...new Set(ledgerRows.filter((r) => r.stage === 'LEAD_CAPTURED' && r.quoteId !== null).map((r) => r.quoteId as string))],
+  );
+
   const report = buildFunnelReport({
+    acquisitionAvailable: acq.available,
     ledger: ledgerRows.map((r) => ({
       stage: r.stage,
       source: r.source,
+      acquisition: r.quoteId ? acq.byQuote.get(r.quoteId) ?? null : null,
       hasDesign: r.designId !== null,
       quoteId: r.quoteId,
       projectId: r.projectId,

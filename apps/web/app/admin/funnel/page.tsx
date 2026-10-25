@@ -23,12 +23,14 @@ export const dynamic = 'force-dynamic';
 
 const pct = (v: number | null) => (v === null ? '—' : `${v}%`);
 
-function CohortTable({ rows }: { rows: CohortRow[] }) {
+type TableRow = { id: string; label: string; counts: CohortRow['counts']; stepRates: CohortRow['stepRates']; unlinkedLeads?: number };
+
+function CohortTable({ rows, firstHeader = 'Channel' }: { rows: TableRow[]; firstHeader?: string }) {
   return (
     <table className="admin-table">
       <thead>
         <tr>
-          <th>Channel</th>
+          <th>{firstHeader}</th>
           {FUNNEL_ORDER.map((s, i) => (
             <th key={s}>{i === 0 ? 'Leads' : `→ ${s.toLowerCase().replace(/_/g, ' ')}`}</th>
           ))}
@@ -36,10 +38,10 @@ function CohortTable({ rows }: { rows: CohortRow[] }) {
       </thead>
       <tbody>
         {rows.map((r) => (
-          <tr key={r.channel}>
+          <tr key={r.id}>
             <td>
               {r.label}
-              {r.unlinkedLeads > 0 && <span className="admin-muted"> ({r.unlinkedLeads} not followable)</span>}
+              {(r.unlinkedLeads ?? 0) > 0 && <span className="admin-muted"> ({r.unlinkedLeads} not followable)</span>}
             </td>
             {FUNNEL_ORDER.map((s, i) => (
               <td key={s}>
@@ -115,7 +117,17 @@ export default async function FunnelPage({
           conversion from the stage before in brackets. A dash means nothing to divide by. Channels come
           from the lead&rsquo;s recorded source; a Floor Studio design id takes precedence.
         </p>
-        <CohortTable rows={report.cohort.rows} />
+        <CohortTable rows={report.cohort.rows.map((r) => ({ ...r, id: r.channel }))} />
+      </section>
+
+      <section className="admin-card">
+        <h2>The same leads, by how the visit began</h2>
+        <p className="admin-note">{report.acquisition.note}</p>
+        {report.acquisition.rows.length === 0 ? (
+          <p className="admin-muted">No leads in this window.</p>
+        ) : (
+          <CohortTable rows={report.acquisition.rows.map((r) => ({ ...r, id: r.key }))} firstHeader="First touch" />
+        )}
       </section>
 
       <section className="admin-card">
