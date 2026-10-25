@@ -66,14 +66,27 @@ export function findDataLinks(html, base = CATALOGUE_URL, cap = 60) {
   return [...out].slice(0, cap);
 }
 
-/** Pull candidate CSV download links out of the catalogue page, absolute, de-duplicated. */
-export function findCsvLinks(html, base = CATALOGUE_URL) {
-  const out = new Set();
-  for (const m of html.matchAll(/href="([^"]+)"/gi)) {
+/** CSV download anchors with their visible text, absolute and de-duplicated by URL. */
+export function findCsvAnchors(html, base = CATALOGUE_URL) {
+  const out = new Map();
+  for (const m of html.matchAll(/<a\b[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi)) {
     const href = m[1].replace(/&amp;/g, '&');
-    if (/(FILETYPE=CSV|_CSV\.zip|csv.*\.zip)/i.test(href)) out.add(new URL(href, base).toString());
+    if (!/(FILETYPE=CSV|_CSV\.zip|csv.*\.zip)/i.test(href)) continue;
+    const text = m[2].replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    try { out.set(new URL(href, base).toString(), text); } catch { /* not a URL */ }
   }
-  return [...out];
+  return [...out].map(([url, text]) => ({ url, text }));
+}
+export const findCsvLinks = (html, base = CATALOGUE_URL) => findCsvAnchors(html, base).map((a) => a.url);
+
+/** The one anchor that is the census-subdivision profile, or an error naming every candidate. */
+export function pickCsdAnchor(anchors) {
+  const hits = anchors.filter((a) => /census subdivisions?|\bCSDs?\b/i.test(a.text));
+  if (hits.length !== 1) {
+    throw new Error(`expected exactly one census-subdivision CSV link, found ${hits.length} of ${anchors.length}:\n` +
+      anchors.map((a) => `  ${a.text} -> ${a.url}`).join('\n'));
+  }
+  return hits[0].url;
 }
 
 async function get(url, types, opts = {}) {
@@ -92,11 +105,20 @@ async function main() {
   let caUrl = a.includes('--ca-url') ? a[a.indexOf('--ca-url') + 1] : '';
   if (!caUrl) {
     const page = await get(CATALOGUE_URL, ['text/html']);
-    const links = findCsvLinks(page.buf.toString('utf8'));
-    console.log(`catalogue page (${page.buf.length} bytes) lists ${links.length} CSV link(s):\n${links.join('\n')}`);
-    if (links.length === 0) console.log(`links that may lead to the data:\n${findDataLinks(page.buf.toString('utf8')).join('\n')}`);
-    if (links.length !== 1) throw new Error(`expected exactly one CSV download link on the catalogue page, found ${links.length}; pass --ca-url`);
-    caUrl = links[0];
+    let html = page.buf.toString('utf8');
+    let anchors = findCsvAnchors(html);
+    if (anchors.length === 0) {
+      /* The catalogue page points at the Census Profile download page, which lists the files. */
+      const next = findDataLinks(html).find((u) => /download-telecharger\.cfm/i.test(u));
+      console.log(`catalogue page has no CSV link; following ${next ?? '(no download page link)'}`);
+      if (!next) throw new Error(`no download page link found; candidates:\n${findDataLinks(html).join('\n')}`);
+      const dl = await get(next, ['text/html']);
+      html = dl.buf.toString('utf8');
+      anchors = findCsvAnchors(html, next);
+      console.log(`download page (${dl.buf.length} bytes) lists ${anchors.length} CSV link(s):\n${anchors.map((x) => `  ${x.text} -> ${x.url}`).join('\n')}`);
+      if (anchors.length === 0) console.log(`links on the download page:\n${findDataLinks(html, next).join('\n')}`);
+    }
+    caUrl = pickCsdAnchor(anchors);
   }
   const zip = await get(caUrl, ['zip', 'octet-stream', 'csv']);
   let csv;

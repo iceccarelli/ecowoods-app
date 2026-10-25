@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { checkResponse, checkCsvHeader, checkAcsJson, findCsvLinks, isZip, MIN_ACS_ROWS } from './geo-fetch.mjs';
+import { checkResponse, checkCsvHeader, checkAcsJson, findCsvLinks, findCsvAnchors, pickCsdAnchor, isZip, MIN_ACS_ROWS } from './geo-fetch.mjs';
 import { US_VARIABLES } from './geo-sources.mjs';
 
 const res = (status, type) => ({ status, headers: new Headers({ 'content-type': type }) });
@@ -36,4 +36,13 @@ test('catalogue links: only CSV downloads, absolute and de-duplicated', () => {
   const html = '<a href="/x/GetFile.cfm?Lang=E&amp;FILETYPE=CSV&amp;GEONO=005">csv</a><a href="/y.pdf">pdf</a><a href="/x/GetFile.cfm?Lang=E&amp;FILETYPE=CSV&amp;GEONO=005">dup</a>';
   const links = findCsvLinks(html, 'https://www150.statcan.gc.ca/n1/en/catalogue/98-401-X2021005');
   assert.deepEqual(links, ['https://www150.statcan.gc.ca/x/GetFile.cfm?Lang=E&FILETYPE=CSV&GEONO=005']);
+});
+
+test('the census-subdivision file is picked by its visible text, and only when unambiguous', () => {
+  const html = '<a href="/a?FILETYPE=CSV&amp;GEONO=1">Canada, provinces and territories</a>' +
+    '<a href="/b?FILETYPE=CSV&amp;GEONO=2"><span>Census subdivisions (CSD)</span></a>';
+  const anchors = findCsvAnchors(html, 'https://example.org/x');
+  assert.equal(pickCsdAnchor(anchors), 'https://example.org/b?FILETYPE=CSV&GEONO=2');
+  assert.throws(() => pickCsdAnchor(anchors.slice(0, 1)), /found 0 of 1/);
+  assert.throws(() => pickCsdAnchor([...anchors, { url: 'u', text: 'Census subdivisions again' }]), /found 2 of 3/);
 });
