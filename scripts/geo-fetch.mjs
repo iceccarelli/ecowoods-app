@@ -90,7 +90,14 @@ export function pickCsdAnchor(anchors) {
 }
 
 async function get(url, types, opts = {}) {
-  const res = await fetch(url, { redirect: 'follow', headers: { 'user-agent': 'ecowoods-geo-ingest (+https://ecowoods.ca)' } });
+  const res = await fetch(url, {
+    redirect: 'follow',
+    headers: {
+      'user-agent': 'Mozilla/5.0 (compatible; ecowoods-geo-ingest/1.0; +https://ecowoods.ca)',
+      accept: 'text/html,application/xhtml+xml,application/zip,application/json;q=0.9,*/*;q=0.8',
+      'accept-language': 'en-CA,en;q=0.9',
+    },
+  });
   const type = checkResponse(res, url, types);
   return { buf: Buffer.from(await res.arrayBuffer()), type, finalUrl: res.url, ...opts };
 }
