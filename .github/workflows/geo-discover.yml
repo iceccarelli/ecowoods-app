@@ -20,3 +20,4 @@ jobs:
         with:
           node-version: 22
       - run: node scripts/geo-wds-discover.mjs
+      - run: node scripts/geo-wds-cube.mjs 98100060 98100240 98100257
