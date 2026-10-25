@@ -28,6 +28,12 @@ export const MIN_CA_BYTES = 50 * 1024 * 1024; // the CSD-level profile is hundre
 export const MIN_ACS_ROWS = 100;
 export const WDS = 'https://www150.statcan.gc.ca/t1/wds/rest';
 export const WDS_REQUIRED_COLUMNS = ['REF_DATE', 'GEO', 'DGUID', 'Coordinate'];
+/** The Census API answers keyless data queries with a redirect to its "Missing Key" page. */
+export function explainCensusRedirect(finalUrl) {
+  return /api\.census\.gov\/data\/missing_key/.test(finalUrl)
+    ? 'the Census API requires an API key: request one free at https://api.census.gov/data/key_signup.html and add it as the repository secret CENSUS_API_KEY'
+    : null;
+}
 export const MIN_WDS_BYTES = 5 * 1024 * 1024;
 
 /** The WDS answer to getFullTableDownloadCSV: SUCCESS and an https statcan.gc.ca URL, nothing else. */
@@ -117,6 +123,7 @@ async function getWithRetry(url, types, tries = 3) {
     try { return await get(url, types); } catch (e) {
       last = e;
       console.warn(`attempt ${i}/${tries} failed: ${e.message}`);
+      if (/requires an API key/.test(e.message)) throw e;
       if (i < tries) await new Promise((r) => setTimeout(r, 5000 * i));
     }
   }
@@ -132,6 +139,8 @@ async function get(url, types, opts = {}) {
       'accept-language': 'en-CA,en;q=0.9',
     },
   });
+  const needKey = explainCensusRedirect(res.url);
+  if (needKey) throw new Error(needKey);
   let type;
   try { type = checkResponse(res, url.replace(/([?&]key=)[^&]+/, '$1…'), types); } catch (e) {
     const body = (await res.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 300);

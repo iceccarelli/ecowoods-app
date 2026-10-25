@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { checkResponse, checkCsvHeader, checkAcsJson, findCsvLinks, findCsvAnchors, pickCsdAnchor, isZip, MIN_ACS_ROWS } from './geo-fetch.mjs';
+import { explainCensusRedirect, checkResponse, checkCsvHeader, checkAcsJson, findCsvLinks, findCsvAnchors, pickCsdAnchor, isZip, MIN_ACS_ROWS } from './geo-fetch.mjs';
 import { US_VARIABLES } from './geo-sources.mjs';
 
 const res = (status, type) => ({ status, headers: new Headers({ 'content-type': type }) });
@@ -46,4 +46,9 @@ test('the census-subdivision file is picked by its visible text, and only when u
   assert.equal(pickCsdAnchor(anchors), 'https://example.org/b?FILETYPE=CSV&GEONO=2');
   assert.throws(() => pickCsdAnchor(anchors.slice(0, 1)), /found 0 of 1/);
   assert.throws(() => pickCsdAnchor([...anchors, { url: 'u', text: 'Census subdivisions again' }]), /found 2 of 3/);
+});
+
+test('a redirect to the Census "Missing Key" page is explained, anything else is not', () => {
+  assert.match(explainCensusRedirect('https://api.census.gov/data/missing_key.html'), /CENSUS_API_KEY/);
+  assert.equal(explainCensusRedirect('https://api.census.gov/data/2024/acs/acs5?get=NAME'), null);
 });
