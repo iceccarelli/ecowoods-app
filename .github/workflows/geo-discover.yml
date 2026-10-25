@@ -21,3 +21,12 @@ jobs:
           node-version: 22
       - run: node scripts/geo-wds-discover.mjs
       - run: node scripts/geo-wds-cube.mjs 98100060 98100240 98100257
+      - name: Probe the Census API (status only)
+        run: |
+          B=https://api.census.gov/data/2024/acs/acs5
+          probe() { printf '%s -> ' "$1"; curl -sS -m 60 -o /tmp/body -w '%{http_code} %{content_type} %{size_download}B %{time_total}s\n' "$1" || echo "curl failed ($?)"; head -c 160 /tmp/body | tr '\n' ' '; echo; }
+          probe "$B?get=NAME&for=state:36"
+          probe "$B/variables/B19013_001E.json"
+          probe "$B?get=NAME,B19013_001E&for=place:11000&in=state:36"
+          probe "$B?get=NAME,B19013_001E&for=place:*&in=state:36"
+          probe "$B?get=NAME,B19013_001E,B25077_001E,B25034_001E,B25024_001E&for=county%20subdivision:*&in=state:36&in=county:029"
