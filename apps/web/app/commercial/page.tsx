@@ -235,8 +235,8 @@ export default function CommercialPage() {
       <section className="tlx-section" aria-label="Coverage and comparing bids">
         <div className="shell">
           <p>
-            Commercial work is taken across the same {SERVICE_AREAS.length} published areas as
-            residential work: <Link href="/service-areas">see where we work</Link>. If your board
+            {`Commercial work is taken across the same ${SERVICE_AREAS.length} published areas as residential work: `}
+            <Link href="/service-areas">see where we work</Link>. If your board
             or property manager is already holding bids, the{' '}
             <Link href="/quote-check">quote check</Link> lays two to four of them side by side so
             that the totals are comparing the same scope.

@@ -17,10 +17,13 @@ export function ReviewProof({ className = 'fw-meta' }: { className?: string }) {
       {rows.map((r, i) => (
         <span key={r.platform}>
           {i > 0 && <span aria-hidden="true"> · </span>}
+          {/* One template literal per sentence: JSX children with interpolations render as separate
+              text nodes with comment markers between them, and a crawler that does not merge them
+              cannot quote "177 reviews at 5.0/5 on HomeStars" as one sentence. */}
           <a href={r.href} target="_blank" rel="noopener noreferrer">
-            {r.count} reviews at {r.rating.toFixed(1)}/{r.outOf} on {r.platform}
-          </a>{' '}
-          (read {r.asOf})
+            {`${r.count} reviews at ${r.rating.toFixed(1)}/${r.outOf} on ${r.platform}`}
+          </a>
+          {` (read ${r.asOf})`}
         </span>
       ))}
       <span aria-hidden="true"> · </span>

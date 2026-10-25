@@ -90,3 +90,37 @@ vercel ls ecowoods-app --prod                    # what has been deploying, and 
 An alias whose deployment lists `…-git-<branch>-…` was produced by the Git
 integration from that branch. If that branch is not the branch you are working
 on, that is the whole answer.
+
+## Database migrations
+
+A deploy never applies a migration. Code reaches production on push to `main`;
+the database changes only when someone applies the migration, so every change
+must work in either order (see `CLAUDE.md`: prefer a new table whose reads and
+writes catch their own failure over new columns on a table read everywhere).
+
+Production's database is the Supabase project named `ecowoods`
+(`wxqjbtcnbhymnfqlvbch`), schema `ecowoods`. That identity was proven rather
+than assumed: a request to the live site that passes the durable rate limiter
+writes a `RateLimitBucket` row, and the write appeared in that project in the
+same second. Repeat that check if the project is ever moved or cloned.
+
+Migrations since 2026-10-21 were applied with the Supabase migration tool using
+the exact SQL of the repository's `prisma/migrations/<name>/migration.sql`, and
+are recorded in Supabase's history, not in `_prisma_migrations`. Therefore
+`prisma migrate deploy` is not a safe way to catch up this database, and
+`prisma migrate dev` and `prisma db push` must never be pointed at it.
+`/api/internal/schema-status` reads `_prisma_migrations` and will list those
+migrations as missing; that is expected, not an outage.
+
+Before applying one, check that only that migration is pending (compare the
+schema's tables and recent columns with `schema.prisma`), apply the exact file,
+then verify the table, columns and indexes and run the Supabase security
+advisor. Only the application's own role and `service_role` may reach the
+`ecowoods` schema: `anon` and `authenticated` must have no `USAGE` on it.
+
+The `public` schema holds unused older copies of some application tables. Their
+API-role access was revoked and row-level security enabled on 2026-10-25
+(migration `contain_legacy_public_tables_api_access` in Supabase's history;
+reverse with `GRANT ALL ... TO anon, authenticated`). Supabase's default
+privileges grant `anon` and `authenticated` everything on any new table in
+`public`, so never create application tables there.
