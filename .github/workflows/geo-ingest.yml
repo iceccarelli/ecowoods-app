@@ -67,7 +67,7 @@ jobs:
           node scripts/verify-market-inputs.mjs
           node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs scripts/geo-ingest.mjs \
             $CA_ARGS \
-            $US_ARGS --discover > "$RUNNER_TEMP/geo/candidates.tsv" || true
+            $US_ARGS --discover | tee "$RUNNER_TEMP/geo/candidates.tsv" || true
       - name: Collect reviewable output
         run: |
           mkdir -p "$RUNNER_TEMP/out"

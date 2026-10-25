@@ -70,11 +70,7 @@
       }
     },
     "aurora": {
-      "direct": {
-        "system": "statcan-csd",
-        "id": "3519049",
-        "name": "Aurora"
-      }
+      "unmapped": "Code 3519049 belongs to King in the 2021 census tables, not Aurora; Aurora's own code is not yet confirmed from the downloaded file"
     },
     "newmarket": {
       "direct": {
@@ -146,7 +142,11 @@
       "parent": "toronto"
     },
     "king": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3519049",
+        "name": "King"
+      }
     },
     "king-city": {
       "parent": "king"
@@ -202,11 +202,7 @@
       }
     },
     "halton-hills": {
-      "direct": {
-        "system": "statcan-csd",
-        "id": "3524011",
-        "name": "Halton Hills"
-      }
+      "unmapped": "Code 3524011 returned no rows in the 2021 census tables; the correct code is not yet confirmed from the downloaded file"
     },
     "caledon": {
       "direct": {

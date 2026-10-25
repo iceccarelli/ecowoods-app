@@ -21,7 +21,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateFacts, validateCrosswalk, deriveInputs, METHOD_VERSION } from './geo-lib.mjs';
 import { readCensusProfile, fileLines, readAcs, caFacts, usFacts, US_VARIABLES } from './geo-sources.mjs';
-import { WDS_TABLES, readWdsCube, wdsFacts } from './geo-wds.mjs';
+import { WDS_TABLES, readWdsCube, wdsFacts, geoBase } from './geo-wds.mjs';
 
 const ROOT = process.cwd();
 const GEO = join(ROOT, 'apps/web/content/geo');
@@ -81,7 +81,22 @@ async function main() {
         }
       }
     }
-    if (!caFile) { if (!usFiles) { console.error('--discover needs --ca-csv and/or --us-json'); process.exit(1); } return; }
+    if (wdsDir) {
+      /* Candidates from the income cube: every Ontario CSD whose name equals an unmapped market's name. */
+      const names = new Map(markets.filter((m) => m.country === 'CA' && map.markets[m.slug].unmapped).map((m) => [MARKETS.find((x) => x.slug === m.slug).name.toLowerCase(), m.slug]));
+      const { parseCsvLine } = await import('./geo-sources.mjs');
+      const seen = new Set();
+      let col = null;
+      for await (const line of fileLines(join(wdsDir, '98100060.csv'))) {
+        const c = parseCsvLine(line);
+        if (!col) { col = Object.fromEntries(c.map((h, i) => [h.replace(/^\uFEFF/, '').trim(), i])); continue; }
+        const dguid = c[col.DGUID] ?? '';
+        if (seen.has(dguid) || !dguid.startsWith('2021A000535')) continue;
+        const slug = names.get(geoBase(c[col.GEO]).toLowerCase());
+        if (slug) { seen.add(dguid); console.log(`${slug}\t${dguid.slice(-7)}\t${c[col.GEO]}`); }
+      }
+    }
+    if (!caFile) { if (!usFiles && !wdsDir) { console.error('--discover needs --ca-csv and/or --us-json'); process.exit(1); } return; }
     const want = new Map(markets.filter((m) => m.country === 'CA' && map.markets[m.slug].unmapped).map((m) => [m.slug, MARKETS.find((x) => x.slug === m.slug).name]));
     const names = new Set(want.values());
     let col = null;

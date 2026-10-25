@@ -1,7 +1,7 @@
 /** Web Data Service reader on SYNTHETIC rows in the cube's wide CSV layout. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readWdsCube, wdsFacts, WDS_TABLES, dimName, parseWideHeader } from './geo-wds.mjs';
+import { readWdsCube, wdsFacts, WDS_TABLES, dimName, parseWideHeader, geoBase } from './geo-wds.mjs';
 import { checkWdsDownloadReply, checkWdsHeader } from './geo-fetch.mjs';
 import { validateFacts } from './geo-lib.mjs';
 
@@ -104,4 +104,11 @@ test('download reply and CSV header checks', () => {
   assert.throws(() => checkWdsHeader('GEO,VALUE', 'p'), /missing column/);
   assert.throws(() => checkWdsHeader('REF_DATE,GEO,DGUID,Coordinate', 'p'), /no "<dimension>:<member>\[n\]"/);
   assert.ok(checkWdsHeader('REF_DATE,GEO,DGUID,Coordinate,"A (2):$100,000 to $149,999[3]",Symbol', 'p').includes('A (2):$100,000 to $149,999[3]'), 'quoted commas');
+});
+
+test('geography names: plain, with province, and with the "(code) type" suffix all reduce to the name', () => {
+  assert.equal(geoBase('Toronto'), 'Toronto');
+  assert.equal(geoBase('Toronto, Ontario'), 'Toronto');
+  assert.equal(geoBase('Toronto (3520005) C'), 'Toronto');
+  assert.equal(geoBase('St. Catharines (3526053) CY'), 'St. Catharines');
 });

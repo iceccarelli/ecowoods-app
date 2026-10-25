@@ -111,7 +111,9 @@ export async function readWdsCube(lines, table, wantedCsds) {
   return { found, notes };
 }
 
-const geoMatches = (geo, name) => geo.split(',')[0].trim().toLowerCase() === name.toLowerCase();
+/** "Toronto", "Toronto, Ontario" and "Toronto (3520005) C" all name Toronto; the DGUID already fixed the code. */
+export const geoBase = (geo) => geo.replace(/\s*\(\d{7}\).*$/, '').split(',')[0].trim();
+const geoMatches = (geo, name) => geoBase(geo).toLowerCase() === name.toLowerCase();
 
 /** Facts for every direct Canadian market the cubes cover. `report` collects what did not become a fact. */
 export function wdsFacts(reads, map, markets, retrievedAt, report) {
