@@ -70,7 +70,11 @@
       }
     },
     "aurora": {
-      "unmapped": "Code 3519049 belongs to King in the 2021 census tables, not Aurora; Aurora's own code is not yet confirmed from the downloaded file"
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3519046",
+        "name": "Aurora"
+      }
     },
     "newmarket": {
       "direct": {
@@ -202,7 +206,11 @@
       }
     },
     "halton-hills": {
-      "unmapped": "Code 3524011 returned no rows in the 2021 census tables; the correct code is not yet confirmed from the downloaded file"
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3524015",
+        "name": "Halton Hills"
+      }
     },
     "caledon": {
       "direct": {
@@ -240,7 +248,11 @@
       }
     },
     "innisfil": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3543017",
+        "name": "Innisfil"
+      }
     },
     "hamilton": {
       "direct": {
@@ -262,7 +274,11 @@
       "parent": "hamilton"
     },
     "grimsby": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3526065",
+        "name": "Grimsby"
+      }
     },
     "guelph": {
       "direct": {
@@ -286,7 +302,11 @@
       }
     },
     "lincoln": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3526057",
+        "name": "Lincoln"
+      }
     },
     "beamsville": {
       "parent": "lincoln"
@@ -299,7 +319,11 @@
       }
     },
     "thorold": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3526037",
+        "name": "Thorold"
+      }
     },
     "welland": {
       "direct": {
@@ -309,7 +333,11 @@
       }
     },
     "niagara-on-the-lake": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3526047",
+        "name": "Niagara-on-the-Lake"
+      }
     },
     "niagara-falls-on": {
       "direct": {
@@ -319,13 +347,25 @@
       }
     },
     "port-colborne": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3526011",
+        "name": "Port Colborne"
+      }
     },
     "fort-erie": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3526003",
+        "name": "Fort Erie"
+      }
     },
     "kawartha-lakes": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3516010",
+        "name": "Kawartha Lakes"
+      }
     },
     "buffalo": {
       "direct": {
