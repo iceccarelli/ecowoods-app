@@ -127,12 +127,16 @@ async function downloadWdsCube(pid, out, manifest) {
   const reply = await get(`${WDS}/getFullTableDownloadCSV/${pid}/en`, ['json']);
   const url = checkWdsDownloadReply(JSON.parse(reply.buf.toString('utf8')), pid);
   const res = await fetch(url, { redirect: 'follow', headers: { 'user-agent': 'ecowoods-geo-ingest/1.0 (+https://ecowoods.ca)' } });
-  checkResponse(res, url, ['zip', 'octet-stream']);
+  const type = checkResponse(res, url, ['zip', 'octet-stream']);
   const zip = join(out, `${pid}.zip`);
   await pipeline(Readable.fromWeb(res.body), createWriteStream(zip));
   const head = Buffer.alloc(4);
   const fd = openSync(zip, 'r'); readSync(fd, head, 0, 4, 0); closeSync(fd);
-  if (!isZip(head)) throw new Error(`WDS ${pid}: download is not a zip`);
+  if (!isZip(head)) {
+    const peek = Buffer.alloc(200);
+    const f = openSync(zip, 'r'); const got = readSync(f, peek, 0, 200, 0); closeSync(f);
+    throw new Error(`WDS ${pid}: download is not a zip (url ${url}, content-type ${type}, ${statSync(zip).size} bytes, starts ${JSON.stringify(peek.subarray(0, got).toString('latin1'))})`);
+  }
   execFileSync('unzip', ['-o', '-q', zip, `${pid}.csv`, '-d', out]);
   const csv = join(out, `${pid}.csv`);
   const size = statSync(csv).size;
