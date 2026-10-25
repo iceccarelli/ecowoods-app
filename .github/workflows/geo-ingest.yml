@@ -14,9 +14,17 @@ on:
         description: 'Optional: a Census Profile CSV (zip) URL. Leave empty to use the Web Data Service tables.'
         required: false
         default: ''
+      publish_branch:
+        description: 'Push the generated files to a review branch geo-ingest/<date>-<run> (never main).'
+        type: boolean
+        default: false
+      include_us:
+        description: 'Also download the U.S. ACS files (needs the Census API to answer).'
+        type: boolean
+        default: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   ingest:
@@ -30,38 +38,53 @@ jobs:
       - name: Download and validate the official files
         env:
           CA_URL: ${{ inputs.ca_url }}
-        run: node scripts/geo-fetch.mjs --out "$RUNNER_TEMP/geo" ${CA_URL:+--ca-url "$CA_URL"}
+          INCLUDE_US: ${{ inputs.include_us }}
+          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+        run: node scripts/geo-fetch.mjs --out "$RUNNER_TEMP/geo" ${CA_URL:+--ca-url "$CA_URL"} $([ "$INCLUDE_US" = "false" ] && echo --no-us)
       - name: Ingest (dry run first)
         env:
           CA_URL: ${{ inputs.ca_url }}
         run: |
           if [ -n "$CA_URL" ]; then CA_ARGS="--ca-csv $RUNNER_TEMP/geo/census-profile.csv"; else CA_ARGS="--wds-csv-dir $RUNNER_TEMP/geo"; fi
+          if [ -f "$RUNNER_TEMP/geo/acs-place.json" ]; then US_ARGS="--us-json $RUNNER_TEMP/geo/acs-place.json,$RUNNER_TEMP/geo/acs-cousub.json"; else US_ARGS=""; fi
           RETRIEVED=$(date -u +%F)
           node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs scripts/geo-ingest.mjs \
             $CA_ARGS \
-            --us-json "$RUNNER_TEMP/geo/acs-place.json,$RUNNER_TEMP/geo/acs-cousub.json" \
+            $US_ARGS \
             --retrieved "$RETRIEVED" --report "$RUNNER_TEMP/geo/ingest-report.txt"
       - name: Write, then run the repository guards on the result
         env:
           CA_URL: ${{ inputs.ca_url }}
         run: |
           if [ -n "$CA_URL" ]; then CA_ARGS="--ca-csv $RUNNER_TEMP/geo/census-profile.csv"; else CA_ARGS="--wds-csv-dir $RUNNER_TEMP/geo"; fi
+          if [ -f "$RUNNER_TEMP/geo/acs-place.json" ]; then US_ARGS="--us-json $RUNNER_TEMP/geo/acs-place.json,$RUNNER_TEMP/geo/acs-cousub.json"; else US_ARGS=""; fi
           RETRIEVED=$(date -u +%F)
           node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs scripts/geo-ingest.mjs \
             $CA_ARGS \
-            --us-json "$RUNNER_TEMP/geo/acs-place.json,$RUNNER_TEMP/geo/acs-cousub.json" \
+            $US_ARGS \
             --retrieved "$RETRIEVED" --write
           node scripts/verify-geo-data.mjs
           node scripts/verify-market-inputs.mjs
           node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs scripts/geo-ingest.mjs \
             $CA_ARGS \
-            --us-json "$RUNNER_TEMP/geo/acs-place.json,$RUNNER_TEMP/geo/acs-cousub.json" --discover > "$RUNNER_TEMP/geo/candidates.tsv" || true
+            $US_ARGS --discover > "$RUNNER_TEMP/geo/candidates.tsv" || true
       - name: Collect reviewable output
         run: |
           mkdir -p "$RUNNER_TEMP/out"
           cp apps/web/content/geo/sourced-facts.json apps/web/content/geo/market-inputs.generated.ts "$RUNNER_TEMP/out/"
           cp "$RUNNER_TEMP/geo/fetch-manifest.json" "$RUNNER_TEMP/geo/ingest-report.txt" "$RUNNER_TEMP/geo/candidates.tsv" "$RUNNER_TEMP/out/"
           git diff --stat > "$RUNNER_TEMP/out/diff-stat.txt" || true
+      - name: Push a review branch (not main)
+        if: ${{ inputs.publish_branch }}
+        run: |
+          BRANCH="geo-ingest/$(date -u +%F)-${GITHUB_RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add apps/web/content/geo/sourced-facts.json apps/web/content/geo/market-inputs.generated.ts
+          git commit -m "Geo ingest result for review (run ${GITHUB_RUN_ID}); not for main until checked"
+          git push origin "$BRANCH"
+          echo "review branch: $BRANCH"
       - uses: actions/upload-artifact@v4
         with:
           name: geo-ingest-result

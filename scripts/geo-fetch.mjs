@@ -111,16 +111,32 @@ export function pickCsdAnchor(anchors) {
   return hits[0].url;
 }
 
+async function getWithRetry(url, types, tries = 3) {
+  let last;
+  for (let i = 1; i <= tries; i++) {
+    try { return await get(url, types); } catch (e) {
+      last = e;
+      console.warn(`attempt ${i}/${tries} failed: ${e.message}`);
+      if (i < tries) await new Promise((r) => setTimeout(r, 5000 * i));
+    }
+  }
+  throw last;
+}
+
 async function get(url, types, opts = {}) {
   const res = await fetch(url, {
     redirect: 'follow',
     headers: {
       'user-agent': 'Mozilla/5.0 (compatible; ecowoods-geo-ingest/1.0; +https://ecowoods.ca)',
-      accept: 'text/html,application/xhtml+xml,application/zip,application/json;q=0.9,*/*;q=0.8',
+      accept: types.includes('json') && !types.includes('html') ? 'application/json' : 'text/html,application/xhtml+xml,application/zip,application/json;q=0.9,*/*;q=0.8',
       'accept-language': 'en-CA,en;q=0.9',
     },
   });
-  const type = checkResponse(res, url, types);
+  let type;
+  try { type = checkResponse(res, url.replace(/([?&]key=)[^&]+/, '$1…'), types); } catch (e) {
+    const body = (await res.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 300);
+    throw new Error(`${e.message}${body ? ` — body starts: ${JSON.stringify(body)}` : ''}`);
+  }
   return { buf: Buffer.from(await res.arrayBuffer()), type, finalUrl: res.url, ...opts };
 }
 
@@ -176,7 +192,8 @@ async function main() {
     caUrl = pickCsdAnchor(anchors);
   }
   if (caUrl || a.includes('--ca-profile')) await downloadProfile(caUrl, out, manifest);
-  await downloadAcs(out, manifest);
+  if (!a.includes('--no-us')) await downloadAcs(out, manifest);
+  else manifest.files.push({ name: 'acs', skipped: true });
   writeFileSync(join(out, 'fetch-manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
   console.log(JSON.stringify(manifest, null, 2));
 }
@@ -201,8 +218,9 @@ async function downloadProfile(caUrl, out, manifest) {
 
 async function downloadAcs(out, manifest) {
   for (const [name, geo] of [['acs-place.json', 'place:*&in=state:36'], ['acs-cousub.json', 'county%20subdivision:*&in=state:36&in=county:*']]) {
+    const key = process.env.CENSUS_API_KEY ? `&key=${encodeURIComponent(process.env.CENSUS_API_KEY)}` : '';
     const url = `${ACS_BASE}?get=NAME,${US_VARIABLES.join(',')}&for=${geo}`;
-    const r = await get(url, ['json']);
+    const r = await getWithRetry(url + key, ['json']);
     const json = JSON.parse(r.buf.toString('utf8'));
     const rows = checkAcsJson(json, name);
     writeFileSync(join(out, name), r.buf);
