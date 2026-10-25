@@ -55,7 +55,7 @@ export function checkResponse(res, url, allowedTypes) {
   return type;
 }
 
-export const isZip = (buf) => buf.length > 4 && buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04;
+export const isZip = (buf) => buf.length >= 4 && buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04;
 
 /** First line of a Census Profile CSV must carry every column the reader needs. */
 export function checkCsvHeader(line) {

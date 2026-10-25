@@ -13,6 +13,7 @@ test('an error page or wrong content type is refused', () => {
 
 test('zip magic bytes', () => {
   assert.equal(isZip(Buffer.from([0x50, 0x4b, 3, 4, 0])), true);
+  assert.equal(isZip(Buffer.from([0x50, 0x4b, 3, 4])), true, 'exactly the four signature bytes');
   assert.equal(isZip(Buffer.from('<html>')), false);
 });
 
