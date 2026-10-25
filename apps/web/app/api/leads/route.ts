@@ -338,7 +338,7 @@ export async function POST(request: Request) {
     timeline: lead.timeline ? String(lead.timeline) : undefined,
     source: lead.source ? String(lead.source) : undefined,
     city: lead.city ? String(lead.city) : lead.postal ? String(lead.postal) : undefined,
-    notes: (persisted ? '' : `NOT CONFIRMED SAVED (ref ${leadId}) — check /admin/quotes for this email/phone before entering it by hand.\n\n`) + (leadNotes(lead) ?? ''),
+    notes: (persisted ? '' : `NOT CONFIRMED SAVED (ref ${leadId}) — check /admin/quotes for this email/phone before entering it by hand.\n\n`) + (leadNotes(lead, acquisition) ?? ''),
   }).catch((err) =>
     console.error(JSON.stringify({ event: 'lead.email_failed', leadId, error: err instanceof Error ? err.message : 'unknown' })),
   ));
