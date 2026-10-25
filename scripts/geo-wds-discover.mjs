@@ -26,9 +26,9 @@ async function main() {
   const rows = cubes
     .filter((c) => /^98100/.test(String(c.productId)) || /2021 census/i.test(c.cubeTitleEn ?? ''))
     .map((c) => ({ id: c.productId, title: c.cubeTitleEn, start: c.cubeStartDate, end: c.cubeEndDate, topics: matchesTopic(c.cubeTitleEn ?? '') }))
-    .filter((r) => r.topics.length)
+    .filter((r) => r.topics.length && /census subdivision/i.test(r.title ?? ''))
     .sort((a, b) => String(a.id).localeCompare(String(b.id)));
-  console.log(`${rows.length} candidate 2021-census cube(s):`);
+  console.log(`${rows.length} candidate 2021-census cube(s) with census-subdivision geography:`);
   for (const r of rows) console.log(`${r.id}\t${r.topics.join('+')}\t${r.start}..${r.end}\t${r.title}`);
   if (!rows.length) throw new Error('no 2021 census cubes matched');
 }
