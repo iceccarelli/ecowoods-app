@@ -1,4 +1,5 @@
 import { ReviewProof } from '@/app/components/ReviewProof';
+import { localCensusLine } from '@/lib/geo/public-facts';
 import type { Metadata } from 'next';
 import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import { notFound } from 'next/navigation';
@@ -319,6 +320,30 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
                     ` Crews reach it on the ${placement.corridors.map((c) => c.name).join(' and ')} ${placement.corridors.length > 1 ? 'routes' : 'route'}, from the Etobicoke shop.`}
                 </p>
               )}
+            </div>
+          </section>
+        );
+      })()}
+
+      {/* One plain, cited local fact from the 2021 Census. Municipalities that are
+          a census geography of their own only; districts and New York get none. */}
+      {(() => {
+        const census = localCensusLine(city.slug, areaDisplayName(city));
+        if (!census) return null;
+        return (
+          <section className="section-tight" aria-label={`Homes in ${areaDisplayName(city)}, from the census`}>
+            <div className="shell">
+              <p style={{ maxWidth: '52rem', lineHeight: 1.7 }}>{census.text}</p>
+              <p style={{ maxWidth: '52rem', fontSize: '0.875rem', opacity: 0.8 }}>
+                Source:{' '}
+                {census.sources.map((src, i) => (
+                  <span key={src.url}>
+                    {i > 0 && '; '}
+                    <a href={src.url} rel="noopener noreferrer">{src.label}</a>
+                  </span>
+                ))}
+                .
+              </p>
             </div>
           </section>
         );

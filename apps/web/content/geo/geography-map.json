@@ -375,40 +375,40 @@
       }
     },
     "amherst": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "williamsville": {
       "parent": "amherst"
     },
     "clarence": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "cheektowaga": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "lancaster": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "west-seneca": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "tonawanda": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "kenmore": {
       "parent": "tonawanda"
     },
     "grand-island": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "orchard-park": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "hamburg": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "east-aurora": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "niagara-falls-ny": {
       "direct": {
@@ -418,16 +418,16 @@
       }
     },
     "lewiston": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "wheatfield": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "north-tonawanda": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "lockport": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "rochester-ny": {
       "direct": {
@@ -437,25 +437,25 @@
       }
     },
     "brighton": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "pittsford": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "fairport": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "victor": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "webster": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "irondequoit": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     },
     "greece": {
-      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+      "unmapped": "No census geography code recorded; New York figures were never ingested"
     }
   }
 }

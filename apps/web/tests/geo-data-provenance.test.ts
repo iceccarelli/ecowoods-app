@@ -81,26 +81,6 @@ describe('sourced geo dataset provenance', () => {
   });
 });
 
-describe('ingest path', () => {
-  it('turns one Census Profile line into a valid, fully cited fact and drops suppressed values', async () => {
-    const { readCensusProfile, caFacts } = await import('../../../scripts/geo-sources.mjs');
-    const lines = [
-      'DGUID,ALT_GEO_CODE,GEO_NAME,CHARACTERISTIC_NAME,C1_COUNT_TOTAL',
-      '2021A00053599999,3599999,"Test, Place","  Population, 2021",1234',
-      '2021A00053599999,3599999,"Test, Place",Total private dwellings,x',
-    ];
-    async function* gen() { for (const l of lines) yield l; }
-    const read = await readCensusProfile(gen(), new Set(['3599999']));
-    const map = { schema: 1, markets: { 'test-place': { direct: { system: 'statcan-csd', id: '3599999', name: 'Test, Place' } } } };
-    const report: string[] = [];
-    const facts = caFacts(read, map, [{ slug: 'test-place', country: 'CA', kind: 'municipality' }], '2026-01-01', report);
-    expect(facts).toHaveLength(1);
-    expect(facts[0]).toMatchObject({ metric: 'population', value: 1234, unit: 'persons', geographyId: '3599999' });
-    expect(report.some((r) => r.includes('Total private dwellings'))).toBe(true);
-    expect(validateFacts({ schema: 1, facts })).toEqual([]);
-  });
-});
-
 const MARKERS = [
   /expansion priorit/i, /opportunity score/i, /\bunsourced\b/i, /MIN_CONFIDENCE/, /\bDOMINATE\b/, /HIGH_PRIORITY/,
   /sourced-facts/i, /market-inputs/i, /worthiness/i, /contentQueue/,

@@ -1,4 +1,0 @@
-{
-  "note": "Each target: { id, marketSlug, metric, unit, productId, filters (exact CSV column values incl. GEO and REF_DATE), sourceName, normalization }. Fill in from the table's own metadata; never guess. Empty: StatCan hosts were unreachable when this was built.",
-  "targets": []
-}
