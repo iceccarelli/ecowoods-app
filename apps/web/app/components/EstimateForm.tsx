@@ -383,6 +383,7 @@ export function EstimateForm({
         track('photo_triage_submit', {
           source,
           photos: photos.length,
+          acquisition: acquisition?.channel,
           event_id: typeof json?.leadId === 'string' ? json.leadId : undefined,
         });
         setSentTrack('photos');

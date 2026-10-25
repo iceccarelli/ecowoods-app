@@ -198,7 +198,9 @@ describe('acquisition cohort', () => {
   });
 
   it('is empty, not an error, when there are no leads', () => {
-    expect(buildFunnelReport(base([])).acquisition.rows).toEqual([]);
+    const r = buildFunnelReport(base([]));
+    expect(r.acquisition.available).toBe(true);
+    expect(r.acquisition.rows).toEqual([]);
   });
 
   it('shows the unfollowable leads per acquisition row, like the channel table does', () => {
@@ -213,8 +215,10 @@ describe('acquisition cohort', () => {
 
   it('says plainly that acquisition could not be read, instead of calling every lead "not captured"', () => {
     const r = buildFunnelReport({ ...base([row({ stage: 'LEAD_CAPTURED', quoteId: q1 })]), acquisitionAvailable: false });
+    expect(r.acquisition.available).toBe(false);
     expect(r.acquisition.rows).toEqual([]);
     expect(r.acquisition.note).toMatch(/could not be read/);
+    expect(r.acquisition.note).toMatch(/does not mean the leads were direct/);
     expect(r.cohort.rows.find((x) => x.channel === 'ALL')!.counts.LEAD_CAPTURED).toBe(1); // the rest of the report is unaffected
   });
 });

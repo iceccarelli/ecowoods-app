@@ -1,18 +1,28 @@
 /**
  * lib/acquisition.ts — how a visitor first reached the site.
  *
- * ONE CONTRACT, THREE PLACES. A closed set of channel slugs and a plain landing
- * path are captured in the browser, validated here on the server, and stored in
- * three structured columns: QuoteRequest.acquisitionChannel,
- * QuoteRequest.acquisitionLanding and FunnelEvent.acquisition. The funnel report
- * aggregates the slug; the estimating desk reads the same facts as one line in
- * the lead's notes. Nothing is stored as free text, so nothing can be reported
- * wrongly by parsing prose.
+ * ONE CONTRACT. A closed set of channel slugs and a plain landing path are
+ * captured in the browser (AcquisitionCapture, on first load), sent with the
+ * estimate form, and validated on the server by parseAcquisition(): anything
+ * outside the set, or a landing that is not a plain public path, is dropped to
+ * null and never rejects a lead.
  *
- * WHAT NULL MEANS. A lead with no acquisition (null) is one where nothing was
- * captured: no JavaScript, a phone call, an assistant handoff, or a lead from
- * before this existed. That is NOT the same as `no_referrer`, which is a
- * captured visit whose browser sent no referrer. The report keeps them apart.
+ * WHERE IT LIVES. One row per lead in the LeadAcquisition table
+ * (lib/lead-acquisition.ts), keyed by the QuoteRequest id; the first touch wins
+ * and a repeat submission never rewrites it. It is a SEPARATE table, not
+ * columns on QuoteRequest or FunnelEvent, because deploys do not apply
+ * migrations and new columns on those tables would break every read of them if
+ * the code reached production first; every read and write of this table catches
+ * its own failure. The funnel report (lib/funnel-report.ts) aggregates the slug;
+ * the estimating desk also reads the same facts as one line in the lead's notes
+ * and in the notification email, which keeps working with or without the table.
+ *
+ * THREE DIFFERENT THINGS, KEPT APART. (1) No row = NOT CAPTURED: no JavaScript, a
+ * phone call, an assistant handoff, or a lead from before this existed. (2)
+ * `no_referrer` = a captured visit whose browser sent no referrer. (3) The table
+ * could not be read at all (migration not applied) = UNAVAILABLE, which the
+ * report says plainly. Missing instrumentation is never presented as direct
+ * traffic, and `no_referrer` itself is not proof of direct traffic.
  *
  * HONEST LIMITS. `no_referrer` is not "confirmed direct": it is a bookmark, a
  * typed address, an app or a privacy setting that hid the sender. Google AI
@@ -25,7 +35,8 @@
  * a plain landing PATH is kept, never its query string, a token, or a signed-in
  * or share route. campaign tags (utm_*) are reduced to the single slug
  * `campaign`; their text is not stored. Held in sessionStorage for the visit
- * and sent only when the visitor submits the estimate form.
+ * and sent only when the visitor submits an estimate form (the phone-tap and
+ * estimate-submitted analytics events carry the channel slug only).
  */
 
 export const ACQUISITION_CHANNELS = [
@@ -77,8 +88,19 @@ const HOSTS: Array<[RegExp, AcquisitionChannel]> = [
   [/(^|\.)instagram\.com$/, 'instagram'],
 ];
 
-/** Channel for a visit, from the referrer URL and whether the landing URL carried a utm_source. */
-export function classifyReferrer(referrer: string, hasUtmSource: boolean, ownHost: string): AcquisitionChannel {
+/**
+ * Channel for a visit, from the referrer URL and whether the landing URL carried a utm_source.
+ *
+ * PRECEDENCE: a recognised referrer wins over a utm tag. That is deliberate:
+ * ChatGPT, for one, appends utm_source=chatgpt.com to the links it cites, so
+ * letting a tag win would file AI referrals under "campaign". A tag counts only
+ * when the referrer says nothing more specific.
+ *
+ * Returns null when the referrer is this site itself: that visitor is already
+ * mid-visit (a link opened in a new tab, or capture that has not run yet), so
+ * the current page is not where the visit began and nothing should be recorded.
+ */
+export function classifyReferrer(referrer: string, hasUtmSource: boolean, ownHost: string): AcquisitionChannel | null {
   let host = '';
   try {
     host = referrer ? new URL(referrer).hostname.toLowerCase() : '';
@@ -88,9 +110,10 @@ export function classifyReferrer(referrer: string, hasUtmSource: boolean, ownHos
   if (host) {
     for (const [re, channel] of HOSTS) if (re.test(host)) return channel;
   }
-  if (hasUtmSource) return 'campaign';
   const bare = (h: string) => h.replace(/^www\./, '');
-  if (!host || bare(host) === bare(ownHost.toLowerCase())) return 'no_referrer';
+  if (host && bare(host) === bare(ownHost.toLowerCase())) return null;
+  if (hasUtmSource) return 'campaign';
+  if (!host) return 'no_referrer';
   return 'other_site';
 }
 
@@ -136,17 +159,14 @@ export function captureAcquisition(): Acquisition | null {
     const stored = window.sessionStorage.getItem(KEY);
     if (stored) {
       const v = JSON.parse(stored) as { channel?: unknown; landing?: unknown } | null;
-      const parsed = v ? parseAcquisition(v.channel, v.landing) : null;
-      if (parsed) return parsed;
-      /* A value written by an older build is not re-classified: by now the
-         referrer is the previous internal page, which would record a visit that
-         began on Google as no_referrer. Not captured is the honest answer. */
-      return null;
+      /* A value written by an older build, or tampered with, is not re-classified:
+         by now the referrer is the previous internal page. Not captured is the
+         honest answer. */
+      return v ? parseAcquisition(v.channel, v.landing) : null;
     }
-    const a: Acquisition = {
-      channel: classifyReferrer(document.referrer, new URLSearchParams(window.location.search).has('utm_source'), window.location.hostname),
-      landing: landingPath(window.location.pathname),
-    };
+    const channel = classifyReferrer(document.referrer, new URLSearchParams(window.location.search).has('utm_source'), window.location.hostname);
+    if (!channel) return null; // already mid-visit: this page is not where the visit began
+    const a: Acquisition = { channel, landing: landingPath(window.location.pathname) };
     window.sessionStorage.setItem(KEY, JSON.stringify(a));
     return a;
   } catch {

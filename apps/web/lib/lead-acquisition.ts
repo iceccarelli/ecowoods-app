@@ -10,6 +10,16 @@
 import { db } from '@/lib/db';
 import { isAcquisitionChannel, type Acquisition } from '@/lib/acquisition';
 
+const READ_BATCH = 1000;
+
+function warnRead(event: string, err: unknown): void {
+  console.warn(JSON.stringify({
+    event,
+    error: err instanceof Error ? err.message.slice(0, 200) : 'unknown',
+    hint: 'Usually the LeadAcquisition table is missing (migration 20261025120000_add_lead_acquisition). Leads are unaffected.',
+  }));
+}
+
 /** Store a lead's first touch. Idempotent per quote; never throws. */
 export async function recordLeadAcquisition(quoteId: string, acquisition: Acquisition | null): Promise<void> {
   if (!acquisition) return;
@@ -34,7 +44,8 @@ export async function acquisitionForQuote(quoteId: string): Promise<Acquisition 
   try {
     const row = await db.leadAcquisition.findUnique({ where: { quoteId } });
     return row && isAcquisitionChannel(row.channel) ? { channel: row.channel, landing: row.landing } : null;
-  } catch {
+  } catch (err) {
+    warnRead('lead.acquisition_read_failed', err);
     return null;
   }
 }
@@ -46,12 +57,19 @@ export async function acquisitionForQuote(quoteId: string): Promise<Acquisition 
  */
 export async function acquisitionByQuote(quoteIds: string[]): Promise<{ available: boolean; byQuote: Map<string, string> }> {
   const byQuote = new Map<string, string>();
-  if (quoteIds.length === 0) return { available: true, byQuote };
   try {
-    const rows = await db.leadAcquisition.findMany({ where: { quoteId: { in: quoteIds } }, select: { quoteId: true, channel: true } });
-    for (const r of rows) byQuote.set(r.quoteId, r.channel);
+    /* In batches, so a long window can never exceed the database's bind-parameter limit and be
+       mistaken for a missing table. */
+    for (let i = 0; i < quoteIds.length; i += READ_BATCH) {
+      const rows = await db.leadAcquisition.findMany({
+        where: { quoteId: { in: quoteIds.slice(i, i + READ_BATCH) } },
+        select: { quoteId: true, channel: true },
+      });
+      for (const r of rows) byQuote.set(r.quoteId, r.channel);
+    }
     return { available: true, byQuote };
-  } catch {
-    return { available: false, byQuote };
+  } catch (err) {
+    warnRead('lead.acquisition_read_failed', err);
+    return { available: false, byQuote: new Map() };
   }
 }

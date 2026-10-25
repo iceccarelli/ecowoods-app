@@ -1,6 +1,6 @@
 # Ecowoods — project instructions
 
-Hardwood flooring contractor (Toronto and the GTA, with listed Southern Ontario and Western New York markets). Production: https://ecowoods.ca. This file is the short version; procedures live in `docs/` (see `docs/VERIFY.md`, `docs/DEPLOY.md`, `docs/FLOOR_STUDIO.md`).
+Hardwood flooring contractor based in Etobicoke, Toronto. Active service markets, as declared in `apps/web/content/geo/markets.ts`: Toronto and the GTA, the listed Southern Ontario markets, and the listed Western New York markets (owner-confirmed, with cross-border licensing and crew work authorization in hand; the confirmation date lives in that file; New York work is priced in US dollars). Production: https://ecowoods.ca. This file is the short version; procedures live in `docs/` (see `docs/VERIFY.md`, `docs/DEPLOY.md`, `docs/FLOOR_STUDIO.md`).
 
 ## Architecture
 
@@ -27,7 +27,7 @@ pnpm + turbo monorepo (`pnpm@9.15`, Node 22).
 | Funnel ledger and report | `apps/web/lib/funnel-ledger.ts`, `lib/funnel-report.ts`, `/admin/funnel` |
 | Credits, checkout, payments | `apps/web/lib/` credit, Stripe and payment-reconciliation modules; do not change prices or eligibility casually |
 
-Business facts that must stay consistent everywhere: legal name Ecowoods Hardwood Flooring Inc.; public name Ecowoods; one organization identity `https://ecowoods.ca/#organization`; one NAP; six published services; the published service-area list is the only coverage claim (never "all of Canada", never an unapproved expansion, no US office). Stated review figures are read from `REVIEW_EVIDENCE` with their read date and are never blended or turned into `aggregateRating`.
+Business facts that must stay consistent everywhere: legal name Ecowoods Hardwood Flooring Inc.; public name Ecowoods; one organization identity `https://ecowoods.ca/#organization`; one NAP; six published services; the published service-area list (Ontario and Western New York) is the only coverage claim: never "all of Canada", never "nationwide", never a market that is not in the registry, never an unapproved expansion. Western New York is an active service market, but the showroom, phone, hours and review figures remain Toronto facts: no second address or phone on a New York page (`pnpm verify:geo`), and no claim of a US office. Stated review figures are read from `REVIEW_EVIDENCE` with their read date and are never blended or turned into `aggregateRating`.
 
 ## Rules
 

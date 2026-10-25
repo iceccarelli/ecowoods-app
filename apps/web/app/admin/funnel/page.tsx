@@ -123,7 +123,7 @@ export default async function FunnelPage({
       <section className="admin-card">
         <h2>The same leads, by how the visit began</h2>
         <p className="admin-note">{report.acquisition.note}</p>
-        {report.acquisition.rows.length === 0 ? (
+        {!report.acquisition.available ? null : report.acquisition.rows.length === 0 ? (
           <p className="admin-muted">No leads in this window.</p>
         ) : (
           <CohortTable rows={report.acquisition.rows.map((r) => ({ ...r, id: r.key }))} firstHeader="First touch" />

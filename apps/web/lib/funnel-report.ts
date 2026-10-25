@@ -178,7 +178,7 @@ export type AcquisitionRow = {
 };
 
 export const ACQUISITION_UNAVAILABLE_NOTE =
-  'Acquisition could not be read, so no split is shown. This is expected until the lead-acquisition database migration has been applied; leads are unaffected.';
+  'Acquisition could not be read, so no split is shown. This does not mean the leads were direct visits. The usual cause is that the lead-acquisition database migration has not been applied; if it has been, check the database logs. Leads are unaffected.';
 
 export const ACQUISITION_NOTE =
   'Leads by how the visit began. "Not captured" is a lead with no recorded acquisition (no JavaScript, a call, an assistant handoff, or before this was recorded). ' +
@@ -193,7 +193,7 @@ export type FunnelReport = {
   /** Leads captured in the window, followed to the stages they reached. */
   cohort: { rows: CohortRow[] };
   /** The same cohort, split by how the visit began (lib/acquisition.ts), not by which form was used. */
-  acquisition: { rows: AcquisitionRow[]; note: string };
+  acquisition: { available: boolean; rows: AcquisitionRow[]; note: string };
   /** Database rows against ledger rows, so a gap in instrumentation is visible rather than hidden. */
   reconciliation: {
     quoteRequests: { databaseRows: number; ledgerLeads: number };
@@ -343,8 +343,8 @@ export function buildFunnelReport(input: ReportInput): FunnelReport {
     },
     cohort: { rows },
     acquisition: acquisitionAvailable
-      ? { rows: acquisitionRows, note: ACQUISITION_NOTE }
-      : { rows: [], note: ACQUISITION_UNAVAILABLE_NOTE },
+      ? { available: true, rows: acquisitionRows, note: ACQUISITION_NOTE }
+      : { available: false, rows: [], note: ACQUISITION_UNAVAILABLE_NOTE },
     reconciliation: {
       quoteRequests: { databaseRows: input.quoteRequestsCreated, ledgerLeads: ledgerLeadQuotes.size + ledgerLeadsNoQuote },
       appointments: { databaseRows: input.appointmentsCreated, ledgerAppointments: periodCounts.APPOINTMENT_BOOKED },

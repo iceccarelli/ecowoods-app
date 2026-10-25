@@ -130,6 +130,7 @@ describe.skipIf(!enabled)('funnel ledger completeness against real PostgreSQL', 
     await new Promise((r) => setTimeout(r, 400));
 
     const out = await loadFunnelReport(7);
+    expect(out.report.acquisition.available).toBe(true); // the table exists in the migrated database
     expect(out.report.acquisition.rows.find((r) => r.key === 'chatgpt')!.counts.LEAD_CAPTURED).toBeGreaterThanOrEqual(1);
     expect(out.report.acquisition.rows.find((r) => r.key === 'NOT_CAPTURED')!.counts.LEAD_CAPTURED).toBeGreaterThanOrEqual(1);
     await db.leadAcquisition.deleteMany({ where: { quoteId: { in: [q.id, legacy.id] } } });

@@ -192,7 +192,7 @@ export const OWN_STORAGE = [
     kind: 'sessionStorage',
     purpose:
       'Holds, for this visit only, the name of the site that sent you here and the page you landed on. ' +
-      'It is sent with your estimate request so we can see which of our pages helped you find us, and it is cleared when you close the tab.',
+      'It is sent with your estimate request so we can see which of our pages helped you find us, and it is cleared when you close the tab. If you have accepted analytics, the kind of site that sent you (for example a search engine) is also included, without the page address, when you tap our phone number or send the form.',
   },
 ] as const;
 
