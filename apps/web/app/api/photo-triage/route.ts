@@ -180,6 +180,7 @@ export async function POST(request: Request) {
             ? 'PHOTO TRIAGE — photos emailed; retained in the Floor Graph with consent.'
             : 'PHOTO TRIAGE — photos emailed, not retained.',
           lead.designSummary ? `Design config: ${lead.designSummary}` : null,
+          lead.acquisition ? `Found us via: ${lead.acquisition.replace(/\s+/g, ' ').slice(0, 120)}` : null,
           `Photos: ${files.map((f) => f.name).join(', ')}`,
         ]
           .filter(Boolean)

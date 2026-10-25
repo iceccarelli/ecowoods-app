@@ -98,6 +98,8 @@ export const photoTriageSchema = z.object({
   }),
   company: z.string().optional(), // honeypot
   source: z.string().optional(),
+  /** How the visitor first reached the site (lib/acquisition.ts): referrer host and landing path only. */
+  acquisition: z.string().max(120).optional(),
   designSummary: z.string().max(300).optional(),
   sqft: z.preprocess(
     (v) => (v === '' || v == null || (typeof v === 'number' && Number.isNaN(v)) ? undefined : Number(v)),

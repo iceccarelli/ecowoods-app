@@ -360,6 +360,8 @@ export function EstimateForm({
     // Replace the raw file input's contents with the compressed set.
     fd.delete('photos');
     for (const f of photos) fd.append('photos', f, f.name);
+    const acquisition = formatAcquisition(captureAcquisition());
+    if (acquisition) fd.append('acquisition', acquisition);
 
     setState('sending');
     setErrors({});
