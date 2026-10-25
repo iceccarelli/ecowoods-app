@@ -1,3 +1,4 @@
+import { ReviewProof } from '@/app/components/ReviewProof';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { BUSINESS_NAP, BUSINESS_ADDRESS_LINE, HOURS_LINE } from '@ecowoods/shared/constants';
@@ -104,6 +105,7 @@ export default function EstimatePage() {
             invoice. Send the form below, or call{' '}
             <a href={BUSINESS_NAP.phoneHref}>{BUSINESS_NAP.phoneDisplay}</a>.
           </p>
+          <ReviewProof className="tlx-note" />
         </div>
       </header>
 

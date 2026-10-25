@@ -1,3 +1,4 @@
+import { ReviewProof } from '@/app/components/ReviewProof';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
@@ -95,6 +96,7 @@ export default function ContactPage() {
             ({HOURS_LINE}) or visit the showroom at {BUSINESS_ADDRESS_LINE}. For a price, the fastest
             path is the free in-home estimate: <Link href="/estimate">request it here</Link>.
           </p>
+          <ReviewProof className="tlx-note" />
         </div>
       </header>
 
