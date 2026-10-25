@@ -1,5 +1,2526 @@
 {
   "schema": 1,
   "note": "INTERNAL input data. Populated only by scripts/geo-ingest.mjs from retrieved public sources. Empty: no authoritative host was reachable when this was built (2026-10-21).",
-  "facts": []
+  "facts": [
+    {
+      "id": "ajax.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "ajax",
+      "metric": "median_dwelling_value",
+      "value": 850000,
+      "unit": "CAD",
+      "geography": "Ajax (3518005) T",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "ajax.median_household_income.98-10-0060-01",
+      "marketSlug": "ajax",
+      "metric": "median_household_income",
+      "value": 119000,
+      "unit": "CAD",
+      "geography": "Ajax",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "ajax.single_detached.98-10-0240-01",
+      "marketSlug": "ajax",
+      "metric": "single_detached",
+      "value": 25560,
+      "unit": "dwellings",
+      "geography": "Ajax",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "ajax.structural_total.98-10-0240-01",
+      "marketSlug": "ajax",
+      "metric": "structural_total",
+      "value": 39485,
+      "unit": "dwellings",
+      "geography": "Ajax",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "aurora.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "aurora",
+      "metric": "median_dwelling_value",
+      "value": 1000000,
+      "unit": "CAD",
+      "geography": "Aurora (3519046) T",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519046",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "aurora.median_household_income.98-10-0060-01",
+      "marketSlug": "aurora",
+      "metric": "median_household_income",
+      "value": 119000,
+      "unit": "CAD",
+      "geography": "Aurora",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519046",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "aurora.single_detached.98-10-0240-01",
+      "marketSlug": "aurora",
+      "metric": "single_detached",
+      "value": 12980,
+      "unit": "dwellings",
+      "geography": "Aurora",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519046",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "aurora.structural_total.98-10-0240-01",
+      "marketSlug": "aurora",
+      "metric": "structural_total",
+      "value": 21505,
+      "unit": "dwellings",
+      "geography": "Aurora",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519046",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "barrie.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "barrie",
+      "metric": "median_dwelling_value",
+      "value": 695000,
+      "unit": "CAD",
+      "geography": "Barrie (3543042) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3543042",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "barrie.median_household_income.98-10-0060-01",
+      "marketSlug": "barrie",
+      "metric": "median_household_income",
+      "value": 93000,
+      "unit": "CAD",
+      "geography": "Barrie",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3543042",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "barrie.single_detached.98-10-0240-01",
+      "marketSlug": "barrie",
+      "metric": "single_detached",
+      "value": 32210,
+      "unit": "dwellings",
+      "geography": "Barrie",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3543042",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "barrie.structural_total.98-10-0240-01",
+      "marketSlug": "barrie",
+      "metric": "structural_total",
+      "value": 55315,
+      "unit": "dwellings",
+      "geography": "Barrie",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3543042",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "brampton.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "brampton",
+      "metric": "median_dwelling_value",
+      "value": 900000,
+      "unit": "CAD",
+      "geography": "Brampton (3521010) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3521010",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "brampton.median_household_income.98-10-0060-01",
+      "marketSlug": "brampton",
+      "metric": "median_household_income",
+      "value": 111000,
+      "unit": "CAD",
+      "geography": "Brampton",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3521010",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "brampton.single_detached.98-10-0240-01",
+      "marketSlug": "brampton",
+      "metric": "single_detached",
+      "value": 96010,
+      "unit": "dwellings",
+      "geography": "Brampton",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3521010",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "brampton.structural_total.98-10-0240-01",
+      "marketSlug": "brampton",
+      "metric": "structural_total",
+      "value": 182470,
+      "unit": "dwellings",
+      "geography": "Brampton",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3521010",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "burlington.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "burlington",
+      "metric": "median_dwelling_value",
+      "value": 900000,
+      "unit": "CAD",
+      "geography": "Burlington (3524002) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524002",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "burlington.median_household_income.98-10-0060-01",
+      "marketSlug": "burlington",
+      "metric": "median_household_income",
+      "value": 110000,
+      "unit": "CAD",
+      "geography": "Burlington",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524002",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "burlington.single_detached.98-10-0240-01",
+      "marketSlug": "burlington",
+      "metric": "single_detached",
+      "value": 36760,
+      "unit": "dwellings",
+      "geography": "Burlington",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524002",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "burlington.structural_total.98-10-0240-01",
+      "marketSlug": "burlington",
+      "metric": "structural_total",
+      "value": 73180,
+      "unit": "dwellings",
+      "geography": "Burlington",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524002",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "caledon.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "caledon",
+      "metric": "median_dwelling_value",
+      "value": 1000000,
+      "unit": "CAD",
+      "geography": "Caledon (3521024) T",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3521024",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "caledon.median_household_income.98-10-0060-01",
+      "marketSlug": "caledon",
+      "metric": "median_household_income",
+      "value": 133000,
+      "unit": "CAD",
+      "geography": "Caledon",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3521024",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "caledon.single_detached.98-10-0240-01",
+      "marketSlug": "caledon",
+      "metric": "single_detached",
+      "value": 19150,
+      "unit": "dwellings",
+      "geography": "Caledon",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3521024",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "caledon.structural_total.98-10-0240-01",
+      "marketSlug": "caledon",
+      "metric": "structural_total",
+      "value": 23700,
+      "unit": "dwellings",
+      "geography": "Caledon",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3521024",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "cambridge.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "cambridge",
+      "metric": "median_dwelling_value",
+      "value": 650000,
+      "unit": "CAD",
+      "geography": "Cambridge (3530010) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3530010",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "cambridge.median_household_income.98-10-0060-01",
+      "marketSlug": "cambridge",
+      "metric": "median_household_income",
+      "value": 93000,
+      "unit": "CAD",
+      "geography": "Cambridge",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3530010",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "cambridge.single_detached.98-10-0240-01",
+      "marketSlug": "cambridge",
+      "metric": "single_detached",
+      "value": 29105,
+      "unit": "dwellings",
+      "geography": "Cambridge",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3530010",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "cambridge.structural_total.98-10-0240-01",
+      "marketSlug": "cambridge",
+      "metric": "structural_total",
+      "value": 51270,
+      "unit": "dwellings",
+      "geography": "Cambridge",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3530010",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "clarington.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "clarington",
+      "metric": "median_dwelling_value",
+      "value": 750000,
+      "unit": "CAD",
+      "geography": "Clarington (3518017) MU",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518017",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "clarington.median_household_income.98-10-0060-01",
+      "marketSlug": "clarington",
+      "metric": "median_household_income",
+      "value": 112000,
+      "unit": "CAD",
+      "geography": "Clarington",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518017",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "clarington.single_detached.98-10-0240-01",
+      "marketSlug": "clarington",
+      "metric": "single_detached",
+      "value": 27920,
+      "unit": "dwellings",
+      "geography": "Clarington",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518017",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "clarington.structural_total.98-10-0240-01",
+      "marketSlug": "clarington",
+      "metric": "structural_total",
+      "value": 35955,
+      "unit": "dwellings",
+      "geography": "Clarington",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518017",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "fort-erie.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "fort-erie",
+      "metric": "median_dwelling_value",
+      "value": 500000,
+      "unit": "CAD",
+      "geography": "Fort Erie (3526003) T",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526003",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "fort-erie.median_household_income.98-10-0060-01",
+      "marketSlug": "fort-erie",
+      "metric": "median_household_income",
+      "value": 76000,
+      "unit": "CAD",
+      "geography": "Fort Erie",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526003",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "fort-erie.single_detached.98-10-0240-01",
+      "marketSlug": "fort-erie",
+      "metric": "single_detached",
+      "value": 11620,
+      "unit": "dwellings",
+      "geography": "Fort Erie",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526003",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "fort-erie.structural_total.98-10-0240-01",
+      "marketSlug": "fort-erie",
+      "metric": "structural_total",
+      "value": 14080,
+      "unit": "dwellings",
+      "geography": "Fort Erie",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526003",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "grimsby.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "grimsby",
+      "metric": "median_dwelling_value",
+      "value": 780000,
+      "unit": "CAD",
+      "geography": "Grimsby (3526065) T",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526065",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "grimsby.median_household_income.98-10-0060-01",
+      "marketSlug": "grimsby",
+      "metric": "median_household_income",
+      "value": 104000,
+      "unit": "CAD",
+      "geography": "Grimsby",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526065",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "grimsby.single_detached.98-10-0240-01",
+      "marketSlug": "grimsby",
+      "metric": "single_detached",
+      "value": 7340,
+      "unit": "dwellings",
+      "geography": "Grimsby",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526065",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "grimsby.structural_total.98-10-0240-01",
+      "marketSlug": "grimsby",
+      "metric": "structural_total",
+      "value": 11395,
+      "unit": "dwellings",
+      "geography": "Grimsby",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526065",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "guelph.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "guelph",
+      "metric": "median_dwelling_value",
+      "value": 700000,
+      "unit": "CAD",
+      "geography": "Guelph (3523008) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3523008",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "guelph.median_household_income.98-10-0060-01",
+      "marketSlug": "guelph",
+      "metric": "median_household_income",
+      "value": 93000,
+      "unit": "CAD",
+      "geography": "Guelph",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3523008",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "guelph.single_detached.98-10-0240-01",
+      "marketSlug": "guelph",
+      "metric": "single_detached",
+      "value": 27450,
+      "unit": "dwellings",
+      "geography": "Guelph",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3523008",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "guelph.structural_total.98-10-0240-01",
+      "marketSlug": "guelph",
+      "metric": "structural_total",
+      "value": 56480,
+      "unit": "dwellings",
+      "geography": "Guelph",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3523008",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "halton-hills.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "halton-hills",
+      "metric": "median_dwelling_value",
+      "value": 900000,
+      "unit": "CAD",
+      "geography": "Halton Hills (3524015) T",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524015",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "halton-hills.median_household_income.98-10-0060-01",
+      "marketSlug": "halton-hills",
+      "metric": "median_household_income",
+      "value": 127000,
+      "unit": "CAD",
+      "geography": "Halton Hills",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524015",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "halton-hills.single_detached.98-10-0240-01",
+      "marketSlug": "halton-hills",
+      "metric": "single_detached",
+      "value": 15940,
+      "unit": "dwellings",
+      "geography": "Halton Hills",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524015",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "halton-hills.structural_total.98-10-0240-01",
+      "marketSlug": "halton-hills",
+      "metric": "structural_total",
+      "value": 21825,
+      "unit": "dwellings",
+      "geography": "Halton Hills",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524015",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "hamilton.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "hamilton",
+      "metric": "median_dwelling_value",
+      "value": 700000,
+      "unit": "CAD",
+      "geography": "Hamilton (3525005) C",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3525005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "hamilton.median_household_income.98-10-0060-01",
+      "marketSlug": "hamilton",
+      "metric": "median_household_income",
+      "value": 86000,
+      "unit": "CAD",
+      "geography": "Hamilton",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3525005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "hamilton.single_detached.98-10-0240-01",
+      "marketSlug": "hamilton",
+      "metric": "single_detached",
+      "value": 125100,
+      "unit": "dwellings",
+      "geography": "Hamilton",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3525005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "hamilton.structural_total.98-10-0240-01",
+      "marketSlug": "hamilton",
+      "metric": "structural_total",
+      "value": 222810,
+      "unit": "dwellings",
+      "geography": "Hamilton",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3525005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "innisfil.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "innisfil",
+      "metric": "median_dwelling_value",
+      "value": 750000,
+      "unit": "CAD",
+      "geography": "Innisfil (3543017) T",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3543017",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "innisfil.median_household_income.98-10-0060-01",
+      "marketSlug": "innisfil",
+      "metric": "median_household_income",
+      "value": 101000,
+      "unit": "CAD",
+      "geography": "Innisfil",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3543017",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "innisfil.single_detached.98-10-0240-01",
+      "marketSlug": "innisfil",
+      "metric": "single_detached",
+      "value": 14210,
+      "unit": "dwellings",
+      "geography": "Innisfil",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3543017",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "innisfil.structural_total.98-10-0240-01",
+      "marketSlug": "innisfil",
+      "metric": "structural_total",
+      "value": 15710,
+      "unit": "dwellings",
+      "geography": "Innisfil",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3543017",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "kawartha-lakes.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "kawartha-lakes",
+      "metric": "median_dwelling_value",
+      "value": 572000,
+      "unit": "CAD",
+      "geography": "Kawartha Lakes (3516010) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3516010",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "kawartha-lakes.median_household_income.98-10-0060-01",
+      "marketSlug": "kawartha-lakes",
+      "metric": "median_household_income",
+      "value": 82000,
+      "unit": "CAD",
+      "geography": "Kawartha Lakes",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3516010",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "kawartha-lakes.single_detached.98-10-0240-01",
+      "marketSlug": "kawartha-lakes",
+      "metric": "single_detached",
+      "value": 27400,
+      "unit": "dwellings",
+      "geography": "Kawartha Lakes",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3516010",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "kawartha-lakes.structural_total.98-10-0240-01",
+      "marketSlug": "kawartha-lakes",
+      "metric": "structural_total",
+      "value": 32710,
+      "unit": "dwellings",
+      "geography": "Kawartha Lakes",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3516010",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "king.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "king",
+      "metric": "median_dwelling_value",
+      "value": 1600000,
+      "unit": "CAD",
+      "geography": "King (3519049) TP",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519049",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "king.median_household_income.98-10-0060-01",
+      "marketSlug": "king",
+      "metric": "median_household_income",
+      "value": 141000,
+      "unit": "CAD",
+      "geography": "King",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519049",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "king.single_detached.98-10-0240-01",
+      "marketSlug": "king",
+      "metric": "single_detached",
+      "value": 7815,
+      "unit": "dwellings",
+      "geography": "King",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519049",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "king.structural_total.98-10-0240-01",
+      "marketSlug": "king",
+      "metric": "structural_total",
+      "value": 8970,
+      "unit": "dwellings",
+      "geography": "King",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519049",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "kitchener.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "kitchener",
+      "metric": "median_dwelling_value",
+      "value": 680000,
+      "unit": "CAD",
+      "geography": "Kitchener (3530013) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3530013",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "kitchener.median_household_income.98-10-0060-01",
+      "marketSlug": "kitchener",
+      "metric": "median_household_income",
+      "value": 87000,
+      "unit": "CAD",
+      "geography": "Kitchener",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3530013",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "kitchener.single_detached.98-10-0240-01",
+      "marketSlug": "kitchener",
+      "metric": "single_detached",
+      "value": 47410,
+      "unit": "dwellings",
+      "geography": "Kitchener",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3530013",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "kitchener.structural_total.98-10-0240-01",
+      "marketSlug": "kitchener",
+      "metric": "structural_total",
+      "value": 99810,
+      "unit": "dwellings",
+      "geography": "Kitchener",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3530013",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "lincoln.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "lincoln",
+      "metric": "median_dwelling_value",
+      "value": 695000,
+      "unit": "CAD",
+      "geography": "Lincoln (3526057) T",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526057",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "lincoln.median_household_income.98-10-0060-01",
+      "marketSlug": "lincoln",
+      "metric": "median_household_income",
+      "value": 102000,
+      "unit": "CAD",
+      "geography": "Lincoln",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526057",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "lincoln.single_detached.98-10-0240-01",
+      "marketSlug": "lincoln",
+      "metric": "single_detached",
+      "value": 6670,
+      "unit": "dwellings",
+      "geography": "Lincoln",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526057",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "lincoln.structural_total.98-10-0240-01",
+      "marketSlug": "lincoln",
+      "metric": "structural_total",
+      "value": 9555,
+      "unit": "dwellings",
+      "geography": "Lincoln",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526057",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "markham.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "markham",
+      "metric": "median_dwelling_value",
+      "value": 1100000,
+      "unit": "CAD",
+      "geography": "Markham (3519036) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519036",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "markham.median_household_income.98-10-0060-01",
+      "marketSlug": "markham",
+      "metric": "median_household_income",
+      "value": 104000,
+      "unit": "CAD",
+      "geography": "Markham",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519036",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "markham.single_detached.98-10-0240-01",
+      "marketSlug": "markham",
+      "metric": "single_detached",
+      "value": 62265,
+      "unit": "dwellings",
+      "geography": "Markham",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519036",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "markham.structural_total.98-10-0240-01",
+      "marketSlug": "markham",
+      "metric": "structural_total",
+      "value": 110870,
+      "unit": "dwellings",
+      "geography": "Markham",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519036",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "milton.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "milton",
+      "metric": "median_dwelling_value",
+      "value": 950000,
+      "unit": "CAD",
+      "geography": "Milton (3524009) T",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524009",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "milton.median_household_income.98-10-0060-01",
+      "marketSlug": "milton",
+      "metric": "median_household_income",
+      "value": 126000,
+      "unit": "CAD",
+      "geography": "Milton",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524009",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "milton.single_detached.98-10-0240-01",
+      "marketSlug": "milton",
+      "metric": "single_detached",
+      "value": 22715,
+      "unit": "dwellings",
+      "geography": "Milton",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524009",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "milton.structural_total.98-10-0240-01",
+      "marketSlug": "milton",
+      "metric": "structural_total",
+      "value": 40040,
+      "unit": "dwellings",
+      "geography": "Milton",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524009",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "mississauga.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "mississauga",
+      "metric": "median_dwelling_value",
+      "value": 900000,
+      "unit": "CAD",
+      "geography": "Mississauga (3521005) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3521005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "mississauga.median_household_income.98-10-0060-01",
+      "marketSlug": "mississauga",
+      "metric": "median_household_income",
+      "value": 102000,
+      "unit": "CAD",
+      "geography": "Mississauga",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3521005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "mississauga.single_detached.98-10-0240-01",
+      "marketSlug": "mississauga",
+      "metric": "single_detached",
+      "value": 90645,
+      "unit": "dwellings",
+      "geography": "Mississauga",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3521005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "mississauga.structural_total.98-10-0240-01",
+      "marketSlug": "mississauga",
+      "metric": "structural_total",
+      "value": 244575,
+      "unit": "dwellings",
+      "geography": "Mississauga",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3521005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "newmarket.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "newmarket",
+      "metric": "median_dwelling_value",
+      "value": 950000,
+      "unit": "CAD",
+      "geography": "Newmarket (3519048) T",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519048",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "newmarket.median_household_income.98-10-0060-01",
+      "marketSlug": "newmarket",
+      "metric": "median_household_income",
+      "value": 110000,
+      "unit": "CAD",
+      "geography": "Newmarket",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519048",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "newmarket.single_detached.98-10-0240-01",
+      "marketSlug": "newmarket",
+      "metric": "single_detached",
+      "value": 18115,
+      "unit": "dwellings",
+      "geography": "Newmarket",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519048",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "newmarket.structural_total.98-10-0240-01",
+      "marketSlug": "newmarket",
+      "metric": "structural_total",
+      "value": 30305,
+      "unit": "dwellings",
+      "geography": "Newmarket",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519048",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "niagara-falls-on.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "niagara-falls-on",
+      "metric": "median_dwelling_value",
+      "value": 552000,
+      "unit": "CAD",
+      "geography": "Niagara Falls (3526043) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526043",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "niagara-falls-on.median_household_income.98-10-0060-01",
+      "marketSlug": "niagara-falls-on",
+      "metric": "median_household_income",
+      "value": 74500,
+      "unit": "CAD",
+      "geography": "Niagara Falls",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526043",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "niagara-falls-on.single_detached.98-10-0240-01",
+      "marketSlug": "niagara-falls-on",
+      "metric": "single_detached",
+      "value": 24990,
+      "unit": "dwellings",
+      "geography": "Niagara Falls",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526043",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "niagara-falls-on.structural_total.98-10-0240-01",
+      "marketSlug": "niagara-falls-on",
+      "metric": "structural_total",
+      "value": 37795,
+      "unit": "dwellings",
+      "geography": "Niagara Falls",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526043",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "niagara-on-the-lake.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "niagara-on-the-lake",
+      "metric": "median_dwelling_value",
+      "value": 900000,
+      "unit": "CAD",
+      "geography": "Niagara-on-the-Lake (3526047) T",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526047",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "niagara-on-the-lake.median_household_income.98-10-0060-01",
+      "marketSlug": "niagara-on-the-lake",
+      "metric": "median_household_income",
+      "value": 98000,
+      "unit": "CAD",
+      "geography": "Niagara-on-the-Lake",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526047",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "niagara-on-the-lake.single_detached.98-10-0240-01",
+      "marketSlug": "niagara-on-the-lake",
+      "metric": "single_detached",
+      "value": 6225,
+      "unit": "dwellings",
+      "geography": "Niagara-on-the-Lake",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526047",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "niagara-on-the-lake.structural_total.98-10-0240-01",
+      "marketSlug": "niagara-on-the-lake",
+      "metric": "structural_total",
+      "value": 7860,
+      "unit": "dwellings",
+      "geography": "Niagara-on-the-Lake",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526047",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "oakville.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "oakville",
+      "metric": "median_dwelling_value",
+      "value": 1200000,
+      "unit": "CAD",
+      "geography": "Oakville (3524001) T",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524001",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "oakville.median_household_income.98-10-0060-01",
+      "marketSlug": "oakville",
+      "metric": "median_household_income",
+      "value": 128000,
+      "unit": "CAD",
+      "geography": "Oakville",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524001",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "oakville.single_detached.98-10-0240-01",
+      "marketSlug": "oakville",
+      "metric": "single_detached",
+      "value": 43135,
+      "unit": "dwellings",
+      "geography": "Oakville",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524001",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "oakville.structural_total.98-10-0240-01",
+      "marketSlug": "oakville",
+      "metric": "structural_total",
+      "value": 73555,
+      "unit": "dwellings",
+      "geography": "Oakville",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3524001",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "oshawa.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "oshawa",
+      "metric": "median_dwelling_value",
+      "value": 695000,
+      "unit": "CAD",
+      "geography": "Oshawa (3518013) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518013",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "oshawa.median_household_income.98-10-0060-01",
+      "marketSlug": "oshawa",
+      "metric": "median_household_income",
+      "value": 86000,
+      "unit": "CAD",
+      "geography": "Oshawa",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518013",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "oshawa.single_detached.98-10-0240-01",
+      "marketSlug": "oshawa",
+      "metric": "single_detached",
+      "value": 37000,
+      "unit": "dwellings",
+      "geography": "Oshawa",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518013",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "oshawa.structural_total.98-10-0240-01",
+      "marketSlug": "oshawa",
+      "metric": "structural_total",
+      "value": 66635,
+      "unit": "dwellings",
+      "geography": "Oshawa",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518013",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "pickering.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "pickering",
+      "metric": "median_dwelling_value",
+      "value": 880000,
+      "unit": "CAD",
+      "geography": "Pickering (3518001) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518001",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "pickering.median_household_income.98-10-0060-01",
+      "marketSlug": "pickering",
+      "metric": "median_household_income",
+      "value": 118000,
+      "unit": "CAD",
+      "geography": "Pickering",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518001",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "pickering.single_detached.98-10-0240-01",
+      "marketSlug": "pickering",
+      "metric": "single_detached",
+      "value": 19915,
+      "unit": "dwellings",
+      "geography": "Pickering",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518001",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "pickering.structural_total.98-10-0240-01",
+      "marketSlug": "pickering",
+      "metric": "structural_total",
+      "value": 33425,
+      "unit": "dwellings",
+      "geography": "Pickering",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518001",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "port-colborne.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "port-colborne",
+      "metric": "median_dwelling_value",
+      "value": 448000,
+      "unit": "CAD",
+      "geography": "Port Colborne (3526011) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526011",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "port-colborne.median_household_income.98-10-0060-01",
+      "marketSlug": "port-colborne",
+      "metric": "median_household_income",
+      "value": 70000,
+      "unit": "CAD",
+      "geography": "Port Colborne",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526011",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "port-colborne.single_detached.98-10-0240-01",
+      "marketSlug": "port-colborne",
+      "metric": "single_detached",
+      "value": 6140,
+      "unit": "dwellings",
+      "geography": "Port Colborne",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526011",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "port-colborne.structural_total.98-10-0240-01",
+      "marketSlug": "port-colborne",
+      "metric": "structural_total",
+      "value": 8710,
+      "unit": "dwellings",
+      "geography": "Port Colborne",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526011",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "richmond-hill.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "richmond-hill",
+      "metric": "median_dwelling_value",
+      "value": 1200000,
+      "unit": "CAD",
+      "geography": "Richmond Hill (3519038) T",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519038",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "richmond-hill.median_household_income.98-10-0060-01",
+      "marketSlug": "richmond-hill",
+      "metric": "median_household_income",
+      "value": 102000,
+      "unit": "CAD",
+      "geography": "Richmond Hill",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519038",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "richmond-hill.single_detached.98-10-0240-01",
+      "marketSlug": "richmond-hill",
+      "metric": "single_detached",
+      "value": 39265,
+      "unit": "dwellings",
+      "geography": "Richmond Hill",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519038",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "richmond-hill.structural_total.98-10-0240-01",
+      "marketSlug": "richmond-hill",
+      "metric": "structural_total",
+      "value": 69315,
+      "unit": "dwellings",
+      "geography": "Richmond Hill",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519038",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "st-catharines.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "st-catharines",
+      "metric": "median_dwelling_value",
+      "value": 548000,
+      "unit": "CAD",
+      "geography": "St. Catharines (3526053) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526053",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "st-catharines.median_household_income.98-10-0060-01",
+      "marketSlug": "st-catharines",
+      "metric": "median_household_income",
+      "value": 72500,
+      "unit": "CAD",
+      "geography": "St. Catharines",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526053",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "st-catharines.single_detached.98-10-0240-01",
+      "marketSlug": "st-catharines",
+      "metric": "single_detached",
+      "value": 32725,
+      "unit": "dwellings",
+      "geography": "St. Catharines",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526053",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "st-catharines.structural_total.98-10-0240-01",
+      "marketSlug": "st-catharines",
+      "metric": "structural_total",
+      "value": 58900,
+      "unit": "dwellings",
+      "geography": "St. Catharines",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526053",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "thorold.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "thorold",
+      "metric": "median_dwelling_value",
+      "value": 552000,
+      "unit": "CAD",
+      "geography": "Thorold (3526037) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526037",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "thorold.median_household_income.98-10-0060-01",
+      "marketSlug": "thorold",
+      "metric": "median_household_income",
+      "value": 82000,
+      "unit": "CAD",
+      "geography": "Thorold",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526037",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "thorold.single_detached.98-10-0240-01",
+      "marketSlug": "thorold",
+      "metric": "single_detached",
+      "value": 6290,
+      "unit": "dwellings",
+      "geography": "Thorold",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526037",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "thorold.structural_total.98-10-0240-01",
+      "marketSlug": "thorold",
+      "metric": "structural_total",
+      "value": 9095,
+      "unit": "dwellings",
+      "geography": "Thorold",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526037",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "toronto.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "toronto",
+      "metric": "median_dwelling_value",
+      "value": 900000,
+      "unit": "CAD",
+      "geography": "Toronto (3520005) C",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3520005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "toronto.median_household_income.98-10-0060-01",
+      "marketSlug": "toronto",
+      "metric": "median_household_income",
+      "value": 84000,
+      "unit": "CAD",
+      "geography": "Toronto",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3520005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "toronto.single_detached.98-10-0240-01",
+      "marketSlug": "toronto",
+      "metric": "single_detached",
+      "value": 270350,
+      "unit": "dwellings",
+      "geography": "Toronto",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3520005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "toronto.structural_total.98-10-0240-01",
+      "marketSlug": "toronto",
+      "metric": "structural_total",
+      "value": 1160890,
+      "unit": "dwellings",
+      "geography": "Toronto",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3520005",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "vaughan.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "vaughan",
+      "metric": "median_dwelling_value",
+      "value": 1200000,
+      "unit": "CAD",
+      "geography": "Vaughan (3519028) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519028",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "vaughan.median_household_income.98-10-0060-01",
+      "marketSlug": "vaughan",
+      "metric": "median_household_income",
+      "value": 124000,
+      "unit": "CAD",
+      "geography": "Vaughan",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519028",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "vaughan.single_detached.98-10-0240-01",
+      "marketSlug": "vaughan",
+      "metric": "single_detached",
+      "value": 65040,
+      "unit": "dwellings",
+      "geography": "Vaughan",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519028",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "vaughan.structural_total.98-10-0240-01",
+      "marketSlug": "vaughan",
+      "metric": "structural_total",
+      "value": 103915,
+      "unit": "dwellings",
+      "geography": "Vaughan",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3519028",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "welland.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "welland",
+      "metric": "median_dwelling_value",
+      "value": 500000,
+      "unit": "CAD",
+      "geography": "Welland (3526032) CY",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526032",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "welland.median_household_income.98-10-0060-01",
+      "marketSlug": "welland",
+      "metric": "median_household_income",
+      "value": 71500,
+      "unit": "CAD",
+      "geography": "Welland",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526032",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "welland.single_detached.98-10-0240-01",
+      "marketSlug": "welland",
+      "metric": "single_detached",
+      "value": 15265,
+      "unit": "dwellings",
+      "geography": "Welland",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526032",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "welland.structural_total.98-10-0240-01",
+      "marketSlug": "welland",
+      "metric": "structural_total",
+      "value": 23655,
+      "unit": "dwellings",
+      "geography": "Welland",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3526032",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "whitby.median_dwelling_value.98-10-0257-01",
+      "marketSlug": "whitby",
+      "metric": "median_dwelling_value",
+      "value": 850000,
+      "unit": "CAD",
+      "geography": "Whitby (3518009) T",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0257-01, Value (owner-estimated) of dwelling by structural type of dwelling: Canada, provinces and territories and census subdivisions with a population 5,000 or more",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810025701"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0257-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518009",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "whitby.median_household_income.98-10-0060-01",
+      "marketSlug": "whitby",
+      "metric": "median_household_income",
+      "value": 123000,
+      "unit": "CAD",
+      "geography": "Whitby",
+      "referencePeriod": "2021 Census (income year 2020)",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0060-01, Household income statistics by dwelling and household characteristics: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810006001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0060-01",
+      "normalization": "Published figure copied as-is. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518009",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "whitby.single_detached.98-10-0240-01",
+      "marketSlug": "whitby",
+      "metric": "single_detached",
+      "value": 32295,
+      "unit": "dwellings",
+      "geography": "Whitby",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518009",
+      "geographySystem": "statcan-csd"
+    },
+    {
+      "id": "whitby.structural_total.98-10-0240-01",
+      "marketSlug": "whitby",
+      "metric": "structural_total",
+      "value": 46460,
+      "unit": "dwellings",
+      "geography": "Whitby",
+      "referencePeriod": "2021 Census",
+      "source": {
+        "name": "Statistics Canada, Table 98-10-0240-01, Structural type of dwelling by tenure: Canada, provinces and territories, census divisions and census subdivisions",
+        "url": "https://www150.statcan.gc.ca/t1/tbl1/en/tv.action?pid=9810024001"
+      },
+      "retrievedAt": "2026-10-25",
+      "tableId": "98-10-0240-01",
+      "normalization": "Published figure copied as-is. Private households, which are occupied private dwellings. Shares and percentiles are derived later by geo-lib.deriveInputs.",
+      "geographyId": "3518009",
+      "geographySystem": "statcan-csd"
+    }
+  ]
 }
