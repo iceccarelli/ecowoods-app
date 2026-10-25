@@ -101,7 +101,6 @@ describe('the opportunity model', () => {
       expect(pp.raw?.unit, m.slug).toBe(m.country === 'CA' ? 'CAD' : 'USD');
     }
   });
-});
 
   it('is deterministic', () => {
     const a = opportunityOrder(MARKETS).map((x) => x.slug);
