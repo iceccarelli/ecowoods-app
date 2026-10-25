@@ -41,7 +41,7 @@ export function checkWdsDownloadReply(body, pid) {
 export function checkWdsHeader(line, pid) {
   const head = line.replace(/^\uFEFF/, '').split(',').map((h) => h.replace(/"/g, '').trim());
   const missing = WDS_REQUIRED_COLUMNS.filter((c) => !head.includes(c));
-  if (missing.length) throw new Error(`${pid}: CSV is missing column(s): ${missing.join(', ')}`);
+  if (missing.length) throw new Error(`${pid}: CSV is missing column(s): ${missing.join(', ')}; header is ${JSON.stringify(head).slice(0, 700)}`);
   return head;
 }
 
@@ -142,7 +142,8 @@ async function downloadWdsCube(pid, out, manifest) {
   const size = statSync(csv).size;
   if (size < MIN_WDS_BYTES) throw new Error(`WDS ${pid}: CSV is only ${size} bytes`);
   const fd2 = openSync(csv, 'r'); const buf = Buffer.alloc(8192); const n = readSync(fd2, buf, 0, 8192, 0); closeSync(fd2);
-  checkWdsHeader(buf.subarray(0, n).toString('utf8').split('\n')[0], pid);
+  const firstLines = buf.subarray(0, n).toString('utf8').split('\n').slice(0, 4);
+  try { checkWdsHeader(firstLines[0], pid); } catch (e) { throw new Error(`${e.message}\nfirst lines: ${JSON.stringify(firstLines).slice(0, 1500)}`); }
   manifest.files.push({ name: `${pid}.csv`, url, bytes: size });
 }
 
