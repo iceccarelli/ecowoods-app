@@ -1,0 +1,22 @@
+name: Geo discover (manual)
+
+# Read-only. Lists the Statistics Canada cubes (official Web Data Service) that
+# could carry the census indicators at census-subdivision level, so a table is
+# chosen on evidence. Changes nothing.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/geo-wds-discover.mjs
