@@ -54,6 +54,18 @@ export function checkAcsJson(json, url) {
   return json.length - 1;
 }
 
+/** Every link that could plausibly lead to the data, for diagnosing a page whose layout changed. */
+export function findDataLinks(html, base = CATALOGUE_URL, cap = 60) {
+  const out = new Set();
+  for (const m of html.matchAll(/href="([^"]+)"/gi)) {
+    const href = m[1].replace(/&amp;/g, '&');
+    if (/(download|telecharger|\.csv|\.zip|csv|98-401|census-recensement|prof)/i.test(href)) {
+      try { out.add(new URL(href, base).toString()); } catch { /* not a URL */ }
+    }
+  }
+  return [...out].slice(0, cap);
+}
+
 /** Pull candidate CSV download links out of the catalogue page, absolute, de-duplicated. */
 export function findCsvLinks(html, base = CATALOGUE_URL) {
   const out = new Set();
@@ -81,7 +93,8 @@ async function main() {
   if (!caUrl) {
     const page = await get(CATALOGUE_URL, ['text/html']);
     const links = findCsvLinks(page.buf.toString('utf8'));
-    console.log(`catalogue page lists ${links.length} CSV link(s):\n${links.join('\n')}`);
+    console.log(`catalogue page (${page.buf.length} bytes) lists ${links.length} CSV link(s):\n${links.join('\n')}`);
+    if (links.length === 0) console.log(`links that may lead to the data:\n${findDataLinks(page.buf.toString('utf8')).join('\n')}`);
     if (links.length !== 1) throw new Error(`expected exactly one CSV download link on the catalogue page, found ${links.length}; pass --ca-url`);
     caUrl = links[0];
   }
