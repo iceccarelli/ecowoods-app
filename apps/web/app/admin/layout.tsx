@@ -33,6 +33,7 @@ const navItems = [
      but is not linked is a page nobody opens, and a funnel nobody opens is the
      write-only failure PG0 found three times over. */
   { href: '/admin/funnel', label: 'Funnel', icon: <FloorGraphIcon /> },
+  { href: '/admin/markets', label: 'Markets', icon: <FloorGraphIcon /> },
   /* Which settings are configured (names only, never values). */
   { href: '/admin/system', label: 'System status', icon: <SettingsIcon /> },
   { href: '/admin/settings', label: 'Settings', icon: <SettingsIcon /> },
