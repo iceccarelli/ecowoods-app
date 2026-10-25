@@ -69,7 +69,16 @@ async function main() {
   const usFiles = arg(a, '--us-json');
 
   if (a.includes('--discover')) {
-    if (!caFile) { console.error('--discover needs --ca-csv'); process.exit(1); }
+    if (usFiles) {
+      /* Candidates only: a person (or a reviewed change) decides, nothing is written. */
+      const want = markets.filter((m) => m.country === 'US' && map.markets[m.slug].unmapped).map((m) => [m.slug, MARKETS.find((x) => x.slug === m.slug).name]);
+      for (const f of usFiles.split(',')) {
+        for (const [geoid, row] of readAcs(JSON.parse(readFileSync(f, 'utf8')))) {
+          for (const [slug, name] of want) if (row.name.startsWith(`${name} `)) console.log(`${slug}\t${geoid}\t${row.name}`);
+        }
+      }
+    }
+    if (!caFile) { if (!usFiles) { console.error('--discover needs --ca-csv and/or --us-json'); process.exit(1); } return; }
     const want = new Map(markets.filter((m) => m.country === 'CA' && map.markets[m.slug].unmapped).map((m) => [m.slug, MARKETS.find((x) => x.slug === m.slug).name]));
     const names = new Set(want.values());
     let col = null;
@@ -105,6 +114,7 @@ async function main() {
       }
     }
     if (acs.length) fresh.push(...usFacts(acs, map, markets, retrieved, report));
+    if (fresh.length === 0) { console.error(`no valid facts were extracted from the supplied file(s):\n${report.join('\n')}`); process.exit(1); }
     const replaced = new Set(fresh.map((f) => f.id));
     facts = [...doc.facts.filter((f) => !replaced.has(f.id)), ...fresh];
   }
@@ -115,6 +125,8 @@ async function main() {
   if (errs.length) { console.error(errs.join('\n')); process.exit(1); }
   const { doc: gen, missing } = buildGenerated(next, map, markets);
 
+  const reportFile = arg(a, '--report');
+  if (reportFile) writeFileSync(reportFile, [...report.map((r) => `SKIP ${r}`), ...missing.map((m) => `NOTE ${m}`)].join('\n') + '\n');
   for (const r of report) console.warn(`SKIP ${r}`);
   for (const m of missing) console.warn(`NOTE ${m}`);
   const covered = Object.keys(gen.inputs).length;

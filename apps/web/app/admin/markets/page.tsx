@@ -75,7 +75,27 @@ export default async function MarketsPage() {
                   <td>{Math.round(o.confidence * 100)}%</td>
                   <td>{o.score ?? (o.partialScore === null ? '—' : <span className="admin-muted">{o.partialScore} (partial)</span>)}</td>
                   <td>{o.classification}</td>
-                  <td>{w.indexable ? 'has a page' : `${w.blockers.length} to clear`}</td>
+                  <td>
+                    <details>
+                      <summary>{w.indexable ? 'has a page' : `${w.blockers.length} to clear`}</summary>
+                      {w.blockers.length > 0 && <ul>{w.blockers.map((b) => <li key={b}>{b}</li>)}</ul>}
+                      <table className="admin-table">
+                        <thead><tr><th>Input</th><th>Kind</th><th>Geography</th><th>Weight</th><th>Credited</th><th>Score</th></tr></thead>
+                        <tbody>
+                          {o.components.map((c) => (
+                            <tr key={c.id}>
+                              <td>{c.id}</td>
+                              <td>{c.basis}</td>
+                              <td>{c.geography ?? '—'}</td>
+                              <td>{c.weight}</td>
+                              <td>{c.effectiveWeight}</td>
+                              <td>{c.score ?? '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </details>
+                  </td>
                 </tr>
               );
             })}

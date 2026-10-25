@@ -1,0 +1,61 @@
+name: Geo ingest (manual)
+
+# Downloads the official Statistics Canada Census Profile and U.S. ACS 5-year
+# data on a GitHub-hosted runner, validates them, runs the repository's ingest
+# and uploads the result as an artifact for review. It never pushes, never
+# deploys and never touches production data; the production build does not
+# depend on it. To adopt the result, review the artifact and commit the two
+# generated files.
+
+on:
+  workflow_dispatch:
+    inputs:
+      ca_url:
+        description: 'Census Profile CSV (zip) URL. Leave empty to read the single CSV link from the catalogue page.'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Download and validate the official files
+        run: node scripts/geo-fetch.mjs --out "$RUNNER_TEMP/geo" ${{ inputs.ca_url != '' && format('--ca-url "{0}"', inputs.ca_url) || '' }}
+      - name: Ingest (dry run first)
+        run: |
+          RETRIEVED=$(date -u +%F)
+          node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs scripts/geo-ingest.mjs \
+            --ca-csv "$RUNNER_TEMP/geo/census-profile.csv" \
+            --us-json "$RUNNER_TEMP/geo/acs-place.json,$RUNNER_TEMP/geo/acs-cousub.json" \
+            --retrieved "$RETRIEVED" --report "$RUNNER_TEMP/geo/ingest-report.txt"
+      - name: Write, then run the repository guards on the result
+        run: |
+          RETRIEVED=$(date -u +%F)
+          node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs scripts/geo-ingest.mjs \
+            --ca-csv "$RUNNER_TEMP/geo/census-profile.csv" \
+            --us-json "$RUNNER_TEMP/geo/acs-place.json,$RUNNER_TEMP/geo/acs-cousub.json" \
+            --retrieved "$RETRIEVED" --write
+          node scripts/verify-geo-data.mjs
+          node scripts/verify-market-inputs.mjs
+          node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs scripts/geo-ingest.mjs \
+            --ca-csv "$RUNNER_TEMP/geo/census-profile.csv" \
+            --us-json "$RUNNER_TEMP/geo/acs-place.json,$RUNNER_TEMP/geo/acs-cousub.json" --discover > "$RUNNER_TEMP/geo/candidates.tsv" || true
+      - name: Collect reviewable output
+        run: |
+          mkdir -p "$RUNNER_TEMP/out"
+          cp apps/web/content/geo/sourced-facts.json apps/web/content/geo/market-inputs.generated.ts "$RUNNER_TEMP/out/"
+          cp "$RUNNER_TEMP/geo/fetch-manifest.json" "$RUNNER_TEMP/geo/ingest-report.txt" "$RUNNER_TEMP/geo/candidates.tsv" "$RUNNER_TEMP/out/"
+          git diff --stat > "$RUNNER_TEMP/out/diff-stat.txt" || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: geo-ingest-result
+          path: ${{ runner.temp }}/out
+          retention-days: 30
