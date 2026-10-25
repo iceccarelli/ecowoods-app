@@ -46,50 +46,66 @@ const DIM_TAIL = /\s*\(\d+C?\)\s*$/;
 export const dimName = (h) => h.replace(DIM_TAIL, '').trim();
 
 /**
+ * The census cubes arrive "wide": REF_DATE, GEO, DGUID, the row dimensions,
+ * Coordinate, then one value column per member of the column dimension, each
+ * named `<dimension>:<member>[<id>]` and followed by a `Symbol` column. Which
+ * dimension is wide differs from cube to cube, so a figure is identified by the
+ * SET of members that meet at a cell: the row's dimension values plus the
+ * column's member.
+ */
+export function parseWideHeader(head) {
+  const at = Object.fromEntries(head.map((h, i) => [h, i]));
+  for (const need of ['REF_DATE', 'GEO', 'DGUID', 'Coordinate']) if (!(need in at)) throw new Error(`CSV is missing column ${need}`);
+  const rowDims = head.slice(at.DGUID + 1, at.Coordinate).map((h, k) => ({ name: dimName(h), at: at.DGUID + 1 + k }));
+  const cols = [];
+  head.forEach((h, i) => {
+    if (i <= at.Coordinate || h === 'Symbol') return;
+    const m = /^(.*?):(.*)\[(\d+)\]$/.exec(h);
+    if (m) cols.push({ at: i, dim: dimName(m[1]), member: m[2].trim() });
+  });
+  if (!cols.length) throw new Error('CSV has no "<dimension>:<member>[n]" value columns');
+  return { at, rowDims, cols };
+}
+
+/**
  * Stream one cube's CSV and return Map<csd, Map<metric, {value, geo}>> plus
- * the decisions that did not become a value.
+ * the decisions that did not become a value. A cell qualifies for a metric when
+ * every selector is among {row members} ∪ {column member} and every other
+ * member is a "Total …" aggregate; more than one qualifying cell is ambiguous.
  */
 export async function readWdsCube(lines, table, wantedCsds) {
   const found = new Map();
   const notes = [];
-  const seen = new Map(); // `${csd}|${metric}` → count of qualifying rows
-  let col = null;
-  let dims = [];
+  const seen = new Map();
+  let layout = null;
   for await (const line of lines) {
     if (!line) continue;
     const c = parseCsvLine(line);
-    if (!col) {
-      const head = c.map((h) => h.replace(/^﻿/, '').trim());
-      col = Object.fromEntries(head.map((h, i) => [h, i]));
-      for (const need of ['REF_DATE', 'GEO', 'DGUID', 'UOM', 'SCALAR_FACTOR', 'VALUE']) {
-        if (!(need in col)) throw new Error(`${table.pid}: CSV is missing column ${need}`);
-      }
-      dims = head.slice(col.DGUID + 1, col.UOM).map((h, k) => ({ name: dimName(h), at: col.DGUID + 1 + k }));
-      if (dims.length < 2) throw new Error(`${table.pid}: found ${dims.length} dimension column(s) between DGUID and UOM`);
-      continue;
-    }
-    const csd = (c[col.DGUID] ?? '').slice(-7);
+    if (!layout) { layout = parseWideHeader(c.map((h) => h.replace(/^\uFEFF/, '').trim())); continue; }
+    const csd = (c[layout.at.DGUID] ?? '').slice(-7);
     if (!wantedCsds.has(csd)) continue;
-    const cells = dims.map((d) => c[d.at]);
+    const rowCells = layout.rowDims.map((d) => c[d.at]);
     for (const m of table.metrics) {
       const sel = new Set(m.selectors);
-      const matched = cells.filter((x) => sel.has(x)).length;
-      if (matched !== sel.size) continue;
-      if (!cells.every((x, i) => sel.has(x) || /^Total\b/.test(x))) continue;
-      const key = `${csd}|${m.metric}`;
-      seen.set(key, (seen.get(key) ?? 0) + 1);
-      if (c[col.SCALAR_FACTOR] !== 'units') { notes.push(`${csd} ${m.metric}: scalar factor "${c[col.SCALAR_FACTOR]}" is not units`); continue; }
-      const value = censusNumber(c[col.VALUE]);
-      if (value == null) continue;
-      if (!found.has(csd)) found.set(csd, new Map());
-      found.get(csd).set(m.metric, { value, geo: c[col.GEO], ref: c[col.REF_DATE] });
+      if (!rowCells.every((x) => sel.has(x) || /^Total\b/.test(x))) continue;
+      for (const col of layout.cols) {
+        if (!(sel.has(col.member) || /^Total\b/.test(col.member))) continue;
+        const have = new Set([...rowCells, col.member]);
+        if (![...sel].every((x) => have.has(x))) continue;
+        const key = `${csd}|${m.metric}`;
+        seen.set(key, (seen.get(key) ?? 0) + 1);
+        const value = censusNumber(c[col.at]);
+        if (value == null) continue;
+        if (!found.has(csd)) found.set(csd, new Map());
+        found.get(csd).set(m.metric, { value, geo: c[layout.at.GEO], ref: c[layout.at.REF_DATE] });
+      }
     }
   }
   for (const [key, n] of seen) {
     if (n > 1) {
       const [csd, metric] = key.split('|');
       found.get(csd)?.delete(metric);
-      notes.push(`${csd} ${metric}: ${n} qualifying rows, ambiguous — left unavailable`);
+      notes.push(`${csd} ${metric}: ${n} qualifying cells, ambiguous — left unavailable`);
     }
   }
   return { found, notes };

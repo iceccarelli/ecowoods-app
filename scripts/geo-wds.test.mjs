@@ -1,26 +1,34 @@
-/** Web Data Service reader on SYNTHETIC rows in the cube CSV layout. */
+/** Web Data Service reader on SYNTHETIC rows in the cube's wide CSV layout. */
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readWdsCube, wdsFacts, WDS_TABLES, dimName } from './geo-wds.mjs';
+import { readWdsCube, wdsFacts, WDS_TABLES, dimName, parseWideHeader } from './geo-wds.mjs';
 import { checkWdsDownloadReply, checkWdsHeader } from './geo-fetch.mjs';
 import { validateFacts } from './geo-lib.mjs';
 
-const HEAD = 'REF_DATE,GEO,DGUID,Household size (8),Statistics (3C),Structural type of dwelling (10),UOM,UOM_ID,SCALAR_FACTOR,SCALAR_ID,VECTOR,COORDINATE,VALUE,STATUS';
-const row = (geo, csd, size, stat, type, value, scalar = 'units') =>
-  `2021,"${geo}",2021A0005${csd},"${size}","${stat}","${type}",Number,1,${scalar},0,v1,1.1,${value},`;
-async function* gen(rows) { for (const r of [HEAD, ...rows]) yield r; }
+/* 98100240-like: structural type is a row dimension, Statistics is the wide dimension. */
+const HEAD240 = 'REF_DATE,GEO,DGUID,Household size (8),Structural type of dwelling (10),Coordinate,Statistics (3C):Number of private households[1],Symbol,Statistics (3C):Confidence interval lower bound of number of private households[2],Symbol';
+const r240 = (geo, csd, size, type, n, lo = 1) => `2021,"${geo}",2021A0005${csd},"${size}","${type}",1.1,${n},,${lo},`;
+async function* gen(head, rows) { for (const r of [`﻿${head}`, ...rows]) yield r; }
 
 const table = WDS_TABLES.find((t) => t.pid === '98100240');
 const want = new Set(['3599001', '3599002']);
-const TOT = 'Total - Household size', HH = 'Number of private households';
+const TOT = 'Total - Household size';
 
-test('selects the single-detached and total rows, ignoring other structural types', async () => {
-  const { found, notes } = await readWdsCube(gen([
-    row('Fixture A, Ontario', '3599001', TOT, HH, 'Total - Structural type of dwelling', 1000),
-    row('Fixture A, Ontario', '3599001', TOT, HH, 'Single-detached house', 400),
-    row('Fixture A, Ontario', '3599001', TOT, HH, 'Row house', 100),
-    row('Fixture A, Ontario', '3599001', '1 person', HH, 'Single-detached house', 50),
-    row('Elsewhere, Ontario', '3500000', TOT, HH, 'Single-detached house', 9),
+test('wide header: row dimensions, value columns and Symbol columns are told apart', () => {
+  const l = parseWideHeader(HEAD240.split(','));
+  assert.deepEqual(l.rowDims.map((d) => d.name), ['Household size', 'Structural type of dwelling']);
+  assert.deepEqual(l.cols.map((c) => c.member), ['Number of private households', 'Confidence interval lower bound of number of private households']);
+  assert.throws(() => parseWideHeader(['REF_DATE', 'GEO', 'DGUID', 'Coordinate']), /no "<dimension>:<member>\[n\]"/);
+  assert.throws(() => parseWideHeader(['GEO', 'DGUID']), /missing column/);
+});
+
+test('selects single-detached and total, never the confidence-interval column or other types', async () => {
+  const { found, notes } = await readWdsCube(gen(HEAD240, [
+    r240('Fixture A, Ontario', '3599001', TOT, 'Total - Structural type of dwelling', 1000),
+    r240('Fixture A, Ontario', '3599001', TOT, 'Single-detached house', 400, 380),
+    r240('Fixture A, Ontario', '3599001', TOT, 'Row house', 100),
+    r240('Fixture A, Ontario', '3599001', '1 person', 'Single-detached house', 50),
+    r240('Elsewhere, Ontario', '3500000', TOT, 'Single-detached house', 9),
   ]), table, want);
   assert.equal(found.get('3599001').get('single_detached').value, 400);
   assert.equal(found.get('3599001').get('structural_total').value, 1000);
@@ -28,22 +36,32 @@ test('selects the single-detached and total rows, ignoring other structural type
   assert.deepEqual(notes, []);
 });
 
-test('a duplicate qualifying row is ambiguous and leaves the metric unavailable', async () => {
-  const { found, notes } = await readWdsCube(gen([
-    row('Fixture A, Ontario', '3599001', TOT, HH, 'Single-detached house', 400),
-    row('Fixture A, Ontario', '3599001', TOT, HH, 'Single-detached house', 401),
+test('a duplicate qualifying cell is ambiguous and leaves the metric unavailable', async () => {
+  const { found, notes } = await readWdsCube(gen(HEAD240, [
+    r240('Fixture A, Ontario', '3599001', TOT, 'Single-detached house', 400),
+    r240('Fixture A, Ontario', '3599001', TOT, 'Single-detached house', 401),
   ]), table, want);
   assert.equal(found.get('3599001')?.has('single_detached') ?? false, false);
   assert.ok(notes.some((n) => /ambiguous/.test(n)));
 });
 
-test('a scalar factor other than units is refused; suppressed values are unavailable', async () => {
-  const { found, notes } = await readWdsCube(gen([
-    row('Fixture A, Ontario', '3599001', TOT, HH, 'Single-detached house', 4, 'thousands'),
-    row('Fixture B, Ontario', '3599002', TOT, HH, 'Single-detached house', 'x'),
+test('suppressed and blank values are unavailable, not zero', async () => {
+  const { found } = await readWdsCube(gen(HEAD240, [
+    r240('Fixture A, Ontario', '3599001', TOT, 'Single-detached house', 'x'),
+    r240('Fixture B, Ontario', '3599002', TOT, 'Single-detached house', ''),
   ]), table, want);
   assert.equal(found.size, 0);
-  assert.ok(notes.some((n) => /scalar factor/.test(n)));
+});
+
+test('income: the figure is found in a wide column named by its member, with 2015 columns ignored', async () => {
+  const t = WDS_TABLES.find((x) => x.pid === '98100060');
+  const head = 'REF_DATE,GEO,DGUID,Household type including census family structure (11),Structural type of dwelling (9),Coordinate,'
+    + 'Household income statistics (16):Total - Household income statistics - 100% Data (2020)[1],Symbol,'
+    + 'Household income statistics (16):Median total income of households ($) (2020)[2],Symbol,'
+    + 'Household income statistics (16):Median total income of households ($) (2015)[10],Symbol';
+  const row = (v) => `2021,"Fixture A, Ontario",2021A00053599001,"Total - Household type including census family structure","Total - Structural type of dwelling",1.1,900,,${v},,70000,`;
+  const { found } = await readWdsCube(gen(head, [row(85000)]), t, want);
+  assert.equal(found.get('3599001').get('median_household_income').value, 85000);
 });
 
 test('facts: geography name and dguid are both checked; out-of-range values are not trusted', async () => {
@@ -52,9 +70,9 @@ test('facts: geography name and dguid are both checked; out-of-range values are 
     b: { direct: { system: 'statcan-csd', id: '3599002', name: 'Fixture B' } },
   } };
   const markets = [{ slug: 'a', country: 'CA', kind: 'municipality' }, { slug: 'b', country: 'CA', kind: 'municipality' }];
-  const read = await readWdsCube(gen([
-    row('Fixture A, Ontario', '3599001', TOT, HH, 'Single-detached house', 400),
-    row('Somewhere Else, Ontario', '3599002', TOT, HH, 'Single-detached house', 50),
+  const read = await readWdsCube(gen(HEAD240, [
+    r240('Fixture A, Ontario', '3599001', TOT, 'Single-detached house', 400),
+    r240('Somewhere Else, Ontario', '3599002', TOT, 'Single-detached house', 50),
   ]), table, want);
   const report = [];
   const facts = wdsFacts([{ table, result: read }], map, markets, '2026-10-20', report);
@@ -65,10 +83,8 @@ test('facts: geography name and dguid are both checked; out-of-range values are 
   assert.equal(facts[0].unit, 'dwellings');
 
   const vt = WDS_TABLES.find((t) => t.pid === '98100257');
-  const v = await readWdsCube((async function* () {
-    yield 'REF_DATE,GEO,DGUID,Statistics (3C),Value (owner-estimated) of dwelling (16),Structural type of dwelling (10),UOM,UOM_ID,SCALAR_FACTOR,SCALAR_ID,VECTOR,COORDINATE,VALUE,STATUS';
-    yield '2021,"Fixture A, Ontario",2021A00053599001,Number of private households,Median value of dwelling $,Total - Structural type of dwelling,Dollars,1,units,0,v,1,12,';
-  })(), vt, want);
+  const vhead = 'REF_DATE,GEO,DGUID,Statistics (3C),Structural type of dwelling (10),Coordinate,Value (owner-estimated) of dwelling (16):Median value of dwelling $[16],Symbol';
+  const v = await readWdsCube(gen(vhead, ['2021,"Fixture A, Ontario",2021A00053599001,Number of private households,Total - Structural type of dwelling,1.1,12,']), vt, want);
   const rep = [];
   assert.equal(wdsFacts([{ table: vt, result: v }], map, markets, '2026-10-20', rep).length, 0, 'a median of 12 dollars is not trusted');
   assert.ok(rep.some((r) => /outside 50000/.test(r)));
@@ -84,6 +100,8 @@ test('download reply and CSV header checks', () => {
   assert.throws(() => checkWdsDownloadReply({ status: 'FAILED' }, 'p'), /unexpected reply/);
   assert.throws(() => checkWdsDownloadReply({ status: 'SUCCESS', object: 'https://evil.example.com/x.zip' }, 'p'), /not an https statcan/);
   assert.throws(() => checkWdsDownloadReply({ status: 'SUCCESS', object: 'http://www150.statcan.gc.ca/x.zip' }, 'p'), /not an https/);
-  assert.ok(checkWdsHeader('REF_DATE,GEO,DGUID,A,UOM,SCALAR_FACTOR,VALUE', 'p').includes('DGUID'));
+  assert.ok(checkWdsHeader(`﻿${HEAD240}`, 'p').includes('DGUID'));
   assert.throws(() => checkWdsHeader('GEO,VALUE', 'p'), /missing column/);
+  assert.throws(() => checkWdsHeader('REF_DATE,GEO,DGUID,Coordinate', 'p'), /no "<dimension>:<member>\[n\]"/);
+  assert.ok(checkWdsHeader('REF_DATE,GEO,DGUID,Coordinate,"A (2):$100,000 to $149,999[3]",Symbol', 'p').includes('A (2):$100,000 to $149,999[3]'), 'quoted commas');
 });

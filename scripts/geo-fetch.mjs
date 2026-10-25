@@ -18,7 +18,7 @@ import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { US_VARIABLES } from './geo-sources.mjs';
+import { US_VARIABLES, parseCsvLine } from './geo-sources.mjs';
 import { WDS_TABLES } from './geo-wds.mjs';
 
 export const CATALOGUE_URL = 'https://www150.statcan.gc.ca/n1/en/catalogue/98-401-X2021005';
@@ -27,7 +27,7 @@ export const CA_REQUIRED_COLUMNS = ['DGUID', 'ALT_GEO_CODE', 'GEO_LEVEL', 'GEO_N
 export const MIN_CA_BYTES = 50 * 1024 * 1024; // the CSD-level profile is hundreds of MB; an error page is not
 export const MIN_ACS_ROWS = 100;
 export const WDS = 'https://www150.statcan.gc.ca/t1/wds/rest';
-export const WDS_REQUIRED_COLUMNS = ['REF_DATE', 'GEO', 'DGUID', 'UOM', 'SCALAR_FACTOR', 'VALUE'];
+export const WDS_REQUIRED_COLUMNS = ['REF_DATE', 'GEO', 'DGUID', 'Coordinate'];
 export const MIN_WDS_BYTES = 5 * 1024 * 1024;
 
 /** The WDS answer to getFullTableDownloadCSV: SUCCESS and an https statcan.gc.ca URL, nothing else. */
@@ -39,9 +39,10 @@ export function checkWdsDownloadReply(body, pid) {
 }
 
 export function checkWdsHeader(line, pid) {
-  const head = line.replace(/^\uFEFF/, '').split(',').map((h) => h.replace(/"/g, '').trim());
+  const head = parseCsvLine(line.replace(/^\uFEFF/, '').replace(/\r$/, '')).map((h) => h.trim());
   const missing = WDS_REQUIRED_COLUMNS.filter((c) => !head.includes(c));
   if (missing.length) throw new Error(`${pid}: CSV is missing column(s): ${missing.join(', ')}; header is ${JSON.stringify(head).slice(0, 700)}`);
+  if (!head.some((h) => /:.*\[\d+\]$/.test(h))) throw new Error(`${pid}: CSV has no "<dimension>:<member>[n]" value columns`);
   return head;
 }
 
@@ -141,7 +142,7 @@ async function downloadWdsCube(pid, out, manifest) {
   const csv = join(out, `${pid}.csv`);
   const size = statSync(csv).size;
   if (size < MIN_WDS_BYTES) throw new Error(`WDS ${pid}: CSV is only ${size} bytes`);
-  const fd2 = openSync(csv, 'r'); const buf = Buffer.alloc(8192); const n = readSync(fd2, buf, 0, 8192, 0); closeSync(fd2);
+  const fd2 = openSync(csv, 'r'); const buf = Buffer.alloc(65536); const n = readSync(fd2, buf, 0, 65536, 0); closeSync(fd2);
   const firstLines = buf.subarray(0, n).toString('utf8').split('\n').slice(0, 4);
   try { checkWdsHeader(firstLines[0], pid); } catch (e) { throw new Error(`${e.message}\nfirst lines: ${JSON.stringify(firstLines).slice(0, 1500)}`); }
   manifest.files.push({ name: `${pid}.csv`, url, bytes: size });
