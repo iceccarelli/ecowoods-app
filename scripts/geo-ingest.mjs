@@ -3,6 +3,7 @@
  * scripts/geo-ingest.mjs — re-runnable, offline-first geo ingestion.
  *
  *   pnpm geo:ingest -- --ca-csv FILE --us-json FILE[,FILE] --retrieved 2026-10-25 [--write]
+ *   pnpm geo:ingest -- --wds-csv-dir DIR --us-json FILE[,FILE] --retrieved D [--write]   # Canada from Web Data Service CSVs (DIR/<pid>.csv)
  *   pnpm geo:ingest -- --regenerate [--write]    # facts → market-inputs.generated.json only
  *   pnpm geo:ingest -- --ca-csv FILE --discover  # list candidate CSDs for unmapped CA markets
  *   pnpm geo:ingest -- --fetch-us --retrieved D  # pull ACS from api.census.gov (approved API)
@@ -20,6 +21,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { validateFacts, validateCrosswalk, deriveInputs, METHOD_VERSION } from './geo-lib.mjs';
 import { readCensusProfile, fileLines, readAcs, caFacts, usFacts, US_VARIABLES } from './geo-sources.mjs';
+import { WDS_TABLES, readWdsCube, wdsFacts } from './geo-wds.mjs';
 
 const ROOT = process.cwd();
 const GEO = join(ROOT, 'apps/web/content/geo');
@@ -67,6 +69,7 @@ async function main() {
   let facts = doc.facts;
   const caFile = arg(a, '--ca-csv');
   const usFiles = arg(a, '--us-json');
+  const wdsDir = arg(a, '--wds-csv-dir');
 
   if (a.includes('--discover')) {
     if (usFiles) {
@@ -95,13 +98,20 @@ async function main() {
     return;
   }
 
-  if (caFile || usFiles || a.includes('--fetch-us')) {
+  if (caFile || usFiles || wdsDir || a.includes('--fetch-us')) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(retrieved ?? '')) { console.error('--retrieved YYYY-MM-DD (the date the file was downloaded) is required'); process.exit(1); }
     if (retrieved > new Date().toISOString().slice(0, 10)) { console.error('--retrieved is in the future'); process.exit(1); }
     const fresh = [];
     if (caFile) {
       const want = new Set(Object.values(map.markets).filter((e) => e.direct?.system === 'statcan-csd').map((e) => e.direct.id));
       fresh.push(...caFacts(await readCensusProfile(fileLines(caFile), want), map, markets, retrieved, report));
+    }
+    if (wdsDir) {
+      const want = new Set(Object.values(map.markets).filter((e) => e.direct?.system === 'statcan-csd').map((e) => e.direct.id));
+      const reads = [];
+      for (const table of WDS_TABLES) reads.push({ table, result: await readWdsCube(fileLines(join(wdsDir, `${table.pid}.csv`)), table, want) });
+      for (const r of reads) for (const n of r.result.notes) report.push(`${r.table.pid} ${n}`);
+      fresh.push(...wdsFacts(reads, map, markets, retrieved, report));
     }
     const acs = [];
     if (usFiles) for (const f of usFiles.split(',')) acs.push(readAcs(JSON.parse(readFileSync(f, 'utf8'))));

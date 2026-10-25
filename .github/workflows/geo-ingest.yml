@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       ca_url:
-        description: 'Census Profile CSV (zip) URL. Leave empty to read the single CSV link from the catalogue page.'
+        description: 'Optional: a Census Profile CSV (zip) URL. Leave empty to use the Web Data Service tables.'
         required: false
         default: ''
 
@@ -28,25 +28,33 @@ jobs:
         with:
           node-version: 22
       - name: Download and validate the official files
-        run: node scripts/geo-fetch.mjs --out "$RUNNER_TEMP/geo" ${{ inputs.ca_url != '' && format('--ca-url "{0}"', inputs.ca_url) || '' }}
+        env:
+          CA_URL: ${{ inputs.ca_url }}
+        run: node scripts/geo-fetch.mjs --out "$RUNNER_TEMP/geo" ${CA_URL:+--ca-url "$CA_URL"}
       - name: Ingest (dry run first)
+        env:
+          CA_URL: ${{ inputs.ca_url }}
         run: |
+          if [ -n "$CA_URL" ]; then CA_ARGS="--ca-csv $RUNNER_TEMP/geo/census-profile.csv"; else CA_ARGS="--wds-csv-dir $RUNNER_TEMP/geo"; fi
           RETRIEVED=$(date -u +%F)
           node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs scripts/geo-ingest.mjs \
-            --ca-csv "$RUNNER_TEMP/geo/census-profile.csv" \
+            $CA_ARGS \
             --us-json "$RUNNER_TEMP/geo/acs-place.json,$RUNNER_TEMP/geo/acs-cousub.json" \
             --retrieved "$RETRIEVED" --report "$RUNNER_TEMP/geo/ingest-report.txt"
       - name: Write, then run the repository guards on the result
+        env:
+          CA_URL: ${{ inputs.ca_url }}
         run: |
+          if [ -n "$CA_URL" ]; then CA_ARGS="--ca-csv $RUNNER_TEMP/geo/census-profile.csv"; else CA_ARGS="--wds-csv-dir $RUNNER_TEMP/geo"; fi
           RETRIEVED=$(date -u +%F)
           node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs scripts/geo-ingest.mjs \
-            --ca-csv "$RUNNER_TEMP/geo/census-profile.csv" \
+            $CA_ARGS \
             --us-json "$RUNNER_TEMP/geo/acs-place.json,$RUNNER_TEMP/geo/acs-cousub.json" \
             --retrieved "$RETRIEVED" --write
           node scripts/verify-geo-data.mjs
           node scripts/verify-market-inputs.mjs
           node --experimental-strip-types --no-warnings --import ./scripts/lib/ts-register.mjs scripts/geo-ingest.mjs \
-            --ca-csv "$RUNNER_TEMP/geo/census-profile.csv" \
+            $CA_ARGS \
             --us-json "$RUNNER_TEMP/geo/acs-place.json,$RUNNER_TEMP/geo/acs-cousub.json" --discover > "$RUNNER_TEMP/geo/candidates.tsv" || true
       - name: Collect reviewable output
         run: |

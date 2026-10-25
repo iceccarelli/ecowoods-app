@@ -11,18 +11,39 @@
  * Exits non-zero on any error page, wrong content type, missing column, empty
  * result or truncated file; nothing downstream runs on a partial download.
  */
-import { mkdirSync, writeFileSync, readFileSync, readdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync, createWriteStream, openSync, readSync, closeSync, statSync } from 'node:fs';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { US_VARIABLES } from './geo-sources.mjs';
+import { WDS_TABLES } from './geo-wds.mjs';
 
 export const CATALOGUE_URL = 'https://www150.statcan.gc.ca/n1/en/catalogue/98-401-X2021005';
 export const ACS_BASE = 'https://api.census.gov/data/2024/acs/acs5';
 export const CA_REQUIRED_COLUMNS = ['DGUID', 'ALT_GEO_CODE', 'GEO_LEVEL', 'GEO_NAME', 'CHARACTERISTIC_NAME', 'C1_COUNT_TOTAL'];
 export const MIN_CA_BYTES = 50 * 1024 * 1024; // the CSD-level profile is hundreds of MB; an error page is not
 export const MIN_ACS_ROWS = 100;
+export const WDS = 'https://www150.statcan.gc.ca/t1/wds/rest';
+export const WDS_REQUIRED_COLUMNS = ['REF_DATE', 'GEO', 'DGUID', 'UOM', 'SCALAR_FACTOR', 'VALUE'];
+export const MIN_WDS_BYTES = 5 * 1024 * 1024;
+
+/** The WDS answer to getFullTableDownloadCSV: SUCCESS and an https statcan.gc.ca URL, nothing else. */
+export function checkWdsDownloadReply(body, pid) {
+  if (!body || body.status !== 'SUCCESS' || typeof body.object !== 'string') throw new Error(`WDS ${pid}: unexpected reply ${JSON.stringify(body).slice(0, 160)}`);
+  const u = new URL(body.object);
+  if (u.protocol !== 'https:' || !/(^|\.)statcan\.gc\.ca$/.test(u.hostname)) throw new Error(`WDS ${pid}: download URL ${u.origin} is not an https statcan.gc.ca host`);
+  return u.toString();
+}
+
+export function checkWdsHeader(line, pid) {
+  const head = line.replace(/^\uFEFF/, '').split(',').map((h) => h.replace(/"/g, '').trim());
+  const missing = WDS_REQUIRED_COLUMNS.filter((c) => !head.includes(c));
+  if (missing.length) throw new Error(`${pid}: CSV is missing column(s): ${missing.join(', ')}`);
+  return head;
+}
 
 export const sha256 = (buf) => createHash('sha256').update(buf).digest('hex');
 
@@ -102,6 +123,25 @@ async function get(url, types, opts = {}) {
   return { buf: Buffer.from(await res.arrayBuffer()), type, finalUrl: res.url, ...opts };
 }
 
+async function downloadWdsCube(pid, out, manifest) {
+  const reply = await get(`${WDS}/getFullTableDownloadCSV/${pid}/en`, ['json']);
+  const url = checkWdsDownloadReply(JSON.parse(reply.buf.toString('utf8')), pid);
+  const res = await fetch(url, { redirect: 'follow', headers: { 'user-agent': 'ecowoods-geo-ingest/1.0 (+https://ecowoods.ca)' } });
+  checkResponse(res, url, ['zip', 'octet-stream']);
+  const zip = join(out, `${pid}.zip`);
+  await pipeline(Readable.fromWeb(res.body), createWriteStream(zip));
+  const head = Buffer.alloc(4);
+  const fd = openSync(zip, 'r'); readSync(fd, head, 0, 4, 0); closeSync(fd);
+  if (!isZip(head)) throw new Error(`WDS ${pid}: download is not a zip`);
+  execFileSync('unzip', ['-o', '-q', zip, `${pid}.csv`, '-d', out]);
+  const csv = join(out, `${pid}.csv`);
+  const size = statSync(csv).size;
+  if (size < MIN_WDS_BYTES) throw new Error(`WDS ${pid}: CSV is only ${size} bytes`);
+  const fd2 = openSync(csv, 'r'); const buf = Buffer.alloc(8192); const n = readSync(fd2, buf, 0, 8192, 0); closeSync(fd2);
+  checkWdsHeader(buf.subarray(0, n).toString('utf8').split('\n')[0], pid);
+  manifest.files.push({ name: `${pid}.csv`, url, bytes: size });
+}
+
 async function main() {
   const a = process.argv.slice(2);
   const out = a[a.indexOf('--out') + 1];
@@ -110,7 +150,9 @@ async function main() {
   const manifest = { fetchedAt: new Date().toISOString(), files: [] };
 
   let caUrl = a.includes('--ca-url') ? a[a.indexOf('--ca-url') + 1] : '';
-  if (!caUrl) {
+  if (!caUrl && !a.includes('--ca-profile')) {
+    for (const t of WDS_TABLES) await downloadWdsCube(t.pid, out, manifest);
+  } else if (!caUrl) {
     const page = await get(CATALOGUE_URL, ['text/html']);
     let html = page.buf.toString('utf8');
     let anchors = findCsvAnchors(html);
@@ -127,6 +169,13 @@ async function main() {
     }
     caUrl = pickCsdAnchor(anchors);
   }
+  if (caUrl || a.includes('--ca-profile')) await downloadProfile(caUrl, out, manifest);
+  await downloadAcs(out, manifest);
+  writeFileSync(join(out, 'fetch-manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+  console.log(JSON.stringify(manifest, null, 2));
+}
+
+async function downloadProfile(caUrl, out, manifest) {
   const zip = await get(caUrl, ['zip', 'octet-stream', 'csv']);
   let csv;
   if (isZip(zip.buf)) {
@@ -142,6 +191,9 @@ async function main() {
   writeFileSync(join(out, 'census-profile.csv'), csv);
   manifest.files.push({ name: 'census-profile.csv', url: zip.finalUrl, bytes: csv.length, sha256: sha256(csv), contentType: zip.type });
 
+}
+
+async function downloadAcs(out, manifest) {
   for (const [name, geo] of [['acs-place.json', 'place:*&in=state:36'], ['acs-cousub.json', 'county%20subdivision:*&in=state:36&in=county:*']]) {
     const url = `${ACS_BASE}?get=NAME,${US_VARIABLES.join(',')}&for=${geo}`;
     const r = await get(url, ['json']);
@@ -150,7 +202,5 @@ async function main() {
     writeFileSync(join(out, name), r.buf);
     manifest.files.push({ name, url, bytes: r.buf.length, sha256: sha256(r.buf), contentType: r.type, rows });
   }
-  writeFileSync(join(out, 'fetch-manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
-  console.log(JSON.stringify(manifest, null, 2));
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) await main().catch((e) => { console.error(`✗ ${e.message}`); process.exit(1); });
