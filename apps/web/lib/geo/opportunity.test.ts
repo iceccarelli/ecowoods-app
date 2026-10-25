@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { MARKETS, type Market } from '@/content/geo/markets';
-import { opportunity, opportunityOrder, MIN_CONFIDENCE } from './opportunity';
+import { opportunity, opportunityOrder, MIN_CONFIDENCE, evidenceFactor } from './opportunity';
 import { INPUT_SPECS, TOTAL_WEIGHT, MARKET_INPUTS } from '@/content/geo/market-inputs';
 import { allocation, meanDepth, MIN_MEAN_DEPTH } from './allocation';
 
@@ -105,5 +105,53 @@ describe('the 80/20 allocation', () => {
     const mean = meanDepth();
     expect(mean.ca).toBeGreaterThanOrEqual(MIN_MEAN_DEPTH);
     expect(mean.us).toBeGreaterThanOrEqual(MIN_MEAN_DEPTH);
+  });
+});
+
+describe('confidence reflects the weight the evidence earns', () => {
+  const src = { title: 'T', url: 'https://example.org/t', retrievedAt: '2026-10-20' };
+  const direct = { kind: 'direct' as const, system: 'statcan-csd', id: '3520005', name: 'Toronto' };
+  const put = (slug: string, v: Record<string, unknown>) => { (MARKET_INPUTS as Record<string, unknown>)[slug] = v; };
+  const toronto = MARKETS.find((m) => m.slug === 'toronto')!;
+
+  it('halves a proxy, halves a parent geography, and quarters both', () => {
+    expect(evidenceFactor({ basis: 'measured', geography: { kind: 'direct' } })).toBe(1);
+    expect(evidenceFactor({ basis: 'proxy', geography: { kind: 'direct' } })).toBe(0.5);
+    expect(evidenceFactor({ basis: 'measured', geography: { kind: 'parent' } })).toBe(0.5);
+    expect(evidenceFactor({ basis: 'proxy', geography: { kind: 'parent' } })).toBe(0.25);
+  });
+
+  it('scores a market with four measured inputs and a proxy at 70% and labels each component', () => {
+    const v = (score: number, basis: 'measured' | 'proxy' = 'measured', geography = direct) => ({ score, note: 'n', source: src, basis, geography });
+    put('toronto', {
+      purchasingPower: v(80), housingValues: v(80), housingAge: v(80), detachedPrevalence: v(80), hardwoodOpportunity: v(80, 'proxy'),
+    });
+    try {
+      const o = opportunity(toronto);
+      // 20+15+10+10 + 10×0.5 + 5 + 5 (computed) = 70 of 100
+      expect(o.confidence).toBe(0.7);
+      expect(o.score).not.toBeNull();
+      expect(o.components.find((c) => c.id === 'hardwoodOpportunity')).toMatchObject({ basis: 'proxy', effectiveWeight: 5 });
+      expect(o.components.find((c) => c.id === 'searchDemand')).toMatchObject({ basis: 'unavailable', score: null });
+    } finally {
+      delete (MARKET_INPUTS as Record<string, unknown>).toronto;
+    }
+  });
+
+  it('keeps a district on parent figures below the gate, however high the parent scores', () => {
+    const district = MARKETS.find((m) => m.kind === 'district' && m.partOf === 'toronto')!;
+    const parent = { ...direct, kind: 'parent' as const, parentSlug: 'toronto' };
+    const v = (score: number, basis: 'measured' | 'proxy' = 'measured') => ({ score, note: 'n', source: src, basis, geography: parent });
+    put(district.slug, {
+      purchasingPower: v(99), housingValues: v(99), housingAge: v(99), detachedPrevalence: v(99), hardwoodOpportunity: v(99, 'proxy'),
+    });
+    try {
+      const o = opportunity(district);
+      expect(o.confidence).toBeLessThan(MIN_CONFIDENCE);
+      expect(o.score).toBeNull();
+      expect(o.classification).toBe('UNSCORED');
+    } finally {
+      delete (MARKET_INPUTS as Record<string, unknown>)[district.slug];
+    }
   });
 });

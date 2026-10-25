@@ -1,0 +1,425 @@
+{
+  "schema": 1,
+  "note": "INTERNAL. One explicit geography decision per market. direct = the market is a census geography of its own (id + official name, checked against the downloaded file at ingest); parent = a district with no census geography of its own, which inherits its registry parent (always labelled parent geography); unmapped = no confirmed code, stays unavailable.",
+  "markets": {
+    "toronto": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3520005",
+        "name": "Toronto"
+      }
+    },
+    "downtown-toronto": {
+      "parent": "toronto"
+    },
+    "north-york": {
+      "parent": "toronto"
+    },
+    "etobicoke": {
+      "parent": "toronto"
+    },
+    "scarborough": {
+      "parent": "toronto"
+    },
+    "east-york": {
+      "parent": "toronto"
+    },
+    "york": {
+      "parent": "toronto"
+    },
+    "mississauga": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3521005",
+        "name": "Mississauga"
+      }
+    },
+    "brampton": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3521010",
+        "name": "Brampton"
+      }
+    },
+    "vaughan": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3519028",
+        "name": "Vaughan"
+      }
+    },
+    "markham": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3519036",
+        "name": "Markham"
+      }
+    },
+    "richmond-hill": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3519038",
+        "name": "Richmond Hill"
+      }
+    },
+    "oakville": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3524001",
+        "name": "Oakville"
+      }
+    },
+    "aurora": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3519049",
+        "name": "Aurora"
+      }
+    },
+    "newmarket": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3519048",
+        "name": "Newmarket"
+      }
+    },
+    "pickering": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3518001",
+        "name": "Pickering"
+      }
+    },
+    "ajax": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3518005",
+        "name": "Ajax"
+      }
+    },
+    "rosedale": {
+      "parent": "toronto"
+    },
+    "forest-hill": {
+      "parent": "toronto"
+    },
+    "yorkville": {
+      "parent": "toronto"
+    },
+    "leaside": {
+      "parent": "toronto"
+    },
+    "the-annex": {
+      "parent": "toronto"
+    },
+    "high-park": {
+      "parent": "toronto"
+    },
+    "riverdale": {
+      "parent": "toronto"
+    },
+    "leslieville": {
+      "parent": "toronto"
+    },
+    "the-beaches": {
+      "parent": "toronto"
+    },
+    "lawrence-park": {
+      "parent": "toronto"
+    },
+    "cabbagetown": {
+      "parent": "toronto"
+    },
+    "swansea": {
+      "parent": "toronto"
+    },
+    "davisville-village": {
+      "parent": "toronto"
+    },
+    "midtown-toronto": {
+      "parent": "toronto"
+    },
+    "king-west": {
+      "parent": "toronto"
+    },
+    "liberty-village": {
+      "parent": "toronto"
+    },
+    "king": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "king-city": {
+      "parent": "king"
+    },
+    "nobleton": {
+      "parent": "king"
+    },
+    "kleinburg": {
+      "parent": "vaughan"
+    },
+    "woodbridge": {
+      "parent": "vaughan"
+    },
+    "angus-glen": {
+      "parent": "markham"
+    },
+    "bayview-glen": {
+      "parent": "markham"
+    },
+    "cachet": {
+      "parent": "markham"
+    },
+    "the-kingsway": {
+      "parent": "toronto"
+    },
+    "port-credit": {
+      "parent": "mississauga"
+    },
+    "lorne-park": {
+      "parent": "mississauga"
+    },
+    "mineola": {
+      "parent": "mississauga"
+    },
+    "clarkson": {
+      "parent": "mississauga"
+    },
+    "sheridan": {
+      "parent": "mississauga"
+    },
+    "milton": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3524009",
+        "name": "Milton"
+      }
+    },
+    "burlington": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3524002",
+        "name": "Burlington"
+      }
+    },
+    "halton-hills": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3524011",
+        "name": "Halton Hills"
+      }
+    },
+    "caledon": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3521024",
+        "name": "Caledon"
+      }
+    },
+    "whitby": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3518009",
+        "name": "Whitby"
+      }
+    },
+    "oshawa": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3518013",
+        "name": "Oshawa"
+      }
+    },
+    "clarington": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3518017",
+        "name": "Clarington"
+      }
+    },
+    "barrie": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3543042",
+        "name": "Barrie"
+      }
+    },
+    "innisfil": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "hamilton": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3525005",
+        "name": "Hamilton"
+      }
+    },
+    "ancaster": {
+      "parent": "hamilton"
+    },
+    "dundas": {
+      "parent": "hamilton"
+    },
+    "stoney-creek": {
+      "parent": "hamilton"
+    },
+    "waterdown": {
+      "parent": "hamilton"
+    },
+    "grimsby": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "guelph": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3523008",
+        "name": "Guelph"
+      }
+    },
+    "cambridge": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3530010",
+        "name": "Cambridge"
+      }
+    },
+    "kitchener": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3530013",
+        "name": "Kitchener"
+      }
+    },
+    "lincoln": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "beamsville": {
+      "parent": "lincoln"
+    },
+    "st-catharines": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3526053",
+        "name": "St. Catharines"
+      }
+    },
+    "thorold": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "welland": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3526032",
+        "name": "Welland"
+      }
+    },
+    "niagara-on-the-lake": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "niagara-falls-on": {
+      "direct": {
+        "system": "statcan-csd",
+        "id": "3526043",
+        "name": "Niagara Falls"
+      }
+    },
+    "port-colborne": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "fort-erie": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "kawartha-lakes": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "buffalo": {
+      "direct": {
+        "system": "us-place",
+        "id": "3611000",
+        "name": "Buffalo city, New York"
+      }
+    },
+    "amherst": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "williamsville": {
+      "parent": "amherst"
+    },
+    "clarence": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "cheektowaga": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "lancaster": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "west-seneca": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "tonawanda": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "kenmore": {
+      "parent": "tonawanda"
+    },
+    "grand-island": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "orchard-park": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "hamburg": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "east-aurora": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "niagara-falls-ny": {
+      "direct": {
+        "system": "us-place",
+        "id": "3649121",
+        "name": "Niagara Falls city, New York"
+      }
+    },
+    "lewiston": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "wheatfield": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "north-tonawanda": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "lockport": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "rochester-ny": {
+      "direct": {
+        "system": "us-place",
+        "id": "3663000",
+        "name": "Rochester city, New York"
+      }
+    },
+    "brighton": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "pittsford": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "fairport": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "victor": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "webster": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "irondequoit": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    },
+    "greece": {
+      "unmapped": "Census geography code not yet confirmed against the downloaded file; run geo:ingest --discover to list candidates"
+    }
+  }
+}

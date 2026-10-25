@@ -50,6 +50,8 @@
  */
 
 /** The ten weighted inputs, in the brief's own words and weights. */
+import { GENERATED_INPUTS } from './market-inputs.generated';
+
 export type InputId =
   | 'purchasingPower'
   | 'housingValues'
@@ -140,16 +142,43 @@ export interface SourcedValue {
   /** The raw figure as published, with units, so the normalisation is auditable. */
   note: string;
   source: { title: string; url: string; retrievedAt: string };
+  /**
+   * `measured`: a published census figure (or a share of two). `proxy`: a
+   * documented stand-in for something no dataset measures (hardwood
+   * prevalence). Proxies carry half weight in the confidence figure.
+   */
+  basis?: 'measured' | 'proxy';
+  /**
+   * `direct`: the market is a census geography of its own. `parent`: a district
+   * that inherits the municipality that contains it; never a direct measurement
+   * and carries half weight.
+   */
+  geography?: { kind: 'direct' | 'parent'; system: string; id: string; name: string; parentSlug?: string };
+  vintage?: string;
+  raw?: { value: number; unit: string; components: Array<{ factId: string; metric: string; value: number; unit: string }> };
+  method?: string;
 }
 
+export type GeneratedInput = SourcedValue & {
+  basis: 'measured' | 'proxy';
+  geography: NonNullable<SourcedValue['geography']>;
+  vintage: string;
+  raw: NonNullable<SourcedValue['raw']>;
+  method: string;
+};
+
 /**
- * Sourced inputs by market slug. Empty until somebody opens a census table.
+ * Sourced inputs by market slug, produced by `pnpm geo:ingest` from the official
+ * Statistics Canada and U.S. Census Bureau downloads and committed as
+ * market-inputs.generated.ts. Empty until real files have been ingested; an
+ * input that has no source is absent, never defaulted.
  *
  * Adding one market's purchasing power moves this model's confidence for that
- * market from 10% to 30% and changes nothing about any other market, which is
- * the property that makes it worth filling in one row at a time.
+ * market and changes nothing about any other market, which is the property that
+ * makes it worth filling in one row at a time.
  */
-export const MARKET_INPUTS: Record<string, Partial<Record<InputId, SourcedValue>>> = {};
+export const MARKET_INPUTS: Record<string, Partial<Record<InputId, SourcedValue>>> =
+  GENERATED_INPUTS as Record<string, Partial<Record<InputId, SourcedValue>>>;
 
 export const inputsFor = (slug: string): Partial<Record<InputId, SourcedValue>> =>
   MARKET_INPUTS[slug] ?? {};

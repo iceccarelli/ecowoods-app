@@ -100,6 +100,21 @@ for (const e of entries) {
   if (!title) fail.push(`input "${id}" carries a score with no source title`);
 }
 
+/* ── 2b. generated values carry the same citation, and say what kind of evidence they are ── */
+const gen = read('content/geo/market-inputs.generated.ts');
+const genBlocks = [...gen.matchAll(/"(\w+)": \{\s*"score": (-?[\d.]+),[\s\S]*?"source": \{([^{}]*)\}[\s\S]*?"basis": "(\w+)"[\s\S]*?"geography": \{([^{}]*)\}/g)];
+for (const [, id, , srcBlock, basis, geo] of genBlocks) {
+  const url = /"url": "([^"]*)"/.exec(srcBlock)?.[1];
+  const at = /"retrievedAt": "(\d{4}-\d{2}-\d{2})"/.exec(srcBlock)?.[1];
+  if (!url || !/^https:\/\//.test(url)) fail.push(`generated input "${id}" has no https source URL`);
+  if (!at) fail.push(`generated input "${id}" has no retrievedAt`);
+  else if (at > today) fail.push(`generated input "${id}" was retrieved on ${at}, in the future`);
+  if (!/"title": "[^"]+"/.test(srcBlock)) fail.push(`generated input "${id}" has no source title`);
+  if (id === 'hardwoodOpportunity' && basis !== 'proxy') fail.push('hardwoodOpportunity must be labelled a proxy — no dataset measures it');
+  if (!/"kind": "(direct|parent)"/.test(geo)) fail.push(`generated input "${id}" does not say whether its geography is direct or parent`);
+}
+if (/"score":/.test(gen) && genBlocks.length === 0) fail.push('market-inputs.generated.ts holds scores but this reader matched none — it is blind');
+
 /* ── 3. the confidence gate is above the computed share ──────────────────── */
 const computedWeight = specs.filter((s) => s.kind === 'computed').reduce((n, s) => n + s.weight, 0);
 const min = Number(/MIN_CONFIDENCE\s*=\s*([0-9.]+)/.exec(opp)?.[1] ?? NaN);
@@ -143,5 +158,5 @@ const sourced = specs.filter((s) => s.kind === 'sourced');
 const filled = entries.filter((e) => /score:\s*-?\d/.test(e[2])).length;
 console.log(
   `✓ market inputs verified — ${specs.length} weighted input(s) summing to ${total}, ${sourced.length} of them ` +
-    `requiring a citation, ${filled} sourced value(s) on file, classification gated at ${min} confidence`,
+    `requiring a citation, ${filled + genBlocks.length} sourced value(s) on file, classification gated at ${min} confidence`,
 );

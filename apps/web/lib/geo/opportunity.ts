@@ -17,7 +17,7 @@
  * the same claim, and a model that reports only the first number invites
  * exactly the decision it should be preventing.
  *
- * Today confidence is 10% everywhere: logistics and corridor value are
+ * Before any census file is ingested confidence is 10% everywhere: logistics and corridor value are
  * computed from facts this repository holds, and the eight economic inputs are
  * unsourced. Every classification therefore comes back UNSCORED, with the
  * missing inputs named. That is not the model failing. That is the model
@@ -85,7 +85,18 @@ export interface Opportunity {
   classification: Classification;
   /** Why it is classified that way, in one line. */
   reason: string;
-  components: Array<{ id: InputId; weight: number; score: number | null; source: string | null }>;
+  components: Array<{
+    id: InputId;
+    weight: number;
+    /** The weight actually credited: weight × evidenceFactor. */
+    effectiveWeight: number;
+    score: number | null;
+    source: string | null;
+    /** measured fact · documented proxy · computed from this repository · none. */
+    basis: 'measured' | 'proxy' | 'computed' | 'unavailable';
+    /** Parent geography is not a direct measurement. */
+    geography: 'direct' | 'parent' | null;
+  }>;
   /** Input ids with no value, and where each is obtainable. */
   missing: Array<{ id: InputId; weight: number; obtainableFrom: string }>;
 }
@@ -106,6 +117,16 @@ const logisticsScore = (m: Market): number => {
 /** Corridor centrality. A junction is worth more per drive than a terminus. */
 const corridorScore = (m: Market): number => Math.min(corridorsFor(m.slug).length * 40, 100);
 
+/**
+ * How much of an input's weight its evidence earns. A proxy (hardwood
+ * prevalence is not census-measured) and a parent geography (a district that
+ * inherits its municipality) each halve it; both together quarter it. Confidence
+ * is the credited weight over the total, so a model built on proxies and parent
+ * figures cannot report the confidence of one built on direct measurements.
+ */
+export const evidenceFactor = (v: { basis?: 'measured' | 'proxy'; geography?: { kind: 'direct' | 'parent' } }): number =>
+  (v.basis === 'proxy' ? 0.5 : 1) * (v.geography?.kind === 'parent' ? 0.5 : 1);
+
 const COMPUTED: Record<string, (m: Market) => number> = {
   logistics: logisticsScore,
   corridorValue: corridorScore,
@@ -123,18 +144,22 @@ export function opportunity(market: Market): Opportunity {
     const computed = COMPUTED[spec.id];
     if (spec.kind === 'computed' && computed) {
       const v = computed(market);
-      components.push({ id: spec.id, weight: spec.weight, score: v, source: 'computed from this repository' });
+      components.push({ id: spec.id, weight: spec.weight, effectiveWeight: spec.weight, score: v, source: 'computed from this repository', basis: 'computed', geography: null });
       weighted += v * spec.weight;
       weightPresent += spec.weight;
       continue;
     }
     const value = sourced[spec.id];
     if (value) {
-      components.push({ id: spec.id, weight: spec.weight, score: value.score, source: value.source.url });
-      weighted += value.score * spec.weight;
-      weightPresent += spec.weight;
+      const w = spec.weight * evidenceFactor(value);
+      components.push({
+        id: spec.id, weight: spec.weight, effectiveWeight: w, score: value.score, source: value.source.url,
+        basis: value.basis ?? 'measured', geography: value.geography?.kind ?? 'direct',
+      });
+      weighted += value.score * w;
+      weightPresent += w;
     } else {
-      components.push({ id: spec.id, weight: spec.weight, score: null, source: null });
+      components.push({ id: spec.id, weight: spec.weight, effectiveWeight: 0, score: null, source: null, basis: 'unavailable', geography: null });
       missing.push({ id: spec.id, weight: spec.weight, obtainableFrom: spec.obtainableFrom });
     }
   }
