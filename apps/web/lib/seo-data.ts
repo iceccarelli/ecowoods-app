@@ -329,8 +329,34 @@ export const US_COST_FAQ: FaqItem = {
 export const US_FAQ_ITEMS: FaqItem[] = FAQ_ITEMS.map((f) => (f.q === CA_COST_QUESTION ? US_COST_FAQ : f));
 
 /** The FAQ for an area page, by country. */
-export const faqItemsForArea = (slug: string): FaqItem[] =>
-  US_AREA_SLUGS.has(slug) ? US_FAQ_ITEMS : FAQ_ITEMS;
+/**
+ * THE COST QUESTION, ASKED IN THE PLACE IT IS ASKED ABOUT.
+ *
+ * An answer engine handed "hardwood floor refinishing cost Burlington" retrieves
+ * the Burlington page; on it the cost question named Toronto, so the most
+ * relevant passage on the page did not match the query. The price is the same
+ * (the published bands are the same everywhere in Ontario — see /pricing and the
+ * corridor pages), so only the place in the question and the first clause of the
+ * answer change; the figures still come from content/constants/pricing.ts.
+ * Toronto keeps the original question, and New York has its own (above).
+ */
+const caCostFaqFor = (name: string): FaqItem => ({
+  q: `How much does hardwood flooring cost in ${name}?`,
+  a:
+    `Refinishing a hardwood floor in ${name} typically runs about ${bandBare(FULL_SAND_FINISH)} per sq ft for a full sand and finish, ` +
+    `or ${bandBare(SCREEN_RECOAT)} for a screen and recoat; new hardwood installed runs about ${bandBare(NEW_INSTALL)} per sq ft — ` +
+    `before stairs, transitions, or moisture remediation. The published price bands are the same everywhere in Ontario, ` +
+    `so ${name} is not priced differently from Toronto; species, pattern, and substrate move the number. ` +
+    `The fixed price is written after a free in-home measure, not from a phone quote.`,
+});
+
+export const faqItemsForArea = (slug: string): FaqItem[] => {
+  if (US_AREA_SLUGS.has(slug)) return US_FAQ_ITEMS;
+  const city = cityBySlug(slug);
+  if (!city || slug === 'toronto') return FAQ_ITEMS;
+  const cost = caCostFaqFor(areaDisplayName(city));
+  return FAQ_ITEMS.map((f) => (f.q === CA_COST_QUESTION ? cost : f));
+};
 
 
 // ── City-specific content ──────────────────────────────────────────────────
