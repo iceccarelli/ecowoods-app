@@ -24,7 +24,7 @@ jobs:
       - name: Probe the Census API (status only)
         run: |
           B=https://api.census.gov/data/2024/acs/acs5
-          probe() { printf '%s -> ' "$1"; curl -sS -m 60 -o /tmp/body -w '%{http_code} %{content_type} %{size_download}B %{time_total}s\n' "$1" || echo "curl failed ($?)"; head -c 160 /tmp/body | tr '\n' ' '; echo; }
+          probe() { printf '%s -> ' "$1"; curl -sS -m 60 -o /tmp/body -w '%{http_code} %{content_type} %{size_download}B %{time_total}s redirect=%{redirect_url}\n' "$1" || echo "curl failed ($?)"; head -c 160 /tmp/body | tr '\n' ' '; echo; R=$(curl -sS -m 30 -o /dev/null -w '%{redirect_url}' "$1"); if [ -n "$R" ]; then printf 'followed: '; curl -sSL -m 60 -o /tmp/body2 -w '%{http_code} %{content_type} %{size_download}B final=%{url_effective}\n' "$1"; head -c 300 /tmp/body2 | tr '\n' ' '; echo; fi; }
           probe "$B?get=NAME&for=state:36"
           probe "$B/variables/B19013_001E.json"
           probe "$B?get=NAME,B19013_001E&for=place:11000&in=state:36"
