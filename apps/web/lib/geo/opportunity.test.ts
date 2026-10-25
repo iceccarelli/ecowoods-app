@@ -37,16 +37,27 @@ describe('the opportunity model', () => {
     const computed = INPUT_SPECS.filter((s) => s.kind === 'computed').reduce((n, s) => n + s.weight, 0);
     expect(MIN_CONFIDENCE).toBeGreaterThan(computed / 100);
     for (const o of opportunityOrder(MARKETS)) {
-      expect(o.classification, o.slug).toBe('UNSCORED');
-      expect(o.reason, o.slug).toMatch(/sourced/);
+      // Whatever is sourced, a market under the gate is UNSCORED and says why.
+      if (o.confidence < MIN_CONFIDENCE) {
+        expect(o.classification, o.slug).toBe('UNSCORED');
+        expect(o.reason, o.slug).toMatch(/sourced/);
+      } else {
+        expect(o.classification, o.slug).not.toBe('UNSCORED');
+      }
     }
   });
 
   it('names every missing input and where to get it', () => {
     const o = opportunity(MARKETS.find((m) => m.slug === 'oakville')!);
-    expect(o.missing).toHaveLength(8);
+    // Canada has income, dwelling value and detached prevalence from the 2021
+    // census tables. Housing age (no subdivision-level table), the hardwood
+    // proxy built on it, renovation permits, search demand and competition
+    // are not sourced.
+    expect(o.missing.map((m) => m.id).sort()).toEqual(
+      ['competition', 'hardwoodOpportunity', 'housingAge', 'renovationPotential', 'searchDemand'],
+    );
     for (const m of o.missing) expect(m.obtainableFrom.length).toBeGreaterThan(10);
-    expect(o.missing.reduce((n, m) => n + m.weight, 0)).toBe(90);
+    expect(o.missing.reduce((n, m) => n + m.weight, 0)).toBe(45);
   });
 
   it('holds United States markets to the same confidence gate as Canadian ones', () => {
@@ -66,9 +77,31 @@ describe('the opportunity model', () => {
     expect(toronto.partialScore!).toBeGreaterThan(fortErie.partialScore!);
   });
 
-  it('holds no unsourced figures at all today', () => {
-    expect(Object.keys(MARKET_INPUTS)).toEqual([]);
+  it('holds only cited, labelled census figures', () => {
+    const today = new Date().toISOString().slice(0, 10);
+    for (const [slug, inputs] of Object.entries(MARKET_INPUTS)) {
+      for (const [id, v] of Object.entries(inputs)) {
+        const at = `${slug}.${id}`;
+        expect(v!.source.url, at).toMatch(/^https:\/\//);
+        expect(v!.source.title.length, at).toBeGreaterThan(10);
+        expect(v!.source.retrievedAt, at).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        expect(v!.source.retrievedAt <= today, at).toBe(true);
+        expect(v!.score, at).toBeGreaterThanOrEqual(0);
+        expect(v!.score, at).toBeLessThanOrEqual(100);
+        expect(v!.geography?.kind, at).toMatch(/^(direct|parent)$/);
+        if (id === 'hardwoodOpportunity') expect(v!.basis, at).toBe('proxy');
+      }
+    }
   });
+
+  it('keeps Canadian and United States figures in their own currency and cohort', () => {
+    for (const m of MARKETS) {
+      const pp = MARKET_INPUTS[m.slug]?.purchasingPower;
+      if (!pp) continue;
+      expect(pp.raw?.unit, m.slug).toBe(m.country === 'CA' ? 'CAD' : 'USD');
+    }
+  });
+});
 
   it('is deterministic', () => {
     const a = opportunityOrder(MARKETS).map((x) => x.slug);
@@ -111,7 +144,16 @@ describe('the 80/20 allocation', () => {
 describe('confidence reflects the weight the evidence earns', () => {
   const src = { title: 'T', url: 'https://example.org/t', retrievedAt: '2026-10-20' };
   const direct = { kind: 'direct' as const, system: 'statcan-csd', id: '3520005', name: 'Toronto' };
-  const put = (slug: string, v: Record<string, unknown>) => { (MARKET_INPUTS as Record<string, unknown>)[slug] = v; };
+  const original: Record<string, unknown> = {};
+  const put = (slug: string, v: Record<string, unknown>) => {
+    if (!(slug in original)) original[slug] = (MARKET_INPUTS as Record<string, unknown>)[slug];
+    (MARKET_INPUTS as Record<string, unknown>)[slug] = v;
+  };
+  const restore = (slug: string) => {
+    if (original[slug] === undefined) delete (MARKET_INPUTS as Record<string, unknown>)[slug];
+    else (MARKET_INPUTS as Record<string, unknown>)[slug] = original[slug];
+    delete original[slug];
+  };
   const toronto = MARKETS.find((m) => m.slug === 'toronto')!;
 
   it('halves a proxy, halves a parent geography, and quarters both', () => {
@@ -134,7 +176,7 @@ describe('confidence reflects the weight the evidence earns', () => {
       expect(o.components.find((c) => c.id === 'hardwoodOpportunity')).toMatchObject({ basis: 'proxy', effectiveWeight: 5 });
       expect(o.components.find((c) => c.id === 'searchDemand')).toMatchObject({ basis: 'unavailable', score: null });
     } finally {
-      delete (MARKET_INPUTS as Record<string, unknown>).toronto;
+      restore('toronto');
     }
   });
 
@@ -151,7 +193,7 @@ describe('confidence reflects the weight the evidence earns', () => {
       expect(o.score).toBeNull();
       expect(o.classification).toBe('UNSCORED');
     } finally {
-      delete (MARKET_INPUTS as Record<string, unknown>)[district.slug];
+      restore(district.slug);
     }
   });
 });
