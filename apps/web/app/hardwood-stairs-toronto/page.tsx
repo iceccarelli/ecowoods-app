@@ -3,6 +3,7 @@ import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import { FeedbackBand } from '../components/FeedbackBand';
 import { EstimateForm } from '../components/EstimateForm';
 import Link from 'next/link';
+import { ReviewProof } from '@/app/components/ReviewProof';
 import { BUSINESS_NAP, yearsInBusiness } from '@ecowoods/shared/constants';
 import { SITE_URL, SERVICE_AREAS } from '@/lib/seo-data';
 import { PRICING, PRICE_PROMISE } from '@/lib/pricing';
@@ -244,6 +245,7 @@ export default function HardwoodStairsTorontoPage() {
               Score a quote you already have
             </Link>
           </div>
+          <ReviewProof />
         </div>
       </header>
 

@@ -48,6 +48,7 @@ export const viewport: Viewport = {
 import ChatWidgetLoader from "./components/ChatWidgetLoader";
 import CookieConsentBanner from './components/CookieConsentBanner';
 import TelClickTracker from './components/TelClickTracker';
+import AcquisitionCapture from './components/AcquisitionCapture';
 import { HOME_TITLE, HOME_DESCRIPTION } from '@/lib/alpha-keywords';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
@@ -196,6 +197,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               delegated tel_click listener (renders nothing). */}
           <CookieConsentBanner />
           <TelClickTracker />
+          <AcquisitionCapture />
         </Providers>
       </body>
     </html>

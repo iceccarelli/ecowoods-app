@@ -1,3 +1,4 @@
+import { ReviewProof } from '@/app/components/ReviewProof';
 import type { Metadata } from 'next';
 import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import { EstimateForm } from '../../components/EstimateForm';
@@ -739,6 +740,7 @@ export default async function ServiceDetailPage({
               Score a quote first
             </Link>
           </div>
+          <ReviewProof />
         </div>
       </section>
     </div>

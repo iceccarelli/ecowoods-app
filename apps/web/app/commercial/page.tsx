@@ -1,3 +1,4 @@
+import { ReviewProof } from '@/app/components/ReviewProof';
 import type { Metadata } from 'next';
 import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import Link from 'next/link';
@@ -161,6 +162,7 @@ export default function CommercialPage() {
               Call {BUSINESS_NAP.phoneDisplay}
             </a>
           </div>
+          <ReviewProof />
         </div>
       </header>
 
@@ -227,6 +229,18 @@ export default function CommercialPage() {
               writing, in a form that can go on a noticeboard or into a resident email.
             </li>
           </ol>
+        </div>
+      </section>
+
+      <section className="tlx-section" aria-label="Coverage and comparing bids">
+        <div className="shell">
+          <p>
+            Commercial work is taken across the same {SERVICE_AREAS.length} published areas as
+            residential work: <Link href="/service-areas">see where we work</Link>. If your board
+            or property manager is already holding bids, the{' '}
+            <Link href="/quote-check">quote check</Link> lays two to four of them side by side so
+            that the totals are comparing the same scope.
+          </p>
         </div>
       </section>
 

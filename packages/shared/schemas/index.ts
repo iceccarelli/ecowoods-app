@@ -37,6 +37,8 @@ export const leadSchema = z.object({
   timeline: z.string().max(80).optional(),
   message: z.string().max(2000).optional(),
   source: z.string().max(120).optional(),
+  /** How the visitor first reached the site (lib/acquisition.ts): referrer host and landing path only. */
+  acquisition: z.string().max(120).optional(),
   /**
    * Floor Studio state, as the readable share code
    * (`c=white-oak.satin.herringbone.5&a=900&…`). Structured, not prose: the

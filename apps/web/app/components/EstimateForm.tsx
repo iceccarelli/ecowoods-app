@@ -9,6 +9,7 @@ import { SERVICE_AREAS } from '@/lib/seo-data';
 import { track } from '@/lib/analytics';
 import { leadRedirectOutcome, leadRedirectTrack } from '@/lib/lead-redirect';
 import { compressPhoto, MAX_PHOTO_BYTES } from '@/lib/image-compress';
+import { captureAcquisition, formatAcquisition } from '@/lib/acquisition';
 import {
   readDesignConfig,
   clearDesignConfig,
@@ -311,6 +312,8 @@ export function EstimateForm({
       if (typeof v === 'string' && v !== '') body[k] = v;
     });
     if (typeof body.sqft === 'string') body.sqft = Number(body.sqft);
+    const acquisition = formatAcquisition(captureAcquisition());
+    if (acquisition) body.acquisition = acquisition;
 
     setState('sending');
     setBounced(false);

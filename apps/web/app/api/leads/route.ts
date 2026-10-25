@@ -76,10 +76,11 @@ function backTo(request: Request, ok: boolean, source?: unknown): string {
  * same floor differently. The desk pastes it into /floor-studio and sees the
  * floor itself.
  */
-function leadNotes(lead: { message?: unknown; design?: unknown }): string | null {
+function leadNotes(lead: { message?: unknown; design?: unknown; acquisition?: unknown }): string | null {
   const parts = [
     lead.message ? String(lead.message) : null,
     lead.design ? `Floor Studio design code: ${String(lead.design)}` : null,
+    lead.acquisition ? `Found us via: ${String(lead.acquisition).replace(/\s+/g, ' ').slice(0, 120)}` : null,
   ].filter(Boolean);
   return parts.length ? parts.join('\n\n') : null;
 }

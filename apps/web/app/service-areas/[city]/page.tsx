@@ -1,3 +1,4 @@
+import { ReviewProof } from '@/app/components/ReviewProof';
 import type { Metadata } from 'next';
 import { ProofSliderForRoute } from '@/app/components/ProofSliderForRoute';
 import { notFound } from 'next/navigation';
@@ -268,6 +269,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
               See it in your room, priced in {isUS ? 'US dollars' : 'Canadian dollars'}
             </Link>
           </p>
+          <ReviewProof className="area-proof" />
         </div>
       </section>
 

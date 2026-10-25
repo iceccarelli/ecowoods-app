@@ -160,11 +160,12 @@ export const LEAD_FIELDS = [
   'timeline (optional)',
   'approximate square footage (optional)',
   'your message (optional)',
+  'how you reached this site (the referring site, for example Google, and the page you landed on; never your search words)',
 ] as const;
 
 /**
  * Cookies and browser storage this site sets itself, as opposed to the ones its
- * processors set. Two, and one of them is the record of what you chose.
+ * processors set. One of them is the record of what you chose.
  */
 export const OWN_STORAGE = [
   {
@@ -185,6 +186,13 @@ export const OWN_STORAGE = [
     key: 'theme',
     kind: 'localStorage',
     purpose: 'Remembers whether you chose the light or dark appearance.',
+  },
+  {
+    key: 'ew_acquisition',
+    kind: 'sessionStorage',
+    purpose:
+      'Holds, for this visit only, the name of the site that sent you here and the page you landed on. ' +
+      'It is sent with your estimate request so we can see which of our pages helped you find us, and it is cleared when you close the tab.',
   },
 ] as const;
 
