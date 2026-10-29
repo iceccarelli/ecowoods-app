@@ -37,6 +37,14 @@ export type ChangeEntry = {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    id: 'framework-count-correction',
+    date: '2026-10-29',
+    kind: 'framework',
+    title: 'The framework count is 25, not 27',
+    body: 'The published list is the criteria in lib/framework.ts. There are 25. Id 6.3 is unused and will not be reused; 6.4 and 6.5 stay as they are. Earlier notes that said 27 were wrong.',
+    href: '/framework',
+  },
+  {
     id: 'color-matching-guides-v1',
     date: '2026-09-18',
     kind: 'guide',
@@ -261,7 +269,7 @@ export const CHANGELOG: ChangeEntry[] = [
     date: '2026-08-20',
     kind: 'data',
     title: 'The whole corpus is now available as JSON',
-    body: 'Every paper with full section text, all 27 framework criteria with their sources, every guide and every glossary term — CORS-open, no key, CC BY 4.0. Generated from the same manifests the pages render from, so it cannot describe a page that does not exist.',
+    body: 'Every paper with full section text, all 25 framework criteria with their sources, every guide and every glossary term — CORS-open, no key, CC BY 4.0. Generated from the same manifests the pages render from, so it cannot describe a page that does not exist.',
     href: '/api/knowledge',
   },
   {
@@ -277,7 +285,7 @@ export const CHANGELOG: ChangeEntry[] = [
     date: '2026-08-19',
     kind: 'framework',
     title: 'The Ecowoods Well-Installed Framework v1.0',
-    body: 'Six pillars and 27 binary criteria for judging a hardwood installation, published under CC BY with permanent criterion ids. Written to be used on any contractor in the GTA, including us. The self-assessment scores a quote in the browser and sends nothing anywhere.',
+    body: 'Six pillars and 25 binary criteria for judging a hardwood installation, published under CC BY with permanent criterion ids. Written to be used on any contractor in the GTA, including us. The self-assessment scores a quote in the browser and sends nothing anywhere.',
     href: '/framework',
   },
   {

@@ -297,6 +297,7 @@ export const PILLARS: FrameworkPillar[] = [
         source: { paper: P_COST, section: 'installer-checklist' },
       },
       {
+        // 6.3 is unused. The id stays reserved. Do not reuse it and do not renumber 6.4 or 6.5.
         id: '6.4',
         question:
           'Would they refuse the job if the substrate or the conditions were wrong — and have they said so plainly?',
