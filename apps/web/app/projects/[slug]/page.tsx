@@ -21,6 +21,7 @@ import { areaForProjectLocation } from '@/lib/area-groups';
 import { BUSINESS_NAP } from '@ecowoods/shared/constants';
 import { buildBreadcrumbList } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
+import { criterionCount } from '@/lib/framework';
 
 export function generateStaticParams() {
   return [...projectSlugs(), ...TRILOGIES.map((t) => t.slug)].map((slug) => ({ slug }));
@@ -270,7 +271,7 @@ export default async function ProjectPage({
             </ul>
             <p>
               The measured version of this argument is elsewhere on the site and it carries
-              numbers: the <Link href="/framework">Well-Installed Framework</Link> is 27 criteria
+              numbers: the <Link href="/framework">Well-Installed Framework</Link> is {criterionCount()} criteria
               you can put to any contractor in writing, and{' '}
               <Link href="/tools/floor-movement">the movement calculator</Link> computes what a
               floor like this one does across a Toronto year from published coefficients.
