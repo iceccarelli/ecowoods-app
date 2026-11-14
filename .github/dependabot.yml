@@ -1,22 +1,23 @@
 version: 2
 updates:
-  # The root pnpm lockfile represents the full JavaScript/TypeScript workspace:
-  # web, mobile, shared packages and the dependency-free render API package.
+  # The root pnpm lockfile represents the full JavaScript/TypeScript workspace.
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
       day: monday
-      time: "05:00"
-    open-pull-requests-limit: 8
+      time: "09:00"
+      timezone: America/Toronto
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    commit-message:
+      prefix: deps
     groups:
-      pnpm-patch-minor:
+      npm-non-major:
         applies-to: version-updates
-        patterns:
-          - "*"
-        update-types:
-          - patch
-          - minor
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
 
   # FastAPI backend is an independent Python application.
   - package-ecosystem: pip
@@ -24,16 +25,40 @@ updates:
     schedule:
       interval: weekly
       day: monday
-      time: "05:15"
-    open-pull-requests-limit: 5
+      time: "09:15"
+      timezone: America/Toronto
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    commit-message:
+      prefix: deps
     groups:
-      python-patch-minor:
+      python-non-major:
         applies-to: version-updates
-        patterns:
-          - "*"
-        update-types:
-          - patch
-          - minor
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:30"
+      timezone: America/Toronto
+    labels: ["dependencies"]
+    commit-message:
+      prefix: deps
+
+  - package-ecosystem: docker
+    directory: /services/render-api
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:30"
+      timezone: America/Toronto
+    labels: ["dependencies"]
+    commit-message:
+      prefix: deps
 
   # Keep the CI and security workflows maintained as dependencies too.
   - package-ecosystem: github-actions
@@ -41,5 +66,14 @@ updates:
     schedule:
       interval: weekly
       day: monday
-      time: "05:30"
-    open-pull-requests-limit: 5
+      time: "09:45"
+      timezone: America/Toronto
+    open-pull-requests-limit: 10
+    labels: ["dependencies"]
+    commit-message:
+      prefix: ci
+    groups:
+      actions-non-major:
+        applies-to: version-updates
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
