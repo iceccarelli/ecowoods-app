@@ -4,7 +4,7 @@
 # The whole monorepo is copied because the service IMPORTS the renderer from
 # apps/web/lib/floor-studio rather than vendoring a second copy of it. That is
 # the point of the design, and .dockerignore keeps the image small anyway.
-FROM node:24-slim
+FROM node:25-slim
 
 WORKDIR /app
 COPY . .
