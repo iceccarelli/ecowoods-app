@@ -21,6 +21,7 @@ on:
       - 'pnpm-lock.yaml'
       - 'pnpm-workspace.yaml'
       - 'turbo.json'
+      - 'services/render-api/**'
       - '.github/workflows/web.yml'
   # No `paths` filter on pull_request, deliberately: Guards, Typecheck & Build and
   # the PostgreSQL job are REQUIRED status checks on main. A path-filtered
@@ -197,3 +198,18 @@ jobs:
           tests/quote-recovery.postgres.integration.test.ts
           tests/commercial-lifecycle.postgres.integration.test.ts
           tests/payment-reconciliation.postgres.integration.test.ts
+
+
+  # The image renderer is a separately deployed product surface on Fly.io.
+  # Keep its Node-native tests in the same PR quality gate as the web app.
+  render-api:
+    name: Render API tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run render API tests
+        run: node scripts/render-api-test.mjs
