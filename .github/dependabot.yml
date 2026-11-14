@@ -1,0 +1,45 @@
+version: 2
+updates:
+  # The root pnpm lockfile represents the full JavaScript/TypeScript workspace:
+  # web, mobile, shared packages and the dependency-free render API package.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+    open-pull-requests-limit: 8
+    groups:
+      pnpm-patch-minor:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - patch
+          - minor
+
+  # FastAPI backend is an independent Python application.
+  - package-ecosystem: pip
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:15"
+    open-pull-requests-limit: 5
+    groups:
+      python-patch-minor:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - patch
+          - minor
+
+  # Keep the CI and security workflows maintained as dependencies too.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:30"
+    open-pull-requests-limit: 5
