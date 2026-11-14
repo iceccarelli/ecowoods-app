@@ -47,7 +47,7 @@ jobs:
     timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       # THE ONE TOOL THESE GUARDS NEED THAT NODE DOES NOT SHIP.
@@ -94,7 +94,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 9.15.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -154,7 +154,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 9.15.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -208,7 +208,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: Run render API tests
