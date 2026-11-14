@@ -13,4 +13,4 @@ pydantic-settings==2.16.2
 python-dotenv==1.2.4
 httpx==0.28.1
 pytest>=8.0
-pytest-asyncio>=0.23
+pytest-asyncio>=1.4.1.post1
