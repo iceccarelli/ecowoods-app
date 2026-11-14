@@ -1,5 +1,6 @@
 version: 2
 updates:
+  # The root pnpm lockfile represents the full JavaScript/TypeScript workspace.
   - package-ecosystem: npm
     directory: /
     schedule:
@@ -14,9 +15,11 @@ updates:
       prefix: deps
     groups:
       npm-non-major:
+        applies-to: version-updates
         patterns: ["*"]
         update-types: ["minor", "patch"]
 
+  # FastAPI backend is an independent Python application.
   - package-ecosystem: pip
     directory: /backend
     schedule:
@@ -31,6 +34,7 @@ updates:
       prefix: deps
     groups:
       python-non-major:
+        applies-to: version-updates
         patterns: ["*"]
         update-types: ["minor", "patch"]
 
@@ -56,6 +60,7 @@ updates:
     commit-message:
       prefix: deps
 
+  # Keep the CI and security workflows maintained as dependencies too.
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -69,5 +74,6 @@ updates:
       prefix: ci
     groups:
       actions-non-major:
+        applies-to: version-updates
         patterns: ["*"]
         update-types: ["minor", "patch"]
