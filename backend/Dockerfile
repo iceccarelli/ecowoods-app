@@ -4,7 +4,7 @@
 ###############################################################################
 
 # ---------- Stage 1: Builder ----------
-FROM python:3.12-slim AS builder
+FROM python:3.15-slim AS builder
 
 WORKDIR /build
 
@@ -12,7 +12,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # ---------- Stage 2: Runtime ----------
-FROM python:3.12-slim AS runtime
+FROM python:3.15-slim AS runtime
 
 # Security: run as non-root user
 RUN groupadd -r ecowoods && useradd -r -g ecowoods -d /app -s /sbin/nologin ecowoods
