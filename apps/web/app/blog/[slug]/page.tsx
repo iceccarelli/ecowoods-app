@@ -17,8 +17,17 @@ import {
   getFallbackRelated,
 } from '@/lib/graph/contentLinks';
 import { OG_IMAGE_URL } from '@/lib/brand-assets';
+import { illustrationImage } from '@/app/data/illustration-images';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ecowoods.ca';
+
+function articleImageUrl(image?: string): string | undefined {
+  const id = image?.split('/').pop()?.replace(/\.webp$/, '');
+  if (!id) return undefined;
+  const asset = illustrationImage(id);
+  return asset ? new URL(asset.src, SITE_URL).toString() : undefined;
+}
+
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -46,6 +55,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const url = `${SITE_URL}/blog/${slug}`;
+  const articleImage = articleImageUrl(article.image);
 
   return {
     title: clampTitle(article.title),
@@ -59,13 +69,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       authors: article.author ? [article.author] : undefined,
       publishedTime: new Date(article.publishedAt).toISOString(),
       modifiedTime: article.modifiedAt,
-      images: article.image ? [{ url: article.image }] : undefined,
+      images: articleImage ? [{ url: articleImage }] : undefined,
     },
     twitter: {
       card: 'summary_large_image',
       title: article.title,
       description: article.description,
-      images: article.image ? [article.image] : undefined,
+      images: articleImage ? [articleImage] : undefined,
     },
     alternates: {
       canonical: url,
@@ -80,6 +90,8 @@ export default async function ArticlePage({ params }: Props) {
   if (!article) {
     notFound();
   }
+
+  const articleImage = articleImageUrl(article.image);
 
   // Build JSON-LD schema for this article
   const articleSchema = buildArticle({
@@ -107,7 +119,7 @@ export default async function ArticlePage({ params }: Props) {
      * photographs eleven posts. A `hero-image` in the frontmatter still wins
      * when one is set, which is the upgrade path.
      */
-    imageUrl: article.image || OG_IMAGE_URL,
+    imageUrl: articleImage || OG_IMAGE_URL,
     siteUrl: SITE_URL,
     topics: article.topics,
   });

@@ -7,6 +7,7 @@ import { catalogueHref, getPublishedCatalogues } from '@/lib/catalogues';
 import { buildWebPageSchema } from '@/lib/schema/builders';
 import { SchemaScript } from '@/lib/schema/components';
 import { formatDate } from '@/lib/content/utils';
+import { IllustrationPair } from '@/app/components/Illustration';
 
 export const metadata: Metadata = {
   title: 'Technical Library',
@@ -39,6 +40,12 @@ const PILLARS = [
     points: ['HEPA extraction systems', 'Polyurethane chemistry', 'Application techniques'],
   },
 ];
+
+const PILLAR_ART: Record<string, readonly [string, string]> = {
+  'Moisture Management': ['technical-pillar-moisture-management', 'technical-pillar-moisture-management-b'],
+  'Wood Science': ['technical-pillar-wood-science', 'technical-pillar-wood-science-b'],
+  'Installation & Finishing': ['technical-pillar-installation-finishing', 'technical-pillar-installation-finishing-b'],
+};
 
 export default async function TechnicalLibraryPage() {
   const articles = await getArticles();
@@ -83,6 +90,11 @@ export default async function TechnicalLibraryPage() {
             The engineering reference behind our work: moisture protocols, wood science, and
             finishing chemistry for hardwood floors in Toronto and the GTA.
           </p>
+          <IllustrationPair
+            a="technical-library-corpus-map"
+            b="technical-library-corpus-map-b"
+            className="my-6"
+          />
         </div>
       </header>
 
@@ -151,6 +163,11 @@ export default async function TechnicalLibraryPage() {
           <div className="tlx-grid">
             {PILLARS.map((pillar) => (
               <div key={pillar.title} className="tlx-pillar">
+                <IllustrationPair
+                  a={PILLAR_ART[pillar.title][0]}
+                  b={PILLAR_ART[pillar.title][1]}
+                  className="mb-4"
+                />
                 <h3>{pillar.title}</h3>
                 <p>{pillar.body}</p>
                 <ul>

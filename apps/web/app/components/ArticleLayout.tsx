@@ -10,6 +10,16 @@ import { formatDate } from '@/lib/content/utils';
 import type { ArticleMetadata } from '@/lib/content/types';
 import type { RelatedContent } from '@/lib/graph/contentLinks';
 import { ArticleNextStep } from '@/app/components/ArticleNextStep';
+import { IllustrationPair } from '@/app/components/Illustration';
+
+const ARTICLE_ILLUSTRATION_PAIRS: Record<string, readonly [string, string]> = {
+  'article-subfloor-moisture-testing': ['article-subfloor-moisture-testing', 'article-subfloor-moisture-testing-b'],
+  'article-hepa-dust-extraction': ['article-hepa-dust-extraction', 'article-hepa-dust-extraction-b'],
+  'article-hardwood-species-comparison': ['article-hardwood-species-comparison', 'article-hardwood-species-comparison-b'],
+  'article-water-vs-oil-finish': ['article-water-vs-oil-finish', 'article-water-vs-oil-finish-b'],
+  'article-wood-acclimation-timeline': ['article-wood-acclimation-timeline', 'article-wood-acclimation-timeline-b'],
+  'article-white-oak-vs-red-oak': ['article-white-oak-vs-red-oak', 'article-white-oak-vs-red-oak-b'],
+};
 
 interface ArticleLayoutProps {
   metadata: ArticleMetadata & { readingTimeMinutes?: number };
@@ -19,6 +29,7 @@ interface ArticleLayoutProps {
 
 export function ArticleLayout({ metadata, children, relatedContent }: ArticleLayoutProps) {
   const readingTime = metadata.readingTimeMinutes;
+  const imageId = metadata.image?.split('/').pop()?.replace(/\.webp$/, '');
 
   return (
     <article className="tlx-page">
@@ -40,6 +51,14 @@ export function ArticleLayout({ metadata, children, relatedContent }: ArticleLay
 
           <h1 className="tlx-title">{metadata.title}</h1>
           <p className="tlx-lede">{metadata.description}</p>
+          {imageId && (
+            <IllustrationPair
+              a={ARTICLE_ILLUSTRATION_PAIRS[imageId]?.[0] ?? imageId}
+              b={ARTICLE_ILLUSTRATION_PAIRS[imageId]?.[1] ?? `${imageId}-b`}
+              interval={8500}
+              className="my-6"
+            />
+          )}
 
           <div className="tlx-meta">
             <span>

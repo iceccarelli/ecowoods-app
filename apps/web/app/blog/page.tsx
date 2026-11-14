@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { getArticles } from '@/lib/content/loader';
 import { formatDate } from '@/lib/content/utils';
+import { Illustration } from '@/app/components/Illustration';
 
 export const metadata: Metadata = {
   title: 'Technical Articles',
@@ -17,6 +18,14 @@ export default async function BlogPage() {
 
   const renderCard = (article: (typeof articles)[number]) => (
     <Link key={article.slug} href={`/blog/${article.slug}`} className="tlx-card">
+      {article.image && (
+        <Illustration
+          id={article.image.split('/').pop()?.replace(/\.webp$/, '') || ''}
+          caption={false}
+          motion="none"
+          className="tlx-card-illustration"
+        />
+      )}
       <span className="tlx-card-tag">
         {article.category ? article.category.replace(/-/g, ' ') : 'Article'}
       </span>

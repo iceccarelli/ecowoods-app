@@ -17,6 +17,7 @@ import { areaDescription, areaTitle } from '@/lib/area-description';
 import { areaOpening } from '@/lib/opening-answers';
 import { guidesForArea, corridorLinkForArea, projectsForArea, areaPlacement } from '@/lib/area-groups';
 import { EstimateForm } from '@/app/components/EstimateForm';
+import { IllustrationPair } from '@/app/components/Illustration';
 
 export function generateStaticParams() {
   return SERVICE_AREAS.map((c) => ({ city: c.slug }));
@@ -32,6 +33,26 @@ export const dynamicParams = false;
  * resolved by the reader against whichever they already had in mind.
  */
 const pageTitle = (city: City) => `Hardwood floor refinishing & installation in ${areaDisplayName(city)}`;
+
+function housingImageForNote(intro?: string, note?: string): readonly [string, string] | undefined {
+  const value = `${intro ?? ''} ${note ?? ''}`.toLowerCase();
+  if (!value.trim()) return undefined;
+
+  if (/\bradiant\b|\bin[- ]floor\b|\bheated floor\b/.test(value)) {
+    return ['area-housing-radiant-newbuild', 'area-housing-radiant-newbuild-b'];
+  }
+  if (/\bconcrete[- ]slab\b|\bcondo(?:minium)?s?\b|\bhigh[- ]rise\b|\btower\b|\bloft conversions?\b/.test(value)) {
+    return ['area-housing-condo-concrete-slab', 'area-housing-condo-concrete-slab-b'];
+  }
+  if (/\bpre[- ]?war\b|\bpre[- ]1930\b|\binter[- ]?war\b|\bheritage\b|\bvictorian\b|\bedwardian\b|\b(?:early[- ]?)?(?:19th|20th)[- ]century\b|\bcentury home\b|\bolder home\b/.test(value)) {
+    return ['area-housing-prewar-heritage', 'area-housing-prewar-heritage-b'];
+  }
+  if (/\bpost[- ]?war\b|\bsuburban\b|\bsubdivisions?\b|\bbungalow\b|\b(?:1950s|1960s|1970s|1980s|1990s)\b|\bmid[- ]century\b|\branch(?:es)?\b/.test(value)) {
+    return ['area-housing-postwar-suburban', 'area-housing-postwar-suburban-b'];
+  }
+  return undefined;
+}
+
 
 export async function generateMetadata({ params }: { params: Promise<{ city: string }> }): Promise<Metadata> {
   const { city: slug } = await params;
@@ -156,6 +177,7 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
   const cc = cityContent(city.slug);
   const localIntro = cc?.intro;
   const localHousing = cc?.housingNote;
+  const housingVisual = housingImageForNote(localIntro, localHousing);
 
   /* Published jobs done in THIS area. A handful of the published areas have one
      today; the rest render nothing rather than a card invented to fill a grid. */
@@ -235,6 +257,13 @@ export default async function CityPage({ params }: { params: Promise<{ city: str
           )}
           {localHousing && (
             <p style={{ maxWidth: '48rem', marginTop: '1rem', lineHeight: 1.7 }}>{localHousing}</p>
+          )}
+          {housingVisual && (
+            <IllustrationPair
+              a={housingVisual[0]}
+              b={housingVisual[1]}
+              className="mt-6"
+            />
           )}
 
           {/* The shared promise still belongs on the page — it is what the
