@@ -6,6 +6,7 @@ import { TERRITORY, TERRITORY_SHORT } from '@/lib/geo/territory';
 import { breadcrumbSchema } from '@/lib/structured-data';
 import { EvidenceRail, CASES } from '@/app/components/EvidenceRail';
 import TerritoryMap from '../components/TerritoryMap';
+import { IllustrationPair } from '@/app/components/Illustration';
 import { illustrationImage } from '@/app/data/illustration-images';
 import { areaGroups } from '@/lib/area-groups';
 
@@ -47,6 +48,11 @@ export default function ServiceAreasIndex() {
           <p style={{ maxWidth: '48rem', marginTop: '1rem' }}>
             {`Installation, refinishing, dust-free sanding, restoration, stairs and custom inlays in ${SERVICE_AREAS.length} published areas across ${TERRITORY}. Find your city for the housing stock and the substrate under it, or book a free in-home measure anywhere on the map.`}
           </p>
+          <IllustrationPair
+            a="service-areas-gta-corridors-map"
+            b="service-areas-gta-corridors-map-b"
+            className="my-8"
+          />
           {/* GROUP-01 — ONE HUNDRED TILES IN ONE FLAT GRID WAS THE MARATHON.
               
               On a phone that is a hundred cards in a single column before the
