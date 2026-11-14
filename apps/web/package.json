@@ -65,7 +65,7 @@
     "@types/react-dom": "^19.1.0",
     "dotenv": "^16.4.7",
     "eslint": "8.57.1",
-    "eslint-config-next": "15.0.0",
+    "eslint-config-next": "16.4.6",
     "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.22.4",
